@@ -1,0 +1,7 @@
+V1.3 Two-Map Popcycle Redesign
+
+Changes only the Popcycle visual map section.
+- Large interactive San Andreas overview on the left.
+- Automatic focused city/county map on the right.
+- Orange outline with minimal transparent wash.
+- Existing map selection, zoom, pan, fullscreen, autosave, batch editor and police controls remain.

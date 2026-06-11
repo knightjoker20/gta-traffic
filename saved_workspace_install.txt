@@ -1,0 +1,34 @@
+GTA Traffic Studio — Saved Workspace Update
+
+THIS PATCH WAS BUILT FROM THE CURRENT SITE ARCHIVE PROVIDED BY THE USER.
+
+Install:
+1. Back up the current website folder.
+2. Copy the contents of this patch into the current website root.
+3. Allow Windows to replace matching files.
+4. Open index.html and press Ctrl+F5.
+
+New file:
+- js/workspaceStorage.js
+
+Replaced files:
+- index.html
+- css/style.css
+- js/app.js
+- js/utils.js
+- js/popgroups.js
+- js/vehicleMeta.js
+- js/render.js
+- js/packDatabase.js
+- js/imageManager.js
+- js/exportTools.js
+- CHANGELOG.md
+- EDITING_GUIDE.md
+
+First use:
+- Load your Popgroups XML once.
+- Load your vehicles.meta files once.
+- The site will autosave parsed data and restore it on the next visit.
+- Use Export Workspace Backup occasionally because clearing browser site data can remove IndexedDB.
+
+The browser cannot silently overwrite the original GTA files. Export Safe XML is still required when you are ready to install your edited Popgroups file.

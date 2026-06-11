@@ -1,0 +1,1588 @@
+/* =====================================================
+   [SECTION: POPCYCLE_PAGE_LAYOUT]
+   Main Popcycle page structure. Uses the existing shared
+   GTA-Traffic.com css/style.css for site-wide branding.
+   ===================================================== */
+
+.popcycle-main {
+  padding-top: 20px;
+}
+
+.popcycle-hero {
+  min-height: 260px;
+}
+
+.popcycle-hero .hero-shade {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 24px;
+}
+
+.popcycle-hero .hero-content {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.popcycle-hero .hero-kicker,
+.popcycle-hero .hero-content h1,
+.popcycle-hero .hero-content p {
+  text-align: center;
+}
+
+.pc-control-panel {
+  margin-bottom: 18px;
+}
+
+.pc-control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pc-file-picker {
+  max-width: 360px;
+}
+
+.pc-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.pc-overview {
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pc-overview-stat {
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 9px;
+  background: rgba(3, 7, 18, 0.62);
+}
+
+.pc-overview-stat small {
+  display: block;
+  color: #94a3b8;
+}
+
+.pc-overview-stat strong {
+  display: block;
+  margin-top: 4px;
+  color: #fff;
+  font-size: 22px;
+}
+
+/* [END SECTION: POPCYCLE_PAGE_LAYOUT] */
+
+/* =====================================================
+   [SECTION: POPCYCLE_WORKSPACE]
+   Left schedule browser and right schedule editor.
+   ===================================================== */
+
+.pc-workspace {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.pc-sidebar {
+  position: sticky;
+  top: 70px;
+  max-height: calc(100vh - 90px);
+  overflow: hidden;
+}
+
+.pc-sidebar-controls {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pc-sidebar-controls input,
+.pc-sidebar-controls select {
+  width: 100%;
+}
+
+.pc-schedule-list {
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.pc-schedule-item {
+  width: 100%;
+  margin: 0 0 7px;
+  padding: 10px;
+  text-align: left;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.17);
+}
+
+.pc-schedule-item:hover {
+  border-color: rgba(249, 115, 22, 0.52);
+}
+
+.pc-schedule-item.active {
+  background: linear-gradient(
+    180deg,
+    rgba(154, 52, 18, 0.92),
+    rgba(124, 45, 18, 0.92)
+  );
+  border-color: rgba(251, 146, 60, 0.72);
+}
+
+.pc-schedule-name {
+  display: block;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.pc-schedule-meta {
+  display: block;
+  margin-top: 4px;
+  color: #cbd5e1;
+  font-size: 10px;
+}
+
+.pc-editor-panel {
+  min-width: 0;
+}
+
+.pc-selected-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.pc-selected-header h2 {
+  margin-bottom: 4px;
+}
+
+.pc-status-stock {
+  color: #4ade80;
+}
+
+.pc-status-modified {
+  color: #facc15;
+}
+
+/* [END SECTION: POPCYCLE_WORKSPACE] */
+
+/* =====================================================
+   [SECTION: POPCYCLE_PRESETS]
+   Named population presets for the selected schedule.
+   ===================================================== */
+
+.pc-presets {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  background: rgba(3, 7, 18, 0.55);
+}
+
+.pc-presets h3 {
+  margin: 0 0 8px;
+}
+
+.pc-preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pc-preset-button {
+  min-width: 120px;
+}
+
+.pc-preset-stock {
+  background: linear-gradient(
+    180deg,
+    #1d4ed8,
+    #1e3a8a
+  );
+}
+
+.pc-preset-night-shift {
+  background: linear-gradient(
+    180deg,
+    #4c1d95,
+    #1e1b4b
+  );
+  border-color: rgba(167, 139, 250, 0.55);
+}
+
+.pc-preset-street-plus {
+  background: linear-gradient(
+    180deg,
+    #0891b2,
+    #155e75
+  );
+}
+
+.pc-preset-city-pulse {
+  background: linear-gradient(
+    180deg,
+    #15803d,
+    #14532d
+  );
+}
+
+.pc-preset-rush-hour {
+  background: linear-gradient(
+    180deg,
+    #ea580c,
+    #9a3412
+  );
+}
+
+.pc-preset-redline {
+  background: linear-gradient(
+    180deg,
+    #dc2626,
+    #7f1d1d
+  );
+}
+
+/* [END SECTION: POPCYCLE_PRESETS] */
+
+/* =====================================================
+   [SECTION: POPCYCLE_TABLE]
+   Twelve AM/PM time rows and editable population values.
+   ===================================================== */
+
+.pc-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 10px;
+}
+
+.pc-table {
+  width: 100%;
+  min-width: 1450px;
+  border-collapse: collapse;
+  background: rgba(3, 7, 18, 0.72);
+}
+
+.pc-table th,
+.pc-table td {
+  padding: 8px;
+  border-right: 1px solid rgba(148, 163, 184, 0.11);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.13);
+  vertical-align: top;
+}
+
+.pc-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  color: #f8fafc;
+  background: #111827;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pc-table tbody tr:hover {
+  background: rgba(30, 41, 59, 0.42);
+}
+
+.pc-row-modified {
+  box-shadow:
+    inset 4px 0 0 #facc15;
+}
+
+.pc-row-selected {
+  background: rgba(249, 115, 22, 0.12);
+  outline: 2px solid rgba(249, 115, 22, 0.58);
+  outline-offset: -2px;
+}
+
+.pc-table tbody tr {
+  cursor: pointer;
+}
+
+.pc-number-input {
+  cursor: text;
+}
+
+.pc-time-badge {
+  min-width: 116px;
+  padding: 8px;
+  border-radius: 8px;
+  color: #fff;
+  background: #1e293b;
+}
+
+.pc-time-badge strong,
+.pc-time-badge span {
+  display: block;
+}
+
+.pc-time-badge span {
+  margin-top: 3px;
+  color: #e2e8f0;
+  font-size: 10px;
+}
+
+.pc-period-night {
+  background: linear-gradient(
+    180deg,
+    #312e81,
+    #1e1b4b
+  );
+}
+
+.pc-period-predawn {
+  background: linear-gradient(
+    180deg,
+    #4338ca,
+    #312e81
+  );
+}
+
+.pc-period-morning {
+  background: linear-gradient(
+    180deg,
+    #c2410c,
+    #7c2d12
+  );
+}
+
+.pc-period-rush {
+  background: linear-gradient(
+    180deg,
+    #d97706,
+    #92400e
+  );
+}
+
+.pc-period-midday {
+  background: linear-gradient(
+    180deg,
+    #ca8a04,
+    #854d0e
+  );
+}
+
+.pc-period-day {
+  background: linear-gradient(
+    180deg,
+    #b45309,
+    #78350f
+  );
+}
+
+.pc-period-afternoon {
+  background: linear-gradient(
+    180deg,
+    #c2410c,
+    #7c2d12
+  );
+}
+
+.pc-period-rush-evening {
+  background: linear-gradient(
+    180deg,
+    #be123c,
+    #881337
+  );
+}
+
+.pc-period-evening {
+  background: linear-gradient(
+    180deg,
+    #6d28d9,
+    #4c1d95
+  );
+}
+
+.pc-number-input {
+  width: 72px;
+  min-width: 72px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.pc-reference-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.pc-value-cell {
+  border-top: 2px solid transparent;
+}
+
+.pc-level-stock {
+  border-top-color: #3b82f6;
+}
+
+.pc-level-street-plus {
+  border-top-color: #06b6d4;
+}
+
+.pc-level-city-pulse {
+  border-top-color: #22c55e;
+}
+
+.pc-level-rush-hour {
+  border-top-color: #f97316;
+}
+
+.pc-level-redline {
+  border-top-color: #ef4444;
+}
+
+.pc-level-beyond-redline {
+  border-top-color: #c026d3;
+  background: rgba(126, 34, 206, 0.12);
+}
+
+.pc-level-below-stock {
+  border-top-color: #64748b;
+}
+
+.pc-groups-cell {
+  min-width: 160px;
+  color: #cbd5e1;
+  font-size: 10px;
+}
+
+.pc-groups-cell small {
+  display: block;
+  margin-top: 5px;
+  color: #94a3b8;
+}
+
+/* [END SECTION: POPCYCLE_TABLE] */
+
+/* =====================================================
+   [SECTION: POPCYCLE_GROUP_PREVIEW]
+   Read-only group preview for Version 1.
+   ===================================================== */
+
+.pc-group-summary-card {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 10px;
+  background: rgba(3, 7, 18, 0.58);
+}
+
+.pc-group-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.pc-group-chip {
+  display: inline-flex;
+  gap: 6px;
+  margin: 3px;
+  padding: 4px 8px;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 999px;
+  color: #e9d5ff;
+  background: rgba(88, 28, 135, 0.28);
+  font-size: 10px;
+}
+
+/* =====================================================
+   [SECTION: POPCYCLE_POPULATION_MIX]
+   Detailed selected-hour ped and vehicle group readout.
+   ===================================================== */
+
+.pc-mix-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.pc-mix-header h3 {
+  margin-bottom: 3px;
+}
+
+.pc-mix-period {
+  color: #f59e0b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.pc-police-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pc-police-summary span {
+  padding: 6px 9px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 999px;
+  color: #bae6fd;
+  background: rgba(7, 89, 133, 0.22);
+  font-size: 10px;
+}
+
+.pc-mix-narrative {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-left: 3px solid #f97316;
+  border-radius: 7px;
+  color: #e2e8f0;
+  background: rgba(124, 45, 18, 0.18);
+}
+
+.pc-mix-narrative p {
+  margin: 4px 0;
+}
+
+.pc-mix-list {
+  display: grid;
+  gap: 8px;
+}
+
+.pc-mix-item {
+  padding: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.pc-mix-item-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pc-mix-item-heading strong,
+.pc-mix-item-heading small {
+  display: block;
+}
+
+.pc-mix-item-heading small {
+  margin-top: 2px;
+  color: #94a3b8;
+}
+
+.pc-mix-item-heading > span {
+  color: #fbbf24;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pc-mix-bar {
+  height: 6px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #1e293b;
+}
+
+.pc-mix-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    #f97316,
+    #facc15
+  );
+}
+
+.pc-mix-item p {
+  margin: 7px 0 0;
+  color: #cbd5e1;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.pc-group-edit-note {
+  margin-top: 12px;
+}
+
+/* [END SECTION: POPCYCLE_POPULATION_MIX] */
+
+/* [END SECTION: POPCYCLE_GROUP_PREVIEW] */
+
+/* =====================================================
+   [SECTION: POPCYCLE_VALIDATION]
+   Errors, warnings, export readiness, and review details.
+   ===================================================== */
+
+.pc-validation-panel {
+  margin-top: 18px;
+}
+
+.pc-validation-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pc-validation-summary span {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.pc-validation-ok {
+  color: #dcfce7;
+  background: #166534;
+}
+
+.pc-validation-warning {
+  color: #fef9c3;
+  background: #854d0e;
+}
+
+.pc-validation-error {
+  color: #fee2e2;
+  background: #991b1b;
+}
+
+.pc-validation-panel details {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.17);
+  border-radius: 8px;
+  background: rgba(3, 7, 18, 0.55);
+}
+
+.pc-empty-state {
+  padding: 20px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* [END SECTION: POPCYCLE_VALIDATION] */
+
+/* =====================================================
+   [SECTION: POPCYCLE_RESPONSIVE]
+   Mobile and narrow-screen behavior.
+   ===================================================== */
+
+@media (max-width: 1050px) {
+  .pc-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .pc-schedule-list {
+    display: grid;
+    grid-template-columns:
+      repeat(auto-fill, minmax(180px, 1fr));
+    max-height: 360px;
+  }
+}
+
+@media (max-width: 700px) {
+  .pc-selected-header {
+    flex-direction: column;
+  }
+
+  .pc-group-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-mix-header {
+    flex-direction: column;
+  }
+
+  .pc-police-summary {
+    justify-content: flex-start;
+  }
+
+  .pc-file-picker {
+    max-width: 100%;
+  }
+}
+
+/* [END SECTION: POPCYCLE_RESPONSIVE] */
+
+
+/* =====================================================
+   [SECTION: POPCYCLE_AREA_MAP]
+   Integrated Area Explorer visual reference.
+   ===================================================== */
+
+.pc-area-map-panel {
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(56, 189, 248, 0.26);
+  border-radius: 12px;
+  background: rgba(3, 7, 18, 0.62);
+}
+
+.pc-area-map-panel > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
+  cursor: pointer;
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.92);
+  font-weight: 900;
+}
+
+.pc-area-map-panel > summary::marker {
+  color: #f97316;
+}
+
+.pc-area-map-controls {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.pc-area-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 0;
+}
+
+.pc-area-heading h3 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.pc-area-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.pc-area-badges span {
+  padding: 4px 8px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 999px;
+  color: #bae6fd;
+  background: rgba(7, 89, 133, 0.2);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.pc-area-badges .pc-area-match-manual {
+  color: #f3e8ff;
+  border-color: rgba(192, 132, 252, 0.42);
+  background: rgba(88, 28, 135, 0.34);
+}
+
+.pc-area-badges .pc-area-match-related {
+  color: #fef3c7;
+  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(120, 53, 15, 0.32);
+}
+
+.pc-area-description {
+  margin: 10px 14px;
+  color: #dbeafe;
+  line-height: 1.5;
+}
+
+.pc-area-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 14px 12px;
+}
+
+.pc-area-detail-grid > div {
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.58);
+}
+
+.pc-area-detail-grid p {
+  margin: 6px 0 0;
+  color: #cbd5e1;
+  font-size: 11px;
+}
+
+.pc-area-detail-grid code {
+  display: inline-block;
+  margin: 2px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  color: #fef3c7;
+  background: rgba(120, 53, 15, 0.4);
+}
+
+.pc-area-reference-groups {
+  margin: 0 14px 14px;
+  padding: 11px;
+  border: 1px solid rgba(168, 85, 247, 0.27);
+  border-radius: 9px;
+  background: rgba(59, 7, 100, 0.18);
+}
+
+.pc-area-group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pc-area-group-chips button {
+  padding: 6px 8px;
+  color: #f3e8ff;
+  border-color: rgba(192, 132, 252, 0.35);
+  background: rgba(88, 28, 135, 0.42);
+  font-size: 10px;
+}
+
+.pc-area-map-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.pc-area-canvas-card {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.pc-area-canvas-card h4 {
+  margin: 0 0 8px;
+}
+
+.pc-area-canvas-card canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 7px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 9px;
+  background: #08111b;
+}
+
+#popcycleOverviewCanvas {
+  cursor: crosshair;
+}
+
+.pc-area-unmatched {
+  margin: 14px;
+  padding: 14px;
+  border: 1px solid rgba(251, 191, 36, 0.38);
+  border-radius: 9px;
+  color: #fef3c7;
+  background: rgba(120, 53, 15, 0.25);
+}
+
+/* [END SECTION: POPCYCLE_AREA_MAP] */
+
+/* =====================================================
+   [SECTION: POPCYCLE_GROUP_EDITOR]
+   Selected-hour group and police mix editor.
+   ===================================================== */
+
+.pc-hour-copy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.pc-hour-copy-actions button {
+  font-size: 10px;
+}
+
+.pc-editable-group-columns {
+  align-items: start;
+}
+
+.pc-group-editor-column {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.58);
+}
+
+.pc-group-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.pc-group-editor-heading h4 {
+  margin: 0 0 3px;
+}
+
+.pc-group-editor-heading span {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.pc-mix-item-editable {
+  cursor: default;
+}
+
+.pc-mix-edit-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 130px) auto;
+  gap: 8px;
+  align-items: end;
+  margin-top: 8px;
+}
+
+.pc-mix-edit-row label {
+  margin: 0;
+}
+
+.pc-mix-edit-row input {
+  width: 100%;
+  min-width: 0;
+}
+
+.pc-group-add-form {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.pc-group-add-form h5 {
+  margin: 0 0 7px;
+  color: #f8fafc;
+}
+
+.pc-group-add-grid {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) 88px auto;
+  gap: 7px;
+}
+
+.pc-police-editor {
+  display: grid;
+  grid-template-columns: minmax(210px, 1fr) auto;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 10px;
+  background: rgba(30, 64, 175, 0.12);
+}
+
+.pc-police-editor h4 {
+  margin: 0 0 4px;
+}
+
+.pc-police-inputs {
+  display: grid;
+  grid-template-columns: 125px 125px;
+  gap: 8px;
+}
+
+.pc-police-inputs label {
+  margin: 0;
+}
+
+.pc-police-inputs input {
+  width: 100%;
+}
+
+.pc-police-presets {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pc-police-presets button {
+  font-size: 10px;
+}
+
+/* [END SECTION: POPCYCLE_GROUP_EDITOR] */
+
+@media (max-width: 1050px) {
+  .pc-area-map-grid,
+  .pc-area-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .pc-area-map-controls,
+  .pc-police-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-group-add-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-police-inputs {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pc-hour-copy-actions {
+    justify-content: flex-start;
+  }
+}
+
+
+/* =====================================================
+   [SECTION: POPCYCLE_VISUAL_MAP_EDITOR_V13]
+   Multi-layer visual map, zoom, pan, marker selection,
+   and fullscreen layout.
+   ===================================================== */
+
+.pc-visual-map-panel {
+  padding: 0 !important;
+  overflow: hidden;
+  border: 1px solid rgba(249, 115, 22, 0.38) !important;
+  background: rgba(2, 6, 23, 0.8) !important;
+}
+
+.pc-visual-map-panel > summary {
+  display: flex !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 10px !important;
+  padding: 13px 16px !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #fff !important;
+  background: linear-gradient(180deg, #f97316, #c2410c) !important;
+  border: 1px solid #fb923c !important;
+  border-radius: 9px !important;
+  cursor: pointer;
+  text-transform: none;
+}
+
+.pc-visual-map-panel > summary::after {
+  content: "SHOW MAP";
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pc-visual-map-panel[open] > summary::after {
+  content: "HIDE MAP";
+}
+
+.pc-map-summary-title {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.35px;
+}
+
+.pc-visual-map-panel .pc-area-current-location {
+  flex: 1;
+  margin: 0;
+  color: #ffedd5;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.pc-visual-map-shell {
+  padding: 12px;
+  background:
+    linear-gradient(rgba(2, 6, 23, 0.82), rgba(2, 6, 23, 0.9)),
+    radial-gradient(circle at 50% 0%, rgba(14, 116, 144, 0.2), transparent 55%);
+}
+
+.pc-visual-map-shell:fullscreen,
+.pc-visual-map-shell.is-fullscreen {
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;
+  padding: 16px;
+  background: #020617;
+}
+
+.pc-map-selection-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 1px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 9px;
+  background: rgba(15, 23, 42, 0.92);
+}
+
+.pc-map-selection-summary > div {
+  min-width: 0;
+  padding: 9px 11px;
+  border-right: 1px solid rgba(148, 163, 184, 0.13);
+}
+
+.pc-map-selection-summary small,
+.pc-map-selection-summary strong {
+  display: block;
+}
+
+.pc-map-selection-summary small {
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+}
+
+.pc-map-selection-summary strong {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #f8fafc;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 9px;
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.pc-map-layer-buttons,
+.pc-map-control-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pc-map-layer-button {
+  padding: 7px 10px;
+  color: #cbd5e1;
+  background: rgba(30, 41, 59, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  font-size: 10px;
+}
+
+.pc-map-layer-button.active {
+  color: #fff7ed;
+  background: linear-gradient(180deg, #ea580c, #9a3412);
+  border-color: #fb923c;
+  box-shadow: 0 0 0 1px rgba(251, 146, 60, 0.15);
+}
+
+.pc-map-control-buttons button {
+  min-width: 38px;
+  padding: 7px 9px;
+  font-size: 10px;
+}
+
+.pc-map-zoom-label {
+  min-width: 52px;
+  padding: 6px 8px;
+  color: #f8fafc;
+  background: #020617;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.pc-visual-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(270px, 0.65fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.pc-visual-map-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 660px;
+  overflow: hidden;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 10px;
+  background: #06111d;
+  box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.45);
+}
+
+.pc-visual-map-shell:fullscreen .pc-visual-map-stage,
+.pc-visual-map-shell.is-fullscreen .pc-visual-map-stage {
+  min-height: calc(100vh - 180px);
+}
+
+#popcycleVisualMapCanvas {
+  display: block;
+  width: 100%;
+  height: 660px;
+  touch-action: none;
+  cursor: grab;
+  background: #06111d;
+}
+
+.pc-visual-map-shell:fullscreen #popcycleVisualMapCanvas,
+.pc-visual-map-shell.is-fullscreen #popcycleVisualMapCanvas {
+  height: calc(100vh - 180px);
+}
+
+#popcycleVisualMapCanvas.is-dragging {
+  cursor: grabbing;
+}
+
+.pc-map-instructions {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  max-width: calc(100% - 20px);
+  padding: 6px 9px;
+  color: #dbeafe;
+  background: rgba(2, 6, 23, 0.84);
+  border: 1px solid rgba(56, 189, 248, 0.26);
+  border-radius: 6px;
+  font-size: 9px;
+  pointer-events: none;
+}
+
+.pc-visual-map-sidebar {
+  min-width: 0;
+  max-height: 720px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  background: rgba(3, 7, 18, 0.78);
+}
+
+.pc-area-layer-note {
+  margin: 0 14px 12px;
+  padding: 10px;
+  border-left: 3px solid #38bdf8;
+  border-radius: 6px;
+  color: #dbeafe;
+  background: rgba(7, 89, 133, 0.16);
+}
+
+.pc-area-layer-note p {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* [END SECTION: POPCYCLE_VISUAL_MAP_EDITOR_V13] */
+
+/* =====================================================
+   [SECTION: POPCYCLE_BATCH_EDITOR_V13]
+   Time-slot checkboxes and multi-hour VEH-group controls.
+   ===================================================== */
+
+.pc-batch-editor-panel {
+  margin: 14px 0;
+  padding: 13px;
+  border: 1px solid rgba(168, 85, 247, 0.34);
+  border-radius: 10px;
+  background: rgba(59, 7, 100, 0.18);
+}
+
+.pc-batch-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pc-batch-heading h3 {
+  margin: 0 0 4px;
+  color: #f3e8ff;
+}
+
+.pc-batch-count {
+  min-width: 90px;
+  padding: 7px 9px;
+  border: 1px solid rgba(192, 132, 252, 0.3);
+  border-radius: 8px;
+  color: #d8b4fe;
+  background: rgba(88, 28, 135, 0.32);
+  font-size: 10px;
+  text-align: center;
+}
+
+.pc-batch-count strong {
+  display: block;
+  color: #fff;
+  font-size: 19px;
+}
+
+.pc-batch-time-shortcuts,
+.pc-batch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.pc-batch-time-shortcuts button,
+.pc-batch-actions button {
+  font-size: 10px;
+}
+
+.pc-batch-time-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(105px, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pc-batch-time-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 7px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 7px;
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.72);
+  cursor: pointer;
+}
+
+.pc-batch-time-option.selected {
+  border-color: rgba(249, 115, 22, 0.6);
+  background: rgba(124, 45, 18, 0.32);
+}
+
+.pc-batch-time-option input {
+  width: auto;
+  margin: 0;
+}
+
+.pc-batch-time-option strong,
+.pc-batch-time-option small {
+  display: block;
+}
+
+.pc-batch-time-option small {
+  margin-top: 1px;
+  color: #94a3b8;
+  font-size: 8px;
+}
+
+.pc-batch-vehicle-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 110px minmax(280px, 1.3fr);
+  gap: 9px;
+  align-items: end;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(192, 132, 252, 0.2);
+}
+
+.pc-batch-preserve-total {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 7px;
+  color: #cbd5e1;
+  background: rgba(2, 6, 23, 0.52);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.pc-batch-preserve-total input {
+  width: auto;
+  margin: 1px 0 0;
+}
+
+.pc-installed-popgroups-status {
+  margin-top: 10px;
+  padding: 8px;
+  color: #c4b5fd;
+  border-left: 3px solid #a855f7;
+  border-radius: 5px;
+  background: rgba(88, 28, 135, 0.18);
+  font-size: 9px;
+}
+
+.pc-time-select-heading,
+.pc-time-select-cell {
+  width: 56px;
+  min-width: 56px;
+  text-align: center;
+}
+
+.pc-time-select-cell input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.pc-police-selection-note {
+  grid-column: 1 / -1;
+  color: #93c5fd;
+  font-size: 10px;
+}
+
+/* [END SECTION: POPCYCLE_BATCH_EDITOR_V13] */
+
+/* =====================================================
+   [SECTION: POPCYCLE_WORKSPACE_STATUS_V13]
+   IndexedDB autosave and saved Popgroups reference status.
+   ===================================================== */
+
+.pc-workspace-status {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid rgba(34, 197, 94, 0.24);
+  border-radius: 9px;
+  background: rgba(20, 83, 45, 0.13);
+}
+
+.pc-workspace-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.pc-workspace-status-grid > div {
+  padding: 7px;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  border-radius: 7px;
+  background: rgba(2, 6, 23, 0.55);
+}
+
+.pc-workspace-status-grid small,
+.pc-workspace-status-grid strong {
+  display: block;
+}
+
+.pc-workspace-status-grid small {
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.pc-workspace-status-grid strong {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #f8fafc;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-workspace-message {
+  margin-top: 8px;
+  font-size: 10px;
+}
+
+/* [END SECTION: POPCYCLE_WORKSPACE_STATUS_V13] */
+
+@media (max-width: 1250px) {
+  .pc-visual-map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-visual-map-sidebar {
+    max-height: none;
+  }
+
+  .pc-batch-time-grid {
+    grid-template-columns: repeat(4, minmax(105px, 1fr));
+  }
+}
+
+@media (max-width: 850px) {
+  .pc-map-selection-summary,
+  .pc-workspace-status-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+
+  .pc-batch-time-grid {
+    grid-template-columns: repeat(2, minmax(110px, 1fr));
+  }
+
+  .pc-batch-vehicle-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-visual-map-stage,
+  #popcycleVisualMapCanvas {
+    min-height: 520px;
+    height: 520px;
+  }
+}
+
+@media (max-width: 560px) {
+  .pc-visual-map-panel > summary,
+  .pc-batch-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pc-visual-map-panel .pc-area-current-location {
+    text-align: left;
+  }
+
+  .pc-map-selection-summary,
+  .pc-workspace-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-batch-time-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =====================================================
+   [SECTION: POPCYCLE_TWO_MAP_REDESIGN_V13]
+   Large interactive island map on the left and an automatic
+   focused city/county reference map on the right.
+   ===================================================== */
+.pc-two-map-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(340px,.85fr);gap:12px;align-items:start}.pc-main-map-column,.pc-focused-map-column{min-width:0}.pc-map-column-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-height:58px;margin-bottom:8px;padding:9px 11px;border:1px solid rgba(148,163,184,.16);border-radius:9px;background:rgba(15,23,42,.86)}.pc-map-column-heading h3{margin:0 0 4px;color:#f8fafc;font-size:14px}.pc-map-column-heading p{margin:0;color:#94a3b8;font-size:10px;line-height:1.4}.pc-main-map-stage{min-height:700px}.pc-main-map-stage #popcycleVisualMapCanvas{height:700px}.pc-focused-map-column{display:grid;gap:10px}.pc-focused-map-stage{position:relative;min-height:430px;overflow:hidden;border:1px solid rgba(249,115,22,.35);border-radius:10px;background:#06111d;box-shadow:inset 0 0 30px rgba(0,0,0,.42)}#popcycleFocusedMapCanvas{display:block;width:100%;height:430px;background:#06111d}.pc-focused-map-legend{position:absolute;left:9px;right:9px;bottom:9px;display:flex;flex-wrap:wrap;gap:9px;padding:7px 9px;color:#e2e8f0;border:1px solid rgba(148,163,184,.22);border-radius:7px;background:rgba(2,6,23,.84);font-size:9px}.pc-focused-map-legend span{display:inline-flex;align-items:center;gap:6px}.pc-outline-sample{display:inline-block;width:21px;height:13px;border:3px solid #f97316;border-radius:3px;background:transparent}.pc-marker-sample{display:inline-block;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:#ef4444}.pc-focused-area-details{max-height:410px;overflow:auto;padding-right:2px}.pc-visual-map-shell:fullscreen .pc-two-map-layout,.pc-visual-map-shell.is-fullscreen .pc-two-map-layout{grid-template-columns:minmax(0,1.8fr) minmax(390px,.8fr)}.pc-visual-map-shell:fullscreen .pc-main-map-stage,.pc-visual-map-shell.is-fullscreen .pc-main-map-stage{min-height:calc(100vh - 200px)}.pc-visual-map-shell:fullscreen .pc-main-map-stage #popcycleVisualMapCanvas,.pc-visual-map-shell.is-fullscreen .pc-main-map-stage #popcycleVisualMapCanvas{height:calc(100vh - 200px)}.pc-visual-map-shell:fullscreen .pc-focused-map-stage,.pc-visual-map-shell.is-fullscreen .pc-focused-map-stage{min-height:min(58vh,620px)}.pc-visual-map-shell:fullscreen #popcycleFocusedMapCanvas,.pc-visual-map-shell.is-fullscreen #popcycleFocusedMapCanvas{height:min(58vh,620px)}@media(max-width:1120px){.pc-two-map-layout{grid-template-columns:1fr}.pc-focused-map-column{grid-template-columns:minmax(0,1fr)}.pc-focused-map-stage{min-height:520px}#popcycleFocusedMapCanvas{height:520px}}@media(max-width:700px){.pc-map-column-heading{flex-direction:column}.pc-main-map-stage,.pc-main-map-stage #popcycleVisualMapCanvas{min-height:520px;height:520px}.pc-focused-map-stage,#popcycleFocusedMapCanvas{min-height:430px;height:430px}}
+/* [END SECTION: POPCYCLE_TWO_MAP_REDESIGN_V13] */

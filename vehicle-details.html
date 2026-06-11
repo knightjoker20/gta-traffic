@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic Vehicle Details</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/vehicle-library.css">
+</head>
+<body data-page="library">
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic Studio">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+      <div class="brand-copy">
+        <div class="brand-title">GTA Traffic Studio</div>
+        <div class="tagline">Vehicle Details</div>
+      </div>
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <main class="vehicle-detail-main">
+    <div class="vd-topbar">
+      <a class="vd-back-link" href="vehicle-library.html">← Back to Vehicle Library</a>
+      <div class="vd-selector-wrap">
+        <label>Choose Vehicle
+          <select id="vdVehicleSelect"><option value="">Opening library...</option></select>
+        </label>
+        <button id="vdPrevious" class="secondary" type="button">Previous</button>
+        <button id="vdNext" class="secondary" type="button">Next</button>
+      </div>
+    </div>
+
+    <div id="vdStatus" class="vl-status warn">Loading vehicle record...</div>
+
+    <div id="vdPage" class="vd-page" hidden>
+      <section class="panel vd-identity-card">
+        <div class="vd-image-column">
+          <div id="vdImageFrame" class="vd-image-frame">
+            <div class="vd-image-placeholder"><span>VEHICLE</span><strong id="vdImageInitials">--</strong></div>
+          </div>
+          <div class="vd-image-actions">
+            <button id="vdChooseImage" type="button">Add / Change Image</button>
+            <button id="vdRemoveImage" class="secondary" type="button">Remove Image</button>
+            <input id="vdImagePicker" class="vl-hidden" type="file" accept="image/png,image/jpeg,image/webp">
+          </div>
+        </div>
+
+        <div class="vd-title-column">
+          <div class="vd-kicker">Vehicle Reference</div>
+          <h1 id="vdDisplayTitle">Vehicle</h1>
+          <div id="vdModelName" class="vd-model-name"></div>
+          <div id="vdIdentityBadges" class="vd-badge-row"></div>
+          <div id="vdSourceCompleteness" class="vd-source-completeness"></div>
+          <div class="vd-title-actions">
+            <button id="vdFavorite" class="btn-orange" type="button">☆ Add Favorite</button>
+            <button id="vdInstallButton" class="vd-install-button" type="button">+ Install Vehicle</button>
+            <a href="vehicle-meta.html">Open Vehicle.meta Editor</a>
+            <a href="handling-meta.html">Open Handling.meta Editor</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="vd-columns">
+        <div class="vd-main-column">
+          <section class="panel">
+            <div class="vd-section-heading">
+              <div><h2>Vehicle.meta Details</h2><p>Parsed from the most recently imported vehicles.meta entry.</p></div>
+            </div>
+            <div id="vdVehicleMetaDetails" class="vd-detail-grid"></div>
+          </section>
+
+          <section class="panel">
+            <div class="vd-section-heading">
+              <div><h2>Handling Summary</h2><p>Matched using vehicles.meta <strong>handlingId</strong> and handling.meta <strong>handlingName</strong>.</p></div>
+            </div>
+            <div id="vdHandlingSummary"></div>
+          </section>
+
+          <section class="panel">
+            <div class="vd-section-heading">
+              <div><h2>Popgroups Membership</h2><p>Every traffic group containing this model in the imported Popgroups files.</p></div>
+            </div>
+            <div id="vdPopgroups" class="vd-group-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="vd-section-heading">
+              <div><h2>Imported Source Files</h2><p>Shows which files contributed information to this vehicle record.</p></div>
+            </div>
+            <div id="vdSources" class="vd-source-list"></div>
+          </section>
+        </div>
+
+        <aside class="vd-side-column">
+          <section class="panel vd-custom-panel">
+            <div class="vd-section-heading">
+              <div><h2>Library Details</h2><p>Your information is saved locally with this vehicle.</p></div>
+              <span id="vdSaveState" class="vd-save-state">Saved</span>
+            </div>
+
+            <form id="vdCustomForm" class="vd-custom-form">
+              <label>Display Name
+                <input id="vdCustomDisplayName" name="displayName" type="text" placeholder="Example: 2018 Police Interceptor">
+              </label>
+              <label>Rockstar DLC / Update
+                <input id="vdRockstarDlc" name="rockstarDlc" type="text" placeholder="Example: mpheist4 or Los Santos Tuners">
+              </label>
+              <label>Mod / Source Pack
+                <input id="vdSourcePack" name="sourcePack" type="text" placeholder="Example: Police Vehicle Pack">
+              </label>
+              <label class="vd-installed-toggle"><input id="vdInstalled" name="installed" type="checkbox"> Installed in Current GTA Game</label>
+              <label>Installed Game Version
+                <select id="vdGameVersion" name="gameVersion">
+                  <option value="">Not set</option>
+                  <option value="Legacy">GTA V Legacy</option>
+                  <option value="Enhanced">GTA V Enhanced</option>
+                </select>
+              </label>
+              <label>Install Date
+                <input id="vdInstallDate" name="installDate" type="date">
+              </label>
+              <label>Installation Type
+                <select id="vdInstallType" name="installType">
+                  <option value="">Not set</option>
+                  <option value="Stock">Stock</option>
+                  <option value="Add-On">Add-On</option>
+                  <option value="Replacement">Replacement</option>
+                </select>
+              </label>
+              <label>Replacement Vehicle / Slot
+                <input id="vdReplacementFor" name="replacementFor" type="text" placeholder="Example: police3">
+              </label>
+              <label>DLC / RPF Folder Location
+                <input id="vdDlcFolderPath" name="dlcFolderPath" type="text" placeholder="mods/update/x64/dlcpacks/...">
+              </label>
+              <label>Base YFT File Location
+                <input id="vdYftPath" name="yftPath" type="text" placeholder=".../vehicles.rpf/model.yft">
+              </label>
+              <label>High-detail YFT Location
+                <input id="vdYftHiPath" name="yftHiPath" type="text" placeholder=".../vehicles.rpf/model_hi.yft">
+              </label>
+              <label>YTD Texture Location
+                <input id="vdYtdPath" name="ytdPath" type="text" placeholder=".../vehicles.rpf/model.ytd">
+              </label>
+              <label>vehicles.meta Location
+                <input id="vdVehiclesMetaPath" name="vehiclesMetaPath" type="text" placeholder=".../common/data/levels/gta5/vehicles.meta">
+              </label>
+              <label>handling.meta Location
+                <input id="vdHandlingMetaPath" name="handlingMetaPath" type="text" placeholder=".../common/data/handling.meta">
+              </label>
+              <label>Download / Source URL
+                <input id="vdDownloadUrl" name="downloadUrl" type="url" placeholder="https://...">
+              </label>
+              <label>Tags
+                <input id="vdTags" name="tags" type="text" placeholder="police, sedan, lore-friendly">
+              </label>
+              <label>Notes
+                <textarea id="vdNotes" name="notes" rows="8" placeholder="Installation notes, known conflicts, preferred handling setup..."></textarea>
+              </label>
+              <button id="vdSaveButton" class="btn-green" type="submit">Save Vehicle Details</button>
+            </form>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/shared/siteShell.js"></script>
+  <script src="js/vehicleLibraryStore.js"></script>
+  <script src="js/vehicleDetails.js"></script>
+</body>
+</html>

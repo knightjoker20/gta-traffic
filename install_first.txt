@@ -1,0 +1,22 @@
+GTA-TRAFFIC.COM POPCYCLE VISUAL MAP EDITOR 1.3.0
+UPDATE EXISTING SITE
+
+THIS IS THE PACKAGE TO INSTALL on the current site.
+
+1. Back up the current website folder.
+2. Extract this ZIP.
+3. Copy everything inside the extracted folder into the current site root.
+4. Replace matching files and merge folders.
+5. Open popcycle.html and press Ctrl+F5.
+
+No index.html edit is required.
+
+First verify:
+- Map layers load.
+- Mouse wheel zoom and drag pan work.
+- Clicking a map marker selects the schedule in the left column.
+- Checked time slots accept a batch vehicle group.
+- Police presets add/update VEH_COPCAR and police percentages.
+- Save Workspace Now survives a page refresh.
+
+The browser saves a working copy. It does not overwrite the original GTA files. Use Export Edited DAT when ready.

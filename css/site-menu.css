@@ -1,0 +1,92 @@
+/* =====================================================
+   [SECTION: SITE_TOOL_MENU]
+   Shared navigation used by Popgroups, Popcycle, and
+   future GTA-Traffic.com tool pages.
+   ===================================================== */
+
+#siteToolMenu {
+  position: sticky;
+  top: 0;
+  z-index: 900;
+}
+
+.site-tool-menu {
+  display: flex;
+  justify-content: center;
+  padding: 8px 18px;
+  background: rgba(3, 6, 13, 0.92);
+  border-top: 1px solid rgba(249, 115, 22, 0.18);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+.site-tool-menu-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.site-tool-menu-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 14px;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.site-tool-menu-link:hover {
+  color: #fff;
+  background: rgba(30, 41, 59, 0.78);
+  border-color: rgba(249, 115, 22, 0.32);
+}
+
+.site-tool-menu-link.active {
+  color: #fff7ed;
+  background: linear-gradient(
+    180deg,
+    rgba(194, 65, 12, 0.92),
+    rgba(124, 45, 18, 0.92)
+  );
+  border-color: rgba(251, 146, 60, 0.62);
+}
+
+.site-tool-menu-toggle {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .site-tool-menu {
+    display: block;
+  }
+
+  .site-tool-menu-toggle {
+    display: block;
+    width: 100%;
+    background: linear-gradient(180deg, #334155, #1e293b);
+  }
+
+  .site-tool-menu-links {
+    display: none;
+    flex-direction: column;
+    padding-top: 8px;
+  }
+
+  .site-tool-menu-links.open {
+    display: flex;
+  }
+
+  .site-tool-menu-link {
+    width: 100%;
+  }
+}
+
+/* [END SECTION: SITE_TOOL_MENU] */

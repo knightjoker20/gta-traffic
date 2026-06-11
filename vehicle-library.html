@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic Vehicle Library</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/vehicle-library.css">
+</head>
+<body data-page="library">
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic Studio">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+      <div class="brand-copy">
+        <div class="brand-title">GTA Traffic Studio</div>
+        <div class="tagline">Vehicle Library V1.3</div>
+      </div>
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner vl-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Visual Vehicle Database</div>
+        <h1>GTA Traffic Vehicle Library</h1>
+        <p>Build a searchable local database by combining Popgroups, vehicles.meta, and handling.meta data. Open any vehicle for a complete reference page and your own saved installation notes.</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="vehicle-library-main">
+    <div class="vl-layout">
+      <aside class="vl-sidebar">
+        <section class="panel vl-import-panel">
+          <h2>Import Sources</h2>
+          <p class="vl-muted vl-compact-copy">Import one or several files. Existing records are updated without erasing your images, paths, or notes.</p>
+
+          <button class="vl-import-button" type="button" data-pick="vlPopgroupsPicker">
+            <span>Popgroups</span><small>Groups and traffic membership</small>
+          </button>
+          <input id="vlPopgroupsPicker" class="vl-hidden" type="file" multiple accept=".ymt,.xml,.meta,.txt">
+
+          <button class="vl-import-button" type="button" data-pick="vlVehiclesPicker">
+            <span>vehicles.meta</span><small>Identity and spawn settings</small>
+          </button>
+          <input id="vlVehiclesPicker" class="vl-hidden" type="file" multiple accept=".meta,.xml,.txt">
+
+          <button class="vl-import-button" type="button" data-pick="vlHandlingPicker">
+            <span>handling.meta</span><small>Physics and AI profiles</small>
+          </button>
+          <input id="vlHandlingPicker" class="vl-hidden" type="file" multiple accept=".meta,.xml,.txt">
+
+          <div id="vlStatus" class="vl-status warn">Opening the local vehicle database...</div>
+        </section>
+
+        <section class="panel vl-install-scan-panel">
+          <h2>Installed File Scanner</h2>
+          <p class="vl-muted vl-compact-copy">Drop vehicle <code>.yft</code> and <code>.ytd</code> files here. Matching model names are toggled once per vehicle: first drop marks installed, dropping them again marks uninstalled.</p>
+          <div id="vlInstallDropZone" class="vl-install-drop-zone" tabindex="0" role="button" aria-label="Drop YFT and YTD files or browse">
+            <strong>Drop YFT / YTD files</strong>
+            <span>Supports large batches and ignores duplicate <code>_hi.yft</code> entries.</span>
+            <button id="vlInstallBrowse" type="button">Browse Vehicle Files</button>
+          </div>
+          <input id="vlInstallFilesPicker" class="vl-hidden" type="file" multiple accept=".yft,.ytd">
+          <div id="vlInstallScanResult" class="vl-install-scan-result" aria-live="polite"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Library Stats</h2>
+          <div class="vl-stat-grid" id="vlStats">
+            <div><strong>0</strong><span>Vehicles</span></div>
+            <div><strong>0</strong><span>With Images</span></div>
+            <div><strong>0</strong><span>Handling Linked</span></div>
+            <div><strong>0</strong><span>In Popgroups</span></div>
+            <div><strong>0</strong><span>Installed</span></div>
+          </div>
+        </section>
+
+        <section class="panel vl-category-panel">
+          <h2>Categories</h2>
+          <div id="vlCategoryList" class="vl-category-list"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Filters</h2>
+          <div class="vl-filter-stack">
+            <label>Vehicle Type
+              <select id="vlTypeFilter"><option value="">All types</option></select>
+            </label>
+            <label>AI Handling
+              <select id="vlAiFilter"><option value="">All AI profiles</option></select>
+            </label>
+            <label>Installed Status
+              <select id="vlInstalledFilter">
+                <option value="">All vehicles</option>
+                <option value="installed">Installed</option>
+                <option value="not-installed">Not Installed</option>
+              </select>
+            </label>
+            <label>Install Type
+              <select id="vlInstallFilter">
+                <option value="">All installation types</option>
+                <option value="Add-On">Add-On</option>
+                <option value="Replacement">Replacement</option>
+                <option value="Stock">Stock</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+            </label>
+            <label class="vl-check-label"><input id="vlFavoritesOnly" type="checkbox"> Favorites only</label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Database</h2>
+          <div class="vl-db-actions">
+            <button class="btn-green" id="vlExportDatabase" type="button">Export Library</button>
+            <button id="vlImportDatabase" type="button">Import Backup</button>
+            <button class="danger" id="vlClearDatabase" type="button">Clear Library</button>
+            <input id="vlDatabasePicker" class="vl-hidden" type="file" accept=".json">
+          </div>
+          <p class="small vl-muted">Records and uploaded images remain in this browser until you clear site data. Export a backup periodically.</p>
+        </section>
+      </aside>
+
+      <section class="panel vl-browser-panel">
+        <div class="vl-browser-header">
+          <div>
+            <h2>Vehicle Library</h2>
+            <p class="vl-muted">Browse every vehicle currently stored in your local database.</p>
+          </div>
+          <div class="vl-header-actions">
+            <button id="vlRandomVehicle" class="btn-orange" type="button">Random Vehicle</button>
+          </div>
+        </div>
+
+        <div class="vl-search-row">
+          <label class="vl-search-box">
+            <span aria-hidden="true">⌕</span>
+            <input id="vlSearch" type="search" placeholder="Search model, game name, make, handling, group, DLC, tag...">
+          </label>
+        </div>
+
+        <div class="vl-results-toolbar">
+          <div id="vlResultCount">0 vehicles</div>
+          <div class="vl-sort-controls">
+            <label>Sort by
+              <select id="vlSort">
+                <option value="name-asc">Name A-Z</option>
+                <option value="name-desc">Name Z-A</option>
+                <option value="make-asc">Make A-Z</option>
+                <option value="class-asc">Class A-Z</option>
+                <option value="ai-asc">AI Handling A-Z</option>
+                <option value="installed-first">Installed First</option>
+                <option value="not-installed-first">Not Installed First</option>
+                <option value="updated-desc">Recently Updated</option>
+              </select>
+            </label>
+            <div class="vl-view-switch" aria-label="View style">
+              <button id="vlGridView" class="active" type="button" title="Grid view">▦</button>
+              <button id="vlListView" type="button" title="List view">☷</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="vlVehicleGrid" class="vl-vehicle-grid">
+          <div class="vl-empty-state">
+            <strong>No vehicles have been imported.</strong>
+            <span>Import a vehicles.meta file to create the library, then add Popgroups and handling.meta data.</span>
+          </div>
+        </div>
+
+        <div id="vlPagination" class="vl-pagination"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/shared/siteShell.js"></script>
+  <script src="js/vehicleLibraryStore.js"></script>
+  <script src="js/vehicleLibrary.js"></script>
+</body>
+</html>

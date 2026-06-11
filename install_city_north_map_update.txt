@@ -1,0 +1,11 @@
+GTA-Traffic.com V1.3 City / North Maps Update
+
+1. Back up the current website folder.
+2. Extract this ZIP.
+3. Copy everything inside the patch folder into the site root.
+4. Allow Windows to replace matching files.
+5. Open popcycle.html.
+6. Press Ctrl + F5.
+
+This patch changes only the Popcycle map system and related assets.
+Batch editing, police presets, workspace saving, and export remain.

@@ -1,0 +1,538 @@
+/* =====================================================
+   GTA Traffic Vehicle Library V1.0
+   Uses the existing GTA Traffic dark/orange design system.
+   ===================================================== */
+
+.vehicle-library-main,
+.vehicle-detail-main {
+  width: min(1900px, calc(100% - 24px));
+  margin: 0 auto 56px;
+}
+
+.vl-hero .hero-content { max-width: 1040px; }
+.vl-muted { color: rgba(255,255,255,.62); }
+.vl-compact-copy { margin: -4px 0 14px; font-size: .84rem; line-height: 1.45; }
+.vl-hidden { display: none !important; }
+
+.vl-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.vl-sidebar {
+  display: grid;
+  gap: 14px;
+  position: sticky;
+  top: 14px;
+}
+
+.vl-sidebar .panel,
+.vl-browser-panel,
+.vd-page .panel {
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.vl-sidebar h2 { font-size: 1rem; color: #ff9a31; margin-bottom: 12px; }
+
+.vl-import-button {
+  width: 100%;
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  margin: 8px 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  background: rgba(255,255,255,.045);
+}
+.vl-import-button span { color: #fff; font-weight: 800; }
+.vl-import-button small { color: rgba(255,255,255,.56); font-size: .74rem; }
+.vl-import-button:hover {
+  border-color: rgba(249,115,22,.6);
+  background: rgba(249,115,22,.10);
+}
+
+.vl-status {
+  margin-top: 12px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.24);
+  font-size: .82rem;
+  line-height: 1.4;
+}
+.vl-status.good { border-left: 4px solid #39d98a; }
+.vl-status.warn { border-left: 4px solid #ffb020; }
+.vl-status.bad { border-left: 4px solid #ff5c5c; }
+
+.vl-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
+}
+.vl-stat-grid > div {
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.045);
+}
+.vl-stat-grid strong { display: block; font-size: 1.15rem; color: #fff; }
+.vl-stat-grid span { font-size: .72rem; color: rgba(255,255,255,.57); }
+
+.vl-category-list { display: grid; gap: 4px; max-height: 390px; overflow-y: auto; padding-right: 3px; }
+.vl-category-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255,255,255,.72);
+  text-align: left;
+  font-size: .82rem;
+}
+.vl-category-button:hover,
+.vl-category-button.active {
+  color: #fff;
+  border-color: rgba(249,115,22,.34);
+  background: rgba(249,115,22,.09);
+}
+.vl-category-button strong {
+  min-width: 29px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.09);
+  font-size: .7rem;
+  text-align: center;
+}
+
+.vl-filter-stack { display: grid; gap: 10px; }
+.vl-filter-stack label,
+.vl-sort-controls label,
+.vd-selector-wrap label,
+.vd-custom-form label {
+  display: grid;
+  gap: 5px;
+  color: rgba(255,255,255,.68);
+  font-size: .78rem;
+}
+.vl-filter-stack select,
+.vl-sort-controls select,
+.vd-selector-wrap select,
+.vd-custom-form input,
+.vd-custom-form select,
+.vd-custom-form textarea {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 9px;
+  padding: 9px 10px;
+  background: rgba(0,0,0,.28);
+  color: #fff;
+}
+.vl-check-label { display: flex !important; grid-template-columns: auto 1fr; align-items: center; gap: 8px !important; }
+.vl-check-label input { width: auto; accent-color: var(--orange); }
+.vl-db-actions { display: grid; gap: 8px; }
+
+.vl-browser-panel { min-width: 0; }
+.vl-browser-header,
+.vl-results-toolbar,
+.vd-topbar,
+.vd-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.vl-browser-header p,
+.vd-section-heading p { margin: -5px 0 0; font-size: .83rem; color: rgba(255,255,255,.58); line-height: 1.4; }
+.vl-header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.vl-search-row { margin: 16px 0; }
+.vl-search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 720px;
+  padding: 0 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 10px;
+  background: rgba(0,0,0,.25);
+}
+.vl-search-box span { color: rgba(255,255,255,.52); font-size: 1.35rem; }
+.vl-search-box input {
+  flex: 1;
+  border: 0;
+  padding: 13px 0;
+  background: transparent;
+  color: #fff;
+  outline: none;
+}
+
+.vl-results-toolbar {
+  padding: 12px 0;
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.7);
+  font-size: .82rem;
+}
+.vl-sort-controls { display: flex; align-items: end; gap: 12px; }
+.vl-sort-controls label { grid-template-columns: auto 170px; align-items: center; }
+.vl-view-switch { display: flex; gap: 5px; }
+.vl-view-switch button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: rgba(255,255,255,.04);
+}
+.vl-view-switch button.active { color: #ff8a1f; border-color: rgba(249,115,22,.7); background: rgba(249,115,22,.12); }
+
+.vl-vehicle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+  gap: 14px;
+  padding: 16px 0;
+}
+.vl-vehicle-grid.list-view { grid-template-columns: 1fr; }
+
+.vl-vehicle-card {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 11px;
+  background: linear-gradient(180deg,rgba(17,24,39,.97),rgba(7,11,19,.98));
+  transition: transform .15s ease,border-color .15s ease,box-shadow .15s ease;
+}
+.vl-vehicle-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(249,115,22,.52);
+  box-shadow: 0 14px 28px rgba(0,0,0,.32);
+}
+.vl-vehicle-card-image {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 25%,rgba(249,115,22,.22),transparent 50%),
+    linear-gradient(145deg,#1c2430,#090d13);
+}
+.vl-vehicle-card-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vl-card-placeholder {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: rgba(255,255,255,.15);
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.vl-favorite-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(3,6,13,.72);
+  color: #fff;
+  font-size: 1.1rem;
+}
+.vl-favorite-button.active { color: #ffb020; }
+.vl-card-source-dots {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 5px;
+}
+.vl-source-dot {
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: rgba(3,6,13,.78);
+  color: rgba(255,255,255,.6);
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: .05em;
+}
+.vl-source-dot.ready { color: #8ff0b9; }
+
+.vl-card-copy { padding: 11px; }
+.vl-card-title-row { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
+.vl-card-title { margin: 0; color: #fff; font-size: .94rem; overflow-wrap: anywhere; }
+.vl-card-model { margin-top: 3px; color: rgba(255,255,255,.48); font-size: .68rem; text-transform: uppercase; }
+.vl-card-make { margin: 7px 0 9px; color: rgba(255,255,255,.62); font-size: .76rem; }
+.vl-card-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.vl-badge,
+.vd-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: rgba(56,189,248,.16);
+  color: #8bdcff;
+  font-size: .62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.vl-badge.ai { background: rgba(168,85,247,.17); color: #d3a8ff; }
+.vl-badge.install { background: rgba(34,197,94,.16); color: #8ff0b9; }
+.vl-card-actions { display: flex; gap: 8px; margin-top: 11px; }
+.vl-card-actions a {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid rgba(249,115,22,.45);
+  border-radius: 8px;
+  background: rgba(249,115,22,.11);
+  color: #fff;
+  text-decoration: none;
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.vl-vehicle-grid.list-view .vl-vehicle-card { display: grid; grid-template-columns: 190px 1fr; }
+.vl-vehicle-grid.list-view .vl-vehicle-card-image { height: 100%; min-height: 145px; }
+.vl-vehicle-grid.list-view .vl-card-copy { display: grid; align-content: center; }
+
+.vl-empty-state {
+  grid-column: 1 / -1;
+  min-height: 260px;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 30px;
+  text-align: center;
+  border: 1px dashed rgba(255,255,255,.16);
+  border-radius: 12px;
+  color: rgba(255,255,255,.58);
+}
+.vl-empty-state strong { color: #fff; font-size: 1.05rem; }
+.vl-pagination { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; padding: 8px 0 2px; }
+.vl-pagination button { min-width: 35px; padding: 8px; }
+.vl-pagination button.active { background: var(--orange); border-color: var(--orange2); }
+
+/* Vehicle details page */
+.vehicle-detail-main { padding-top: 18px; }
+.vd-topbar { margin-bottom: 14px; }
+.vd-back-link,
+.vd-title-actions a {
+  color: #fff;
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 9px;
+  padding: 9px 11px;
+  background: rgba(255,255,255,.045);
+  font-size: .8rem;
+  font-weight: 700;
+}
+.vd-back-link:hover,
+.vd-title-actions a:hover { border-color: rgba(249,115,22,.55); background: rgba(249,115,22,.09); }
+.vd-selector-wrap { display: flex; align-items: end; gap: 8px; min-width: min(680px,100%); }
+.vd-selector-wrap label { flex: 1; }
+
+.vd-page { display: grid; gap: 18px; }
+.vd-identity-card {
+  display: grid;
+  grid-template-columns: minmax(300px,500px) minmax(0,1fr);
+  gap: 22px;
+  align-items: stretch;
+}
+.vd-image-column { display: grid; gap: 10px; }
+.vd-image-frame {
+  min-height: 290px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 12px;
+  background: linear-gradient(145deg,#222b37,#080c12);
+}
+.vd-image-frame img { width: 100%; height: 100%; min-height: 290px; object-fit: cover; display: block; }
+.vd-image-placeholder {
+  min-height: 290px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: rgba(255,255,255,.14);
+}
+.vd-image-placeholder span { font-size: .7rem; letter-spacing: .32em; }
+.vd-image-placeholder strong { font-size: 4.4rem; letter-spacing: .08em; }
+.vd-image-actions { display: flex; gap: 8px; }
+.vd-image-actions button { flex: 1; }
+
+.vd-title-column { display: grid; align-content: center; }
+.vd-kicker { color: #ff9a31; font-weight: 900; text-transform: uppercase; letter-spacing: .12em; font-size: .72rem; }
+.vd-title-column h1 { margin: 8px 0 4px; font-size: clamp(2rem,4vw,4rem); line-height: 1; }
+.vd-model-name { color: rgba(255,255,255,.48); font-family: Consolas,monospace; font-size: .9rem; }
+.vd-badge-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 18px 0 12px; }
+.vd-badge.orange { color: #ffc17f; background: rgba(249,115,22,.18); }
+.vd-badge.green { color: #8ff0b9; background: rgba(34,197,94,.16); }
+.vd-source-completeness { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.vd-source-chip { padding: 7px 9px; border-radius: 7px; background: rgba(255,255,255,.045); color: rgba(255,255,255,.48); font-size: .72rem; }
+.vd-source-chip.ready { color: #8ff0b9; border: 1px solid rgba(34,197,94,.25); }
+.vd-title-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.vd-columns { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(330px,.65fr); gap: 18px; align-items: start; }
+.vd-main-column { display: grid; gap: 18px; }
+.vd-side-column { position: sticky; top: 14px; }
+.vd-section-heading { align-items: start; margin-bottom: 14px; }
+.vd-section-heading h2 { margin-bottom: 8px; }
+.vd-detail-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.vd-detail-item {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 9px;
+  background: rgba(255,255,255,.032);
+}
+.vd-detail-item span { display: block; margin-bottom: 4px; color: rgba(255,255,255,.45); font-size: .66rem; text-transform: uppercase; letter-spacing: .04em; }
+.vd-detail-item strong { display: block; color: #fff; font-size: .84rem; overflow-wrap: anywhere; }
+
+.vd-handling-groups { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.vd-handling-group {
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 10px;
+  background: rgba(255,255,255,.03);
+}
+.vd-handling-group h3 { margin: 0 0 10px; color: #ff9a31; font-size: .85rem; text-transform: uppercase; }
+.vd-handling-list { display: grid; gap: 7px; }
+.vd-handling-row { display: flex; justify-content: space-between; gap: 12px; font-size: .78rem; }
+.vd-handling-row span { color: rgba(255,255,255,.52); }
+.vd-handling-row strong { color: #fff; text-align: right; overflow-wrap: anywhere; }
+.vd-no-data { padding: 18px; border: 1px dashed rgba(255,255,255,.14); border-radius: 10px; color: rgba(255,255,255,.55); }
+
+.vd-group-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.vd-group-chip { padding: 7px 9px; border-radius: 7px; background: rgba(56,189,248,.11); color: #9de1ff; font-size: .75rem; }
+.vd-group-chip small { display: block; margin-top: 2px; color: rgba(255,255,255,.4); }
+.vd-source-list { display: grid; gap: 8px; }
+.vd-source-entry { display: flex; justify-content: space-between; gap: 12px; padding: 9px 10px; border-radius: 8px; background: rgba(255,255,255,.035); font-size: .78rem; }
+.vd-source-entry span { color: rgba(255,255,255,.5); }
+
+.vd-save-state { padding: 5px 8px; border-radius: 999px; background: rgba(34,197,94,.12); color: #8ff0b9; font-size: .7rem; }
+.vd-save-state.dirty { background: rgba(255,176,32,.12); color: #ffc76a; }
+.vd-save-state.bad { background: rgba(255,92,92,.12); color: #ff8b8b; }
+.vd-custom-form { display: grid; gap: 11px; }
+.vd-custom-form textarea { resize: vertical; min-height: 140px; font-family: inherit; }
+
+@media (max-width: 1150px) {
+  .vl-layout { grid-template-columns: 1fr; }
+  .vl-sidebar { position: static; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .vl-import-panel,.vl-category-panel { grid-row: span 2; }
+  .vd-columns { grid-template-columns: 1fr; }
+  .vd-side-column { position: static; }
+}
+
+@media (max-width: 780px) {
+  .vehicle-library-main,.vehicle-detail-main { width: min(100% - 12px,1900px); }
+  .vl-sidebar { grid-template-columns: 1fr; }
+  .vl-browser-header,.vl-results-toolbar,.vd-topbar,.vd-section-heading { align-items: stretch; flex-direction: column; }
+  .vl-sort-controls,.vd-selector-wrap { align-items: stretch; flex-direction: column; min-width: 0; }
+  .vl-sort-controls label { grid-template-columns: 1fr; }
+  .vl-vehicle-grid { grid-template-columns: repeat(auto-fill,minmax(175px,1fr)); }
+  .vl-vehicle-grid.list-view .vl-vehicle-card { grid-template-columns: 1fr; }
+  .vl-vehicle-grid.list-view .vl-vehicle-card-image { min-height: 160px; }
+  .vd-identity-card { grid-template-columns: 1fr; }
+  .vd-detail-grid,.vd-handling-groups { grid-template-columns: 1fr; }
+}
+
+/* Vehicle Library V1.1 installed inventory controls */
+.vl-installed-button {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 3;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(3,6,13,.78);
+  color: rgba(255,255,255,.78);
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+.vl-installed-button:hover { border-color: rgba(34,197,94,.65); color: #fff; }
+.vl-installed-button.active {
+  border-color: rgba(34,197,94,.72);
+  background: rgba(22,101,52,.9);
+  color: #d1fae5;
+}
+.vl-badge.installed-status,
+.vd-badge.installed {
+  background: rgba(34,197,94,.24);
+  color: #a7f3d0;
+  border: 1px solid rgba(34,197,94,.32);
+}
+.vd-installed-toggle {
+  display: flex !important;
+  align-items: center;
+  gap: 9px !important;
+  padding: 11px 12px;
+  border: 1px solid rgba(34,197,94,.32);
+  border-radius: 9px;
+  background: rgba(34,197,94,.08);
+  color: #d1fae5 !important;
+  font-weight: 800;
+}
+.vd-installed-toggle input { width: auto !important; accent-color: #22c55e; transform: scale(1.15); }
+
+
+/* Vehicle details installed-state action */
+.vd-install-button {
+  border: 1px solid rgba(34,197,94,.55);
+  background: rgba(34,197,94,.10);
+  color: #a7f3d0;
+  font-weight: 900;
+}
+.vd-install-button:hover {
+  border-color: rgba(34,197,94,.85);
+  background: rgba(34,197,94,.18);
+  color: #fff;
+}
+.vd-install-button.active {
+  border-color: rgba(34,197,94,.85);
+  background: rgba(22,101,52,.92);
+  color: #dcfce7;
+  box-shadow: 0 0 0 1px rgba(34,197,94,.16) inset;
+}
+
+
+/* Vehicle Library V1.3 installed-file batch scanner */
+.vl-install-drop-zone {
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  min-height: 170px;
+  padding: 18px;
+  border: 2px dashed rgba(249,115,22,.42);
+  border-radius: 12px;
+  background: linear-gradient(145deg,rgba(249,115,22,.08),rgba(255,255,255,.025));
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.vl-install-drop-zone:hover,
+.vl-install-drop-zone:focus-visible,
+.vl-install-drop-zone.drag-over {
+  border-color: #f97316;
+  background: rgba(249,115,22,.14);
+  outline: none;
+}
+.vl-install-drop-zone.drag-over { transform: translateY(-2px); }
+.vl-install-drop-zone strong { color: #fff; font-size: 1rem; }
+.vl-install-drop-zone span { color: rgba(255,255,255,.58); font-size: .75rem; line-height: 1.45; }
+.vl-install-drop-zone code { color: #ffc17f; }
+.vl-install-drop-zone button { margin-top: 5px; }
+.vl-install-scan-result { display: grid; gap: 8px; margin-top: 10px; }
+.vl-scan-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.vl-scan-summary div { padding: 9px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: rgba(255,255,255,.03); }
+.vl-scan-summary strong { display: block; color: #fff; font-size: 1rem; }
+.vl-scan-summary span { display: block; margin-top: 2px; color: rgba(255,255,255,.48); font-size: .65rem; }
+.vl-scan-warning { padding: 9px 10px; border: 1px solid rgba(245,158,11,.3); border-radius: 8px; background: rgba(245,158,11,.08); color: #fcd38d; font-size: .72rem; line-height: 1.45; overflow-wrap: anywhere; }
+.vl-scan-warning code { color: #fff; }
