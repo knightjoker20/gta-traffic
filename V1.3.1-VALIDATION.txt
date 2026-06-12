@@ -1,0 +1,29 @@
+GTA Traffic V1.3.1 Cloudflare Validation
+========================================
+
+Deployment structure
+- wrangler.jsonc targets ./public
+- public/ contains the live website only
+
+Corrected case-sensitive references
+- js/shared/siteShell.js -> js/shared/siteshell.js
+- js/handlingMetaEditor.js -> js/handlingmetaeditor.js
+- js/packDatabase.js -> js/packdatabase.js
+- data/stockTrafficReference.js -> data/stocktrafficreference.js
+- data/trafficRedlineReference.js -> data/trafficredlinereference.js
+- data/popcycleAreaMapData.js -> data/popcycleareamapdata.js
+- data/popcycleVisualMapConfig.js -> data/popcyclevisualmapconfig.js
+- All popcycle module references normalized to lowercase filenames
+- js/vehicleLibraryStore.js -> js/vehiclelibrarystore.js
+- js/vehicleDetails.js -> js/vehicledetails.js
+- js/vehicleLibrary.js -> js/vehiclelibrary.js
+- js/vehicleMetaEditor.js -> js/vehiclemetaeditor.js
+
+Validation completed
+- 35 JavaScript files passed Node syntax checking
+- 72 HTML/CSS static file references were checked
+- All referenced HTML, JavaScript, CSS, and static image files exist with exact case
+
+Notes
+- Vehicle screenshots are intentionally not included in this package.
+- The library retains its placeholder/fallback behavior when a vehicle image is unavailable.

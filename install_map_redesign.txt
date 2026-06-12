@@ -1,6 +1,0 @@
-GTA-Traffic.com V1.3 Popcycle Two-Map Redesign
-
-1. Back up the site.
-2. Copy everything in this patch into the site root.
-3. Replace matching files.
-4. Open popcycle.html and press Ctrl+F5.
