@@ -358,16 +358,61 @@
     }
   }
 
-  async function reloadData() {
-    const [vehicles, handlingProfiles] = await Promise.all([
+ async function reloadData() {
+  const [localVehicles, handlingProfiles] =
+    await Promise.all([
       store.getVehicles(),
       store.getHandlingProfiles()
     ]);
-    state.vehicles = vehicles;
-    state.handlingMap = new Map(handlingProfiles.map(profile => [profile.id, profile]));
-    populateFilters();
-    renderAll();
+
+  let vehicles = localVehicles;
+  let source = "local";
+
+  if (window.vehicleCloud) {
+    try {
+      const cloudVehicles =
+        await window.vehicleCloud.getVehicles(
+          localVehicles
+        );
+
+      if (cloudVehicles.length > 0) {
+        vehicles = cloudVehicles;
+        source = "cloud";
+
+        await store.putVehicles(cloudVehicles);
+      }
+    } catch (error) {
+      console.warn(
+        "Cloud library unavailable. Using IndexedDB.",
+        error
+      );
+    }
   }
+
+  state.vehicles = vehicles;
+
+  state.handlingMap = new Map(
+    handlingProfiles.map(profile => [
+      profile.id,
+      profile
+    ])
+  );
+
+  populateFilters();
+  renderAll();
+
+  if (source === "cloud") {
+    setStatus(
+      `Loaded ${vehicles.length.toLocaleString()} vehicles from the cloud database.`,
+      "good"
+    );
+  } else {
+    setStatus(
+      `Cloud database unavailable. Loaded ${vehicles.length.toLocaleString()} vehicles from this browser.`,
+      vehicles.length ? "warn" : "bad"
+    );
+  }
+}
 
   function linkedHandling(vehicle) {
     return state.handlingMap.get(store.normalizeId(vehicle.vehiclesMeta?.handlingId || "")) || null;
