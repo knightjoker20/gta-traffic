@@ -2,12 +2,30 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "gta-traffic",
   "compatibility_date": "2026-06-12",
+
   "observability": {
     "enabled": true
   },
+
   "assets": {
     "directory": "./public"
   },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gta-traffic-db",
+      "database_id": "21789331-3127-4410-b0ca-eed510f0d8b6"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "VEHICLE_IMAGES",
+      "bucket_name": "gta-traffic-vehicle-images"
+    }
+  ],
+
   "compatibility_flags": [
     "nodejs_compat"
   ]
