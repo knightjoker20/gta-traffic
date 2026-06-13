@@ -512,7 +512,317 @@ async function handleVehicleBulkImport(request, env) {
     201
   );
 }
+function splitTags(value) {
+  if (Array.isArray(value)) {
+    return value
+      .filter(tag => typeof tag === "string")
+      .map(tag => tag.trim())
+      .filter(Boolean);
+  }
 
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map(tag => tag.trim())
+    .filter(Boolean);
+}
+
+function flattenLibraryVehicle(record) {
+  const meta = record?.vehiclesMeta || {};
+  const custom = record?.custom || {};
+  const sources = record?.sources || {};
+
+  const vehicleMetaSources = Array.isArray(sources.vehiclesMeta)
+    ? sources.vehiclesMeta
+    : [];
+
+  return {
+    modelName:
+      optionalText(record?.modelName) ||
+      optionalText(meta.modelName),
+
+    gameName: optionalText(meta.gameName),
+
+    displayName:
+      optionalText(custom.displayName) ||
+      optionalText(meta.vehicleMakeName) ||
+      optionalText(meta.gameName),
+
+    makeName: optionalText(meta.vehicleMakeName),
+
+    vehicleClass: optionalText(meta.vehicleClass),
+    vehicleType: optionalText(meta.vehicleType),
+
+    handlingId: optionalText(meta.handlingId),
+    audioName: optionalText(meta.audioNameHash),
+    layoutName: optionalText(meta.layout),
+
+    frequency: optionalInteger(meta.frequency),
+    maxNum: optionalInteger(meta.maxNum),
+    maxNumOfSameColor:
+      optionalInteger(meta.maxNumOfSameColor),
+
+    identicalModelSpawnDistance:
+      optionalInteger(meta.identicalModelSpawnDistance),
+
+    swankness: optionalText(meta.swankness),
+
+    installed: Boolean(custom.installed),
+    favorite: Boolean(custom.favorite),
+
+    installationType: optionalText(custom.installType),
+    replacementSlot: optionalText(custom.replacementFor),
+    gameVersion: optionalText(custom.gameVersion),
+
+    installedDlcFolder:
+      optionalText(custom.dlcFolderPath),
+
+    installDate: optionalText(custom.installDate),
+
+    rockstarDlc: optionalText(custom.rockstarDlc),
+    sourcePack:
+      optionalText(custom.sourcePack) ||
+      optionalText(vehicleMetaSources[0]),
+
+    downloadUrl: optionalText(custom.downloadUrl),
+
+    yftPath: optionalText(custom.yftPath),
+    hiYftPath: optionalText(custom.yftHiPath),
+    ytdPath: optionalText(custom.ytdPath),
+
+    vehiclesMetaPath:
+      optionalText(custom.vehiclesMetaPath) ||
+      optionalText(vehicleMetaSources[0]),
+
+    handlingMetaPath:
+      optionalText(custom.handlingMetaPath),
+
+    tags: splitTags(custom.tags),
+    notes: optionalText(custom.notes),
+
+    originalLibraryRecord: record
+  };
+}
+
+function buildHandlingUpsertStatement(profile, env) {
+  const handlingName = optionalText(profile?.handlingName);
+
+  if (!handlingName) {
+    throw new Error("Handling profile is missing handlingName");
+  }
+
+  const id =
+    optionalText(profile.id) ||
+    handlingName.toLowerCase();
+
+  return env.DB.prepare(`
+    INSERT INTO handling_profiles (
+      id,
+      handling_name,
+      ai_handling,
+      source_file,
+      handling_data_json,
+      raw_xml,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ?, ?, ?, ?, ?, NULL,
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    )
+    ON CONFLICT(handling_name) DO UPDATE SET
+      ai_handling = excluded.ai_handling,
+      source_file = excluded.source_file,
+      handling_data_json = excluded.handling_data_json,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    id,
+    handlingName,
+    optionalText(profile.AIHandling),
+    optionalText(profile.sourceFile),
+    JSON.stringify(profile)
+  );
+}
+
+async function importVehiclePopgroups(records, env) {
+  let imported = 0;
+
+  for (const record of records) {
+    const modelName =
+      optionalText(record?.modelName) ||
+      optionalText(record?.vehiclesMeta?.modelName);
+
+    const popgroups = Array.isArray(record?.popgroups)
+      ? record.popgroups
+      : [];
+
+    if (!modelName || popgroups.length === 0) {
+      continue;
+    }
+
+    const vehicle = await env.DB
+      .prepare(`
+        SELECT id
+        FROM vehicles
+        WHERE model_name = ? COLLATE NOCASE
+        LIMIT 1
+      `)
+      .bind(modelName)
+      .first();
+
+    if (!vehicle?.id) {
+      continue;
+    }
+
+    const statements = popgroups
+      .filter(group => optionalText(group?.groupName))
+      .map(group =>
+        env.DB.prepare(`
+          INSERT INTO vehicle_popgroups (
+            vehicle_id,
+            popgroup_name,
+            source_file
+          )
+          VALUES (?, ?, ?)
+          ON CONFLICT(vehicle_id, popgroup_name)
+          DO UPDATE SET
+            source_file = excluded.source_file
+        `).bind(
+          vehicle.id,
+          optionalText(group.groupName),
+          optionalText(group.sourceFile)
+        )
+      );
+
+    if (statements.length > 0) {
+      await env.DB.batch(statements);
+      imported += statements.length;
+    }
+  }
+
+  return imported;
+}
+
+async function handleLibraryV2Import(request, env) {
+  const parsed = await readJsonRequest(request);
+
+  if (parsed.error) {
+    return parsed.error;
+  }
+
+  const body = parsed.body || {};
+
+  const vehicleRecords = Array.isArray(body.vehicles)
+    ? body.vehicles
+    : [];
+
+  const handlingProfiles =
+    Array.isArray(body.handlingProfiles)
+      ? body.handlingProfiles
+      : [];
+
+  if (
+    vehicleRecords.length === 0 &&
+    handlingProfiles.length === 0
+  ) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "The request must contain vehicles or handlingProfiles"
+      },
+      400
+    );
+  }
+
+  if (vehicleRecords.length > 50) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "A maximum of 50 library vehicles may be imported per request"
+      },
+      400
+    );
+  }
+
+  if (handlingProfiles.length > 50) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "A maximum of 50 handling profiles may be imported per request"
+      },
+      400
+    );
+  }
+
+  const flattenedVehicles = vehicleRecords.map(
+    flattenLibraryVehicle
+  );
+
+  const validationErrors = flattenedVehicles
+    .map((vehicle, index) =>
+      validateVehicleInput(vehicle, index)
+    )
+    .filter(Boolean);
+
+  if (validationErrors.length > 0) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Library import validation failed",
+        details: validationErrors
+      },
+      400
+    );
+  }
+
+  if (flattenedVehicles.length > 0) {
+    const vehicleStatements = flattenedVehicles.map(
+      vehicle =>
+        buildVehicleUpsertStatement(vehicle, env)
+    );
+
+    await env.DB.batch(vehicleStatements);
+  }
+
+  let popgroupsImported = 0;
+
+  if (vehicleRecords.length > 0) {
+    popgroupsImported =
+      await importVehiclePopgroups(
+        vehicleRecords,
+        env
+      );
+  }
+
+  if (handlingProfiles.length > 0) {
+    const handlingStatements =
+      handlingProfiles.map(profile =>
+        buildHandlingUpsertStatement(profile, env)
+      );
+
+    await env.DB.batch(handlingStatements);
+  }
+
+  return jsonResponse(
+    {
+      ok: true,
+      message: "Library V2 batch imported",
+      vehiclesImported: flattenedVehicles.length,
+      handlingProfilesImported:
+        handlingProfiles.length,
+      popgroupsImported,
+      sourceFilesImported: 0
+    },
+    201
+  );
+}
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -545,6 +855,12 @@ export default {
       ) {
         return await handleVehicleBulkImport(request, env);
       }
+if (
+  request.method === "POST" &&
+  url.pathname === "/api/library/import-v2"
+) {
+  return await handleLibraryV2Import(request, env);
+}
 
       if (url.pathname.startsWith("/api/")) {
         return jsonResponse(
