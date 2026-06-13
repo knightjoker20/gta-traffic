@@ -468,7 +468,7 @@ window.vehicleCloud = {
   getHandlingProfiles,
   getVehiclePopgroups,
   getVehicleImages,
-  getLibraryData
+  getLibraryData,
   updateVehicle,
   clearLibraryWriteToken,
 };
