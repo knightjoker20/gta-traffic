@@ -546,10 +546,7 @@ function flattenLibraryVehicle(record) {
 
     gameName: optionalText(meta.gameName),
 
-    displayName:
-      optionalText(custom.displayName) ||
-      optionalText(meta.vehicleMakeName) ||
-      optionalText(meta.gameName),
+   displayName: optionalText(custom.displayName),
 
     makeName: optionalText(meta.vehicleMakeName),
 
