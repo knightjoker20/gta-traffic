@@ -90,6 +90,192 @@ function booleanInteger(value) {
   return value === true || value === 1 || value === "true" ? 1 : 0;
 }
 
+function validateVehicleInput(body, index = null) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return index === null
+      ? "Vehicle body must be a JSON object"
+      : `Vehicle at index ${index} must be a JSON object`;
+  }
+
+  const modelName = optionalText(body.modelName);
+
+  if (!modelName) {
+    return index === null
+      ? "modelName is required"
+      : `Vehicle at index ${index} is missing modelName`;
+  }
+
+  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(modelName)) {
+    return index === null
+      ? "modelName may contain only letters, numbers, underscores, and dashes"
+      : `Vehicle at index ${index} has an invalid modelName`;
+  }
+
+  return null;
+}
+
+function buildVehicleUpsertStatement(body, env) {
+  const modelName = optionalText(body.modelName);
+  const id = crypto.randomUUID();
+
+  const tags = Array.isArray(body.tags)
+    ? JSON.stringify(
+        body.tags
+          .filter(tag => typeof tag === "string")
+          .map(tag => tag.trim())
+          .filter(Boolean)
+      )
+    : "[]";
+
+  const rawRecord = JSON.stringify(body);
+
+  return env.DB.prepare(`
+    INSERT INTO vehicles (
+      id,
+      model_name,
+      game_name,
+      display_name,
+      make_name,
+      vehicle_class,
+      vehicle_type,
+      handling_id,
+      audio_name,
+      layout_name,
+      frequency,
+      max_num,
+      max_num_of_same_color,
+      identical_model_spawn_distance,
+      swankness,
+      installed,
+      favorite,
+      installation_type,
+      replacement_slot,
+      game_version,
+      installed_dlc_folder,
+      install_date,
+      rockstar_dlc,
+      source_pack,
+      download_url,
+      yft_path,
+      hi_yft_path,
+      ytd_path,
+      vehicles_meta_path,
+      handling_meta_path,
+      tags_json,
+      notes,
+      raw_record_json,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    )
+    ON CONFLICT(model_name) DO UPDATE SET
+      game_name = excluded.game_name,
+      display_name = excluded.display_name,
+      make_name = excluded.make_name,
+      vehicle_class = excluded.vehicle_class,
+      vehicle_type = excluded.vehicle_type,
+      handling_id = excluded.handling_id,
+      audio_name = excluded.audio_name,
+      layout_name = excluded.layout_name,
+      frequency = excluded.frequency,
+      max_num = excluded.max_num,
+      max_num_of_same_color = excluded.max_num_of_same_color,
+      identical_model_spawn_distance =
+        excluded.identical_model_spawn_distance,
+      swankness = excluded.swankness,
+      installed = excluded.installed,
+      favorite = excluded.favorite,
+      installation_type = excluded.installation_type,
+      replacement_slot = excluded.replacement_slot,
+      game_version = excluded.game_version,
+      installed_dlc_folder = excluded.installed_dlc_folder,
+      install_date = excluded.install_date,
+      rockstar_dlc = excluded.rockstar_dlc,
+      source_pack = excluded.source_pack,
+      download_url = excluded.download_url,
+      yft_path = excluded.yft_path,
+      hi_yft_path = excluded.hi_yft_path,
+      ytd_path = excluded.ytd_path,
+      vehicles_meta_path = excluded.vehicles_meta_path,
+      handling_meta_path = excluded.handling_meta_path,
+      tags_json = excluded.tags_json,
+      notes = excluded.notes,
+      raw_record_json = excluded.raw_record_json,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    id,
+    modelName,
+    optionalText(body.gameName),
+    optionalText(body.displayName),
+    optionalText(body.makeName),
+    optionalText(body.vehicleClass),
+    optionalText(body.vehicleType),
+    optionalText(body.handlingId),
+    optionalText(body.audioName),
+    optionalText(body.layoutName),
+    optionalInteger(body.frequency),
+    optionalInteger(body.maxNum),
+    optionalInteger(body.maxNumOfSameColor),
+    optionalInteger(body.identicalModelSpawnDistance),
+    optionalText(body.swankness),
+    booleanInteger(body.installed),
+    booleanInteger(body.favorite),
+    optionalText(body.installationType),
+    optionalText(body.replacementSlot),
+    optionalText(body.gameVersion),
+    optionalText(body.installedDlcFolder),
+    optionalText(body.installDate),
+    optionalText(body.rockstarDlc),
+    optionalText(body.sourcePack),
+    optionalText(body.downloadUrl),
+    optionalText(body.yftPath),
+    optionalText(body.hiYftPath),
+    optionalText(body.ytdPath),
+    optionalText(body.vehiclesMetaPath),
+    optionalText(body.handlingMetaPath),
+    tags,
+    optionalText(body.notes),
+    rawRecord
+  );
+}
+
+async function readJsonRequest(request) {
+  const contentType = request.headers.get("content-type") || "";
+
+  if (!contentType.includes("application/json")) {
+    return {
+      error: jsonResponse(
+        {
+          ok: false,
+          error: "Content-Type must be application/json"
+        },
+        415
+      )
+    };
+  }
+
+  try {
+    return {
+      body: await request.json()
+    };
+  } catch {
+    return {
+      error: jsonResponse(
+        {
+          ok: false,
+          error: "The request body is not valid JSON"
+        },
+        400
+      )
+    };
+  }
+}
+
 async function handleHealthCheck(env) {
   const vehicleCount = await env.DB
     .prepare("SELECT COUNT(*) AS count FROM vehicles")
@@ -209,183 +395,25 @@ async function handleVehicleList(request, env) {
 }
 
 async function handleVehicleImport(request, env) {
-  const contentType = request.headers.get("content-type") || "";
+  const parsed = await readJsonRequest(request);
 
-  if (!contentType.includes("application/json")) {
-    return jsonResponse(
-      {
-        ok: false,
-        error: "Content-Type must be application/json"
-      },
-      415
-    );
+  if (parsed.error) {
+    return parsed.error;
   }
 
-  let body;
+  const validationError = validateVehicleInput(parsed.body);
 
-  try {
-    body = await request.json();
-  } catch {
+  if (validationError) {
     return jsonResponse(
       {
         ok: false,
-        error: "The request body is not valid JSON"
+        error: validationError
       },
       400
     );
   }
 
-  const modelName = optionalText(body.modelName);
-
-  if (!modelName) {
-    return jsonResponse(
-      {
-        ok: false,
-        error: "modelName is required"
-      },
-      400
-    );
-  }
-
-  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(modelName)) {
-    return jsonResponse(
-      {
-        ok: false,
-        error:
-          "modelName may contain only letters, numbers, underscores, and dashes"
-      },
-      400
-    );
-  }
-
-  const id = crypto.randomUUID();
-
-  const tags = Array.isArray(body.tags)
-    ? JSON.stringify(
-        body.tags
-          .filter(tag => typeof tag === "string")
-          .map(tag => tag.trim())
-          .filter(Boolean)
-      )
-    : "[]";
-
-  const rawRecord = JSON.stringify(body);
-
-  const statement = env.DB.prepare(`
-    INSERT INTO vehicles (
-      id,
-      model_name,
-      game_name,
-      display_name,
-      make_name,
-      vehicle_class,
-      vehicle_type,
-      handling_id,
-      audio_name,
-      layout_name,
-      frequency,
-      max_num,
-      max_num_of_same_color,
-      identical_model_spawn_distance,
-      swankness,
-      installed,
-      favorite,
-      installation_type,
-      replacement_slot,
-      game_version,
-      installed_dlc_folder,
-      install_date,
-      rockstar_dlc,
-      source_pack,
-      download_url,
-      yft_path,
-      hi_yft_path,
-      ytd_path,
-      vehicles_meta_path,
-      handling_meta_path,
-      tags_json,
-      notes,
-      raw_record_json,
-      created_at,
-      updated_at
-    )
-    VALUES (
-      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-    )
-    ON CONFLICT(model_name) DO UPDATE SET
-      game_name = excluded.game_name,
-      display_name = excluded.display_name,
-      make_name = excluded.make_name,
-      vehicle_class = excluded.vehicle_class,
-      vehicle_type = excluded.vehicle_type,
-      handling_id = excluded.handling_id,
-      audio_name = excluded.audio_name,
-      layout_name = excluded.layout_name,
-      frequency = excluded.frequency,
-      max_num = excluded.max_num,
-      max_num_of_same_color = excluded.max_num_of_same_color,
-      identical_model_spawn_distance =
-        excluded.identical_model_spawn_distance,
-      swankness = excluded.swankness,
-      installed = excluded.installed,
-      favorite = excluded.favorite,
-      installation_type = excluded.installation_type,
-      replacement_slot = excluded.replacement_slot,
-      game_version = excluded.game_version,
-      installed_dlc_folder = excluded.installed_dlc_folder,
-      install_date = excluded.install_date,
-      rockstar_dlc = excluded.rockstar_dlc,
-      source_pack = excluded.source_pack,
-      download_url = excluded.download_url,
-      yft_path = excluded.yft_path,
-      hi_yft_path = excluded.hi_yft_path,
-      ytd_path = excluded.ytd_path,
-      vehicles_meta_path = excluded.vehicles_meta_path,
-      handling_meta_path = excluded.handling_meta_path,
-      tags_json = excluded.tags_json,
-      notes = excluded.notes,
-      raw_record_json = excluded.raw_record_json,
-      updated_at = CURRENT_TIMESTAMP
-  `).bind(
-    id,
-    modelName,
-    optionalText(body.gameName),
-    optionalText(body.displayName),
-    optionalText(body.makeName),
-    optionalText(body.vehicleClass),
-    optionalText(body.vehicleType),
-    optionalText(body.handlingId),
-    optionalText(body.audioName),
-    optionalText(body.layoutName),
-    optionalInteger(body.frequency),
-    optionalInteger(body.maxNum),
-    optionalInteger(body.maxNumOfSameColor),
-    optionalInteger(body.identicalModelSpawnDistance),
-    optionalText(body.swankness),
-    booleanInteger(body.installed),
-    booleanInteger(body.favorite),
-    optionalText(body.installationType),
-    optionalText(body.replacementSlot),
-    optionalText(body.gameVersion),
-    optionalText(body.installedDlcFolder),
-    optionalText(body.installDate),
-    optionalText(body.rockstarDlc),
-    optionalText(body.sourcePack),
-    optionalText(body.downloadUrl),
-    optionalText(body.yftPath),
-    optionalText(body.hiYftPath),
-    optionalText(body.ytdPath),
-    optionalText(body.vehiclesMetaPath),
-    optionalText(body.handlingMetaPath),
-    tags,
-    optionalText(body.notes),
-    rawRecord
-  );
-
-  await statement.run();
+  await buildVehicleUpsertStatement(parsed.body, env).run();
 
   const savedVehicle = await env.DB
     .prepare(`
@@ -394,7 +422,7 @@ async function handleVehicleImport(request, env) {
       WHERE model_name = ? COLLATE NOCASE
       LIMIT 1
     `)
-    .bind(modelName)
+    .bind(parsed.body.modelName)
     .first();
 
   return jsonResponse(
@@ -402,6 +430,84 @@ async function handleVehicleImport(request, env) {
       ok: true,
       message: "Vehicle saved",
       vehicle: normalizeVehicle(savedVehicle)
+    },
+    201
+  );
+}
+
+async function handleVehicleBulkImport(request, env) {
+  const parsed = await readJsonRequest(request);
+
+  if (parsed.error) {
+    return parsed.error;
+  }
+
+  const vehicles = Array.isArray(parsed.body)
+    ? parsed.body
+    : parsed.body?.vehicles;
+
+  if (!Array.isArray(vehicles)) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Request body must be an array or an object with a vehicles array"
+      },
+      400
+    );
+  }
+
+  if (vehicles.length === 0) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "At least one vehicle is required"
+      },
+      400
+    );
+  }
+
+  if (vehicles.length > 100) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "A maximum of 100 vehicles may be imported per request"
+      },
+      400
+    );
+  }
+
+  const validationErrors = vehicles
+    .map((vehicle, index) =>
+      validateVehicleInput(vehicle, index)
+    )
+    .filter(Boolean);
+
+  if (validationErrors.length > 0) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Bulk import validation failed",
+        details: validationErrors
+      },
+      400
+    );
+  }
+
+  const statements = vehicles.map(vehicle =>
+    buildVehicleUpsertStatement(vehicle, env)
+  );
+
+  await env.DB.batch(statements);
+
+  const modelNames = vehicles.map(vehicle => vehicle.modelName);
+
+  return jsonResponse(
+    {
+      ok: true,
+      message: "Bulk vehicle import completed",
+      imported: vehicles.length,
+      modelNames
     },
     201
   );
@@ -431,6 +537,13 @@ export default {
         url.pathname === "/api/vehicles/import"
       ) {
         return await handleVehicleImport(request, env);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/vehicles/import-bulk"
+      ) {
+        return await handleVehicleBulkImport(request, env);
       }
 
       if (url.pathname.startsWith("/api/")) {
