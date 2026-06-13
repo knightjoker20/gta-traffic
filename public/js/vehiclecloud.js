@@ -185,8 +185,136 @@
       return mergeLocalOnlyData(converted, localVehicle);
     });
   }
+async function fetchCloudJson(path, description) {
+  const response = await fetch(path, {
+    method: "GET",
+    headers: {
+      Accept: "application/json"
+    },
+    cache: "no-store"
+  });
 
-  window.vehicleCloud = {
-    getVehicles
+  if (!response.ok) {
+    throw new Error(
+      `${description} request failed with status ${response.status}.`
+    );
+  }
+
+  const result = await response.json();
+
+  if (!result.ok) {
+    throw new Error(
+      `${description} response reported an error.`
+    );
+  }
+
+  return result;
+}
+
+async function getHandlingProfiles() {
+  const result = await fetchCloudJson(
+    "/api/handling-profiles",
+    "Cloud handling profile"
+  );
+
+  if (!Array.isArray(result.handlingProfiles)) {
+    throw new Error(
+      "Cloud handling profile response was invalid."
+    );
+  }
+
+  return result.handlingProfiles;
+}
+
+async function getVehiclePopgroups() {
+  const result = await fetchCloudJson(
+    "/api/vehicle-popgroups",
+    "Cloud popgroup"
+  );
+
+  if (!Array.isArray(result.relationships)) {
+    throw new Error(
+      "Cloud popgroup response was invalid."
+    );
+  }
+
+  return result.relationships;
+}
+
+function attachPopgroupsToVehicles(
+  vehicles,
+  relationships
+) {
+  const groupsByModel = new Map();
+
+  relationships.forEach(relationship => {
+    const modelId = String(
+      relationship.modelName || ""
+    ).toLowerCase();
+
+    if (!modelId) {
+      return;
+    }
+
+    if (!groupsByModel.has(modelId)) {
+      groupsByModel.set(modelId, []);
+    }
+
+    groupsByModel.get(modelId).push({
+      groupName: relationship.groupName || "",
+      sourceFile: relationship.sourceFile || ""
+    });
+  });
+
+  return vehicles.map(vehicle => {
+    const modelId = String(
+      vehicle.id || vehicle.modelName || ""
+    ).toLowerCase();
+
+    const popgroups = groupsByModel.get(modelId) || [];
+
+    return {
+      ...vehicle,
+      popgroups,
+
+      sources: {
+        ...(vehicle.sources || {}),
+        popgroups: [
+          ...new Set(
+            popgroups
+              .map(group => group.sourceFile)
+              .filter(Boolean)
+          )
+        ]
+      }
+    };
+  });
+}
+
+async function getLibraryData(localVehicles = []) {
+  const [
+    vehicles,
+    handlingProfiles,
+    relationships
+  ] = await Promise.all([
+    getVehicles(localVehicles),
+    getHandlingProfiles(),
+    getVehiclePopgroups()
+  ]);
+
+  return {
+    vehicles: attachPopgroupsToVehicles(
+      vehicles,
+      relationships
+    ),
+    handlingProfiles,
+    popgroupRelationships: relationships
   };
+}
+  window.vehicleCloud = {
+  getVehicles,
+  getHandlingProfiles,
+  getVehiclePopgroups,
+  getLibraryData
+};
 })();

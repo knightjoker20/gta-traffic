@@ -359,27 +359,35 @@
   }
 
  async function reloadData() {
-  const [localVehicles, handlingProfiles] =
+  const [localVehicles, localHandlingProfiles] =
     await Promise.all([
       store.getVehicles(),
       store.getHandlingProfiles()
     ]);
 
   let vehicles = localVehicles;
+  let handlingProfiles = localHandlingProfiles;
   let source = "local";
 
   if (window.vehicleCloud) {
     try {
-      const cloudVehicles =
-        await window.vehicleCloud.getVehicles(
+      const cloudData =
+        await window.vehicleCloud.getLibraryData(
           localVehicles
         );
 
-      if (cloudVehicles.length > 0) {
-        vehicles = cloudVehicles;
+      if (cloudData.vehicles.length > 0) {
+        vehicles = cloudData.vehicles;
+        handlingProfiles =
+          cloudData.handlingProfiles;
         source = "cloud";
 
-        await store.putVehicles(cloudVehicles);
+        await Promise.all([
+          store.putVehicles(vehicles),
+          store.putHandlingProfiles(
+            handlingProfiles
+          )
+        ]);
       }
     } catch (error) {
       console.warn(
@@ -393,7 +401,9 @@
 
   state.handlingMap = new Map(
     handlingProfiles.map(profile => [
-      profile.id,
+      store.normalizeId(
+        profile.handlingName || profile.id || ""
+      ),
       profile
     ])
   );
@@ -403,12 +413,15 @@
 
   if (source === "cloud") {
     setStatus(
-      `Loaded ${vehicles.length.toLocaleString()} vehicles from the cloud database.`,
+      `Loaded ${vehicles.length.toLocaleString()} vehicles, ` +
+      `${handlingProfiles.length.toLocaleString()} handling profiles, ` +
+      `and cloud popgroups.`,
       "good"
     );
   } else {
     setStatus(
-      `Cloud database unavailable. Loaded ${vehicles.length.toLocaleString()} vehicles from this browser.`,
+      `Cloud database unavailable. Loaded ` +
+      `${vehicles.length.toLocaleString()} vehicles from this browser.`,
       vehicles.length ? "warn" : "bad"
     );
   }

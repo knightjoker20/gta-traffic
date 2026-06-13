@@ -393,7 +393,95 @@ async function handleVehicleList(request, env) {
     vehicles: listResult.results.map(normalizeVehicle)
   });
 }
+function safeParseObject(value, fallback = {}) {
+  if (!value) {
+    return fallback;
+  }
 
+  try {
+    const parsed = JSON.parse(value);
+
+    return parsed && typeof parsed === "object"
+      ? parsed
+      : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+async function handleHandlingProfileList(env) {
+  const result = await env.DB
+    .prepare(`
+      SELECT
+        id,
+        handling_name,
+        ai_handling,
+        source_file,
+        handling_data_json,
+        created_at,
+        updated_at
+      FROM handling_profiles
+      ORDER BY handling_name COLLATE NOCASE ASC
+    `)
+    .all();
+
+  const handlingProfiles = result.results.map(row => {
+    const storedProfile = safeParseObject(
+      row.handling_data_json
+    );
+
+    return {
+      ...storedProfile,
+      id: row.id,
+      handlingName: row.handling_name,
+      AIHandling:
+        row.ai_handling ??
+        storedProfile.AIHandling ??
+        "",
+      sourceFile:
+        row.source_file ??
+        storedProfile.sourceFile ??
+        "",
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  });
+
+  return jsonResponse({
+    ok: true,
+    total: handlingProfiles.length,
+    handlingProfiles
+  });
+}
+
+async function handleVehiclePopgroupList(env) {
+  const result = await env.DB
+    .prepare(`
+      SELECT
+        v.model_name,
+        vp.popgroup_name,
+        vp.source_file
+      FROM vehicle_popgroups vp
+      INNER JOIN vehicles v
+        ON v.id = vp.vehicle_id
+      ORDER BY
+        v.model_name COLLATE NOCASE ASC,
+        vp.popgroup_name COLLATE NOCASE ASC
+    `)
+    .all();
+
+  const relationships = result.results.map(row => ({
+    modelName: row.model_name,
+    groupName: row.popgroup_name,
+    sourceFile: row.source_file
+  }));
+
+  return jsonResponse({
+    ok: true,
+    total: relationships.length,
+    relationships
+  });
+}
 async function handleVehicleImport(request, env) {
   const parsed = await readJsonRequest(request);
 
@@ -838,7 +926,19 @@ export default {
       ) {
         return await handleVehicleList(request, env);
       }
+if (
+  request.method === "GET" &&
+  url.pathname === "/api/handling-profiles"
+) {
+  return await handleHandlingProfileList(env);
+}
 
+if (
+  request.method === "GET" &&
+  url.pathname === "/api/vehicle-popgroups"
+) {
+  return await handleVehiclePopgroupList(env);
+}
       if (
         request.method === "POST" &&
         url.pathname === "/api/vehicles/import"
