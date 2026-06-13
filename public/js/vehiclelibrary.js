@@ -621,37 +621,133 @@
 
     setupStaticImageFallbacks(grid);
 
-    grid.querySelectorAll("[data-favorite]").forEach(button => {
-      button.addEventListener("click", async event => {
-        event.preventDefault();
-        event.stopPropagation();
-        const vehicle = await store.getVehicle(button.dataset.favorite);
-        if (!vehicle) return;
-        vehicle.custom = vehicle.custom || {};
-        vehicle.custom.favorite = !vehicle.custom.favorite;
-        vehicle.updatedAt = new Date().toISOString();
-        await store.putVehicle(vehicle);
-        await reloadData();
-      });
-    });
+grid.querySelectorAll(
+  "[data-favorite]"
+).forEach(button => {
+  button.addEventListener(
+    "click",
+    async event => {
+      event.preventDefault();
+      event.stopPropagation();
 
-    grid.querySelectorAll("[data-installed]").forEach(button => {
-      button.addEventListener("click", async event => {
-        event.preventDefault();
-        event.stopPropagation();
-        const vehicle = await store.getVehicle(button.dataset.installed);
-        if (!vehicle) return;
-        vehicle.custom = vehicle.custom || {};
-        vehicle.custom.installed = vehicle.custom.installed !== true;
-        if (vehicle.custom.installed && !vehicle.custom.installDate) {
-          vehicle.custom.installDate = new Date().toISOString().slice(0, 10);
-        }
-        vehicle.updatedAt = new Date().toISOString();
-        await store.putVehicle(vehicle);
+      const modelName =
+        button.dataset.favorite;
+
+      const vehicle = state.vehicles.find(
+        candidate =>
+          candidate.modelName.toLowerCase() ===
+          modelName.toLowerCase()
+      );
+
+      if (!vehicle) {
+        return;
+      }
+
+      const nextFavorite =
+        !vehicle.custom?.favorite;
+
+      button.disabled = true;
+
+      try {
+        await window.vehicleCloud.updateVehicle(
+          vehicle.modelName,
+          {
+            favorite: nextFavorite
+          }
+        );
+
         await reloadData();
-        setStatus(`${vehicle.modelName} marked ${vehicle.custom.installed ? "installed" : "not installed"}.`, "good");
-      });
-    });
+
+        setStatus(
+          nextFavorite
+            ? `${vehicle.modelName} added to favorites.`
+            : `${vehicle.modelName} removed from favorites.`,
+          "good"
+        );
+      } catch (error) {
+        console.error(error);
+
+        setStatus(
+          error.message ||
+          "Favorite status could not be saved.",
+          "bad"
+        );
+      } finally {
+        button.disabled = false;
+      }
+    }
+  );
+});
+
+  grid.querySelectorAll(
+  "[data-installed]"
+).forEach(button => {
+  button.addEventListener(
+    "click",
+    async event => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const modelName =
+        button.dataset.installed;
+
+      const vehicle = state.vehicles.find(
+        candidate =>
+          candidate.modelName.toLowerCase() ===
+          modelName.toLowerCase()
+      );
+
+      if (!vehicle) {
+        return;
+      }
+
+      const nextInstalled =
+        vehicle.custom?.installed !== true;
+
+      const changes = {
+        installed: nextInstalled
+      };
+
+      if (
+        nextInstalled &&
+        !vehicle.custom?.installDate
+      ) {
+        changes.installDate =
+          new Date().toISOString().slice(0, 10);
+      }
+
+      button.disabled = true;
+
+      try {
+        await window.vehicleCloud.updateVehicle(
+          vehicle.modelName,
+          changes
+        );
+
+        await reloadData();
+
+        setStatus(
+          `${vehicle.modelName} marked ${
+            nextInstalled
+              ? "installed"
+              : "not installed"
+          }.`,
+          "good"
+        );
+      } catch (error) {
+        console.error(error);
+
+        setStatus(
+          error.message ||
+          "Installed status could not be saved.",
+          "bad"
+        );
+      } finally {
+        button.disabled = false;
+      }
+    }
+  );
+});
 
     renderPagination(totalPages);
   }

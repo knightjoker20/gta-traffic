@@ -377,11 +377,99 @@ async function getLibraryData(
     vehicleImages
   };
 }
+const LIBRARY_WRITE_TOKEN_KEY =
+  "gtaTrafficLibraryWriteToken";
+
+function getLibraryWriteToken() {
+  let token = sessionStorage.getItem(
+    LIBRARY_WRITE_TOKEN_KEY
+  );
+
+  if (!token) {
+    token = window.prompt(
+      "Enter the GTA Traffic library write token:"
+    );
+
+    token = String(token || "").trim();
+
+    if (token) {
+      sessionStorage.setItem(
+        LIBRARY_WRITE_TOKEN_KEY,
+        token
+      );
+    }
+  }
+
+  return token;
+}
+
+async function updateVehicle(
+  modelName,
+  changes
+) {
+  const token = getLibraryWriteToken();
+
+  if (!token) {
+    throw new Error(
+      "The library write token was not entered."
+    );
+  }
+
+  const response = await fetch(
+    `/api/vehicles/${encodeURIComponent(modelName)}`,
+    {
+      method: "PATCH",
+
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Library-Token": token
+      },
+
+      body: JSON.stringify(changes)
+    }
+  );
+
+  let result;
+
+  try {
+    result = await response.json();
+  } catch {
+    result = {
+      ok: false,
+      error: "The update response was not valid JSON."
+    };
+  }
+
+  if (!response.ok || !result.ok) {
+    if (response.status === 401) {
+      sessionStorage.removeItem(
+        LIBRARY_WRITE_TOKEN_KEY
+      );
+    }
+
+    throw new Error(
+      result.error ||
+      `Vehicle update failed with status ${response.status}.`
+    );
+  }
+
+  return result.vehicle;
+}
+
+function clearLibraryWriteToken() {
+  sessionStorage.removeItem(
+    LIBRARY_WRITE_TOKEN_KEY
+  );
+}
+
 window.vehicleCloud = {
   getVehicles,
   getHandlingProfiles,
   getVehiclePopgroups,
   getVehicleImages,
   getLibraryData
+  updateVehicle,
+  clearLibraryWriteToken,
 };
 })();

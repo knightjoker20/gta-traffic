@@ -1261,6 +1261,272 @@ async function handleVehicleImageList(env) {
     images
   });
 }
+function checkLibraryWriteAuthorization(request, env) {
+  if (!env.LIBRARY_WRITE_TOKEN) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "LIBRARY_WRITE_TOKEN has not been configured for this Worker"
+      },
+      503
+    );
+  }
+
+  const suppliedToken =
+    request.headers.get("x-library-token") || "";
+
+  if (suppliedToken !== env.LIBRARY_WRITE_TOKEN) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Unauthorized library update"
+      },
+      401
+    );
+  }
+
+  return null;
+}
+
+function tagsForDatabase(value) {
+  let tags = [];
+
+  if (Array.isArray(value)) {
+    tags = value;
+  } else if (typeof value === "string") {
+    tags = value.split(",");
+  }
+
+  const cleanedTags = tags
+    .filter(tag => typeof tag === "string")
+    .map(tag => tag.trim())
+    .filter(Boolean);
+
+  return JSON.stringify([...new Set(cleanedTags)]);
+}
+
+async function handleVehiclePatch(
+  request,
+  env,
+  requestedModelName
+) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const modelName = String(
+    requestedModelName || ""
+  ).trim();
+
+  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(modelName)) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "The vehicle model name is invalid"
+      },
+      400
+    );
+  }
+
+  const parsed = await readJsonRequest(request);
+
+  if (parsed.error) {
+    return parsed.error;
+  }
+
+  const changes = parsed.body;
+
+  if (
+    !changes ||
+    typeof changes !== "object" ||
+    Array.isArray(changes)
+  ) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Update body must be a JSON object"
+      },
+      400
+    );
+  }
+
+  const allowedFields = {
+    displayName: {
+      column: "display_name",
+      convert: optionalText
+    },
+
+    rockstarDlc: {
+      column: "rockstar_dlc",
+      convert: optionalText
+    },
+
+    sourcePack: {
+      column: "source_pack",
+      convert: optionalText
+    },
+
+    gameVersion: {
+      column: "game_version",
+      convert: optionalText
+    },
+
+    installDate: {
+      column: "install_date",
+      convert: optionalText
+    },
+
+    installationType: {
+      column: "installation_type",
+      convert: optionalText
+    },
+
+    replacementSlot: {
+      column: "replacement_slot",
+      convert: optionalText
+    },
+
+    installedDlcFolder: {
+      column: "installed_dlc_folder",
+      convert: optionalText
+    },
+
+    yftPath: {
+      column: "yft_path",
+      convert: optionalText
+    },
+
+    hiYftPath: {
+      column: "hi_yft_path",
+      convert: optionalText
+    },
+
+    ytdPath: {
+      column: "ytd_path",
+      convert: optionalText
+    },
+
+    vehiclesMetaPath: {
+      column: "vehicles_meta_path",
+      convert: optionalText
+    },
+
+    handlingMetaPath: {
+      column: "handling_meta_path",
+      convert: optionalText
+    },
+
+    downloadUrl: {
+      column: "download_url",
+      convert: optionalText
+    },
+
+    tags: {
+      column: "tags_json",
+      convert: tagsForDatabase
+    },
+
+    notes: {
+      column: "notes",
+      convert: optionalText
+    },
+
+    installed: {
+      column: "installed",
+      convert: booleanInteger
+    },
+
+    favorite: {
+      column: "favorite",
+      convert: booleanInteger
+    }
+  };
+
+  const assignments = [];
+  const bindings = [];
+
+  for (const [requestField, definition] of Object.entries(
+    allowedFields
+  )) {
+    if (
+      Object.prototype.hasOwnProperty.call(
+        changes,
+        requestField
+      )
+    ) {
+      assignments.push(`${definition.column} = ?`);
+
+      bindings.push(
+        definition.convert(
+          changes[requestField]
+        )
+      );
+    }
+  }
+
+  if (assignments.length === 0) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "No supported update fields were supplied"
+      },
+      400
+    );
+  }
+
+  assignments.push(
+    "updated_at = CURRENT_TIMESTAMP"
+  );
+
+  const updateResult = await env.DB
+    .prepare(`
+      UPDATE vehicles
+      SET ${assignments.join(", ")}
+      WHERE model_name = ? COLLATE NOCASE
+    `)
+    .bind(...bindings, modelName)
+    .run();
+
+  if (!updateResult.success) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "The vehicle could not be updated"
+      },
+      500
+    );
+  }
+
+  const savedVehicle = await env.DB
+    .prepare(`
+      SELECT *
+      FROM vehicles
+      WHERE model_name = ? COLLATE NOCASE
+      LIMIT 1
+    `)
+    .bind(modelName)
+    .first();
+
+  if (!savedVehicle) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Vehicle not found"
+      },
+      404
+    );
+  }
+
+  return jsonResponse({
+    ok: true,
+    message: "Vehicle updated",
+    vehicle: normalizeVehicle(savedVehicle)
+  });
+}
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -1343,7 +1609,21 @@ if (
 ) {
   return await handleLibraryV2Import(request, env);
 }
+const vehiclePatchRoute =
+  url.pathname.match(
+    /^\/api\/vehicles\/([a-zA-Z0-9_-]{1,100})$/
+  );
 
+if (
+  vehiclePatchRoute &&
+  request.method === "PATCH"
+) {
+  return await handleVehiclePatch(
+    request,
+    env,
+    vehiclePatchRoute[1]
+  );
+}
       if (url.pathname.startsWith("/api/")) {
         return jsonResponse(
           {
