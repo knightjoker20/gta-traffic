@@ -290,31 +290,98 @@ function attachPopgroupsToVehicles(
     };
   });
 }
+async function getVehicleImages() {
+  const result = await fetchCloudJson(
+    "/api/vehicle-images",
+    "Cloud vehicle image"
+  );
 
-async function getLibraryData(localVehicles = []) {
+  if (!Array.isArray(result.images)) {
+    throw new Error(
+      "Cloud vehicle image response was invalid."
+    );
+  }
+
+  return result.images;
+}
+
+function attachImagesToVehicles(
+  vehicles,
+  images
+) {
+  const imageMap = new Map(
+    images.map(image => [
+      String(
+        image.modelName || ""
+      ).toLowerCase(),
+      image.imageUrl
+    ])
+  );
+
+  return vehicles.map(vehicle => {
+    const modelId = String(
+      vehicle.id ||
+      vehicle.modelName ||
+      ""
+    ).toLowerCase();
+
+    const cloudImageUrl =
+      imageMap.get(modelId);
+
+    if (!cloudImageUrl) {
+      return vehicle;
+    }
+
+    return {
+      ...vehicle,
+
+      custom: {
+        ...(vehicle.custom || {}),
+        imageDataUrl: cloudImageUrl
+      }
+    };
+  });
+}
+async function getLibraryData(
+  localVehicles = []
+) {
   const [
     vehicles,
     handlingProfiles,
-    relationships
+    relationships,
+    vehicleImages
   ] = await Promise.all([
     getVehicles(localVehicles),
     getHandlingProfiles(),
-    getVehiclePopgroups()
+    getVehiclePopgroups(),
+    getVehicleImages()
   ]);
 
-  return {
-    vehicles: attachPopgroupsToVehicles(
+  const vehiclesWithPopgroups =
+    attachPopgroupsToVehicles(
       vehicles,
       relationships
-    ),
+    );
+
+  const vehiclesWithImages =
+    attachImagesToVehicles(
+      vehiclesWithPopgroups,
+      vehicleImages
+    );
+
+  return {
+    vehicles: vehiclesWithImages,
     handlingProfiles,
-    popgroupRelationships: relationships
+    popgroupRelationships:
+      relationships,
+    vehicleImages
   };
 }
-  window.vehicleCloud = {
+window.vehicleCloud = {
   getVehicles,
   getHandlingProfiles,
   getVehiclePopgroups,
+  getVehicleImages,
   getLibraryData
 };
 })();

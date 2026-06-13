@@ -908,6 +908,359 @@ async function handleLibraryV2Import(request, env) {
     201
   );
 }
+const VEHICLE_IMAGE_PREFIX = "vehicles/";
+const MAX_VEHICLE_IMAGE_BYTES = 10 * 1024 * 1024;
+
+const ALLOWED_VEHICLE_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp"
+]);
+
+function normalizeVehicleImageModelName(value) {
+  const modelName = String(value || "").trim();
+
+  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(modelName)) {
+    return "";
+  }
+
+  return modelName.toLowerCase();
+}
+
+function vehicleImageKey(modelName) {
+  return (
+    `${VEHICLE_IMAGE_PREFIX}` +
+    `${normalizeVehicleImageModelName(modelName)}` +
+    `/primary`
+  );
+}
+
+function modelNameFromVehicleImageKey(key) {
+  const parts = String(key || "").split("/");
+
+  if (
+    parts.length < 3 ||
+    parts[0] !== "vehicles" ||
+    parts[2] !== "primary"
+  ) {
+    return "";
+  }
+
+  return parts[1];
+}
+
+function vehicleImageUrl(modelName, version = "") {
+  const baseUrl =
+    `/api/vehicle-images/` +
+    encodeURIComponent(modelName);
+
+  return version
+    ? `${baseUrl}?v=${encodeURIComponent(version)}`
+    : baseUrl;
+}
+
+function checkImageUploadAuthorization(request, env) {
+  if (!env.IMAGE_UPLOAD_TOKEN) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "IMAGE_UPLOAD_TOKEN has not been configured for this Worker"
+      },
+      503
+    );
+  }
+
+  const suppliedToken =
+    request.headers.get("x-upload-token") || "";
+
+  if (suppliedToken !== env.IMAGE_UPLOAD_TOKEN) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Unauthorized image upload"
+      },
+      401
+    );
+  }
+
+  return null;
+}
+
+async function handleVehicleImageUpload(
+  request,
+  env,
+  requestedModelName
+) {
+  const authorizationError =
+    checkImageUploadAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const normalizedModelName =
+    normalizeVehicleImageModelName(
+      requestedModelName
+    );
+
+  if (!normalizedModelName) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "The vehicle model name is invalid"
+      },
+      400
+    );
+  }
+
+  const vehicle = await env.DB
+    .prepare(`
+      SELECT
+        id,
+        model_name
+      FROM vehicles
+      WHERE model_name = ? COLLATE NOCASE
+      LIMIT 1
+    `)
+    .bind(normalizedModelName)
+    .first();
+
+  if (!vehicle) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "The requested vehicle does not exist in the database"
+      },
+      404
+    );
+  }
+
+  const contentType = (
+    request.headers.get("content-type") || ""
+  )
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+
+  if (!ALLOWED_VEHICLE_IMAGE_TYPES.has(contentType)) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Only JPEG, PNG, and WebP images are supported"
+      },
+      415
+    );
+  }
+
+  const imageBytes = await request.arrayBuffer();
+
+  if (imageBytes.byteLength === 0) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "The uploaded image is empty"
+      },
+      400
+    );
+  }
+
+  if (
+    imageBytes.byteLength >
+    MAX_VEHICLE_IMAGE_BYTES
+  ) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Vehicle screenshots must be 10 MB or smaller"
+      },
+      413
+    );
+  }
+
+  const canonicalModelName =
+    vehicle.model_name;
+
+  const key = vehicleImageKey(
+    canonicalModelName
+  );
+
+  const storedObject =
+    await env.VEHICLE_IMAGES.put(
+      key,
+      imageBytes,
+      {
+        httpMetadata: {
+          contentType,
+          cacheControl:
+            "public, max-age=31536000, immutable"
+        },
+
+        customMetadata: {
+          modelName: canonicalModelName,
+          imageType: "primary"
+        }
+      }
+    );
+
+  if (!storedObject) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "The image could not be stored"
+      },
+      500
+    );
+  }
+
+  return jsonResponse(
+    {
+      ok: true,
+      message: "Vehicle image uploaded",
+      image: {
+        modelName: canonicalModelName,
+        key,
+        contentType,
+        size: imageBytes.byteLength,
+        etag: storedObject.etag,
+        imageUrl: vehicleImageUrl(
+          canonicalModelName,
+          storedObject.etag
+        )
+      }
+    },
+    201
+  );
+}
+
+async function handleVehicleImageGet(
+  env,
+  requestedModelName
+) {
+  const normalizedModelName =
+    normalizeVehicleImageModelName(
+      requestedModelName
+    );
+
+  if (!normalizedModelName) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "The vehicle model name is invalid"
+      },
+      400
+    );
+  }
+
+  const key = vehicleImageKey(
+    normalizedModelName
+  );
+
+  const object =
+    await env.VEHICLE_IMAGES.get(key);
+
+  if (!object || !object.body) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Vehicle image not found"
+      },
+      404
+    );
+  }
+
+  const headers = new Headers();
+
+  object.writeHttpMetadata(headers);
+
+  headers.set("ETag", object.httpEtag);
+
+  headers.set(
+    "Cache-Control",
+    "public, max-age=31536000, immutable"
+  );
+
+  headers.set(
+    "X-Content-Type-Options",
+    "nosniff"
+  );
+
+  return new Response(object.body, {
+    status: 200,
+    headers
+  });
+}
+
+async function handleVehicleImageList(env) {
+  const images = [];
+  let cursor;
+
+  do {
+    const result =
+      await env.VEHICLE_IMAGES.list({
+        prefix: VEHICLE_IMAGE_PREFIX,
+        limit: 1000,
+        cursor,
+        include: [
+          "httpMetadata",
+          "customMetadata"
+        ]
+      });
+
+    result.objects.forEach(object => {
+      const modelName =
+        object.customMetadata?.modelName ||
+        modelNameFromVehicleImageKey(
+          object.key
+        );
+
+      if (!modelName) {
+        return;
+      }
+
+      images.push({
+        modelName,
+        key: object.key,
+        size: object.size,
+        etag: object.etag,
+        contentType:
+          object.httpMetadata?.contentType ||
+          "application/octet-stream",
+        uploadedAt:
+          object.uploaded instanceof Date
+            ? object.uploaded.toISOString()
+            : object.uploaded,
+        imageUrl: vehicleImageUrl(
+          modelName,
+          object.etag
+        )
+      });
+    });
+
+    cursor = result.truncated
+      ? result.cursor
+      : undefined;
+  } while (cursor);
+
+  images.sort((a, b) =>
+    a.modelName.localeCompare(
+      b.modelName,
+      undefined,
+      {
+        sensitivity: "base"
+      }
+    )
+  );
+
+  return jsonResponse({
+    ok: true,
+    total: images.length,
+    images
+  });
+}
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -938,6 +1291,38 @@ if (
   url.pathname === "/api/vehicle-popgroups"
 ) {
   return await handleVehiclePopgroupList(env);
+}
+if (
+  request.method === "GET" &&
+  url.pathname === "/api/vehicle-images"
+) {
+  return await handleVehicleImageList(env);
+}
+
+const vehicleImageRoute =
+  url.pathname.match(
+    /^\/api\/vehicle-images\/([a-zA-Z0-9_-]{1,100})$/
+  );
+
+if (
+  vehicleImageRoute &&
+  request.method === "GET"
+) {
+  return await handleVehicleImageGet(
+    env,
+    vehicleImageRoute[1]
+  );
+}
+
+if (
+  vehicleImageRoute &&
+  request.method === "PUT"
+) {
+  return await handleVehicleImageUpload(
+    request,
+    env,
+    vehicleImageRoute[1]
+  );
 }
       if (
         request.method === "POST" &&
