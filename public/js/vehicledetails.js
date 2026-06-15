@@ -8,12 +8,14 @@
   "use strict";
 
   const store = window.vehicleLibraryStore;
-  const state = {
-    vehicles: [],
-    vehicle: null,
-    handling: null,
-    saveTimer: null
-  };
+  
+ const state = {
+  vehicles: [],
+  vehicle: null,
+  handling: null,
+  saveTimer: null,
+  source: "local"
+};
 
   const el = id => document.getElementById(id);
 
@@ -297,26 +299,111 @@
     if (values.installed && !values.installDate) values.installDate = new Date().toISOString().slice(0, 10);
     return values;
   }
+  
+  function customToCloudChanges(custom) {
+  return {
+    displayName: custom.displayName || "",
+    rockstarDlc: custom.rockstarDlc || "",
+    sourcePack: custom.sourcePack || "",
+    gameVersion: custom.gameVersion || "",
+    installDate: custom.installDate || "",
 
-  async function saveCurrentVehicle({ quiet = false } = {}) {
-    if (!state.vehicle) return;
-    clearTimeout(state.saveTimer);
-    try {
-      state.vehicle.custom = {
-        ...(state.vehicle.custom || {}),
-        ...collectCustomForm()
-      };
-      state.vehicle.updatedAt = new Date().toISOString();
-      await store.putVehicle(state.vehicle);
-      setSaveState("Saved", "saved");
-      renderIdentity();
-      if (!quiet) setStatus(`Saved library details for ${state.vehicle.modelName}.`, "good");
-    } catch (error) {
-      console.error(error);
-      setSaveState("Save failed", "bad");
-      if (!quiet) setStatus("The vehicle details could not be saved.", "bad");
-    }
+    installationType:
+      custom.installType || "",
+
+    replacementSlot:
+      custom.replacementFor || "",
+
+    installedDlcFolder:
+      custom.dlcFolderPath || "",
+
+    yftPath: custom.yftPath || "",
+
+    hiYftPath:
+      custom.yftHiPath || "",
+
+    ytdPath: custom.ytdPath || "",
+
+    vehiclesMetaPath:
+      custom.vehiclesMetaPath || "",
+
+    handlingMetaPath:
+      custom.handlingMetaPath || "",
+
+    downloadUrl: custom.downloadUrl || "",
+    tags: custom.tags || "",
+    notes: custom.notes || "",
+
+    installed: custom.installed === true,
+    favorite: custom.favorite === true
+  };
+}
+
+async function saveCurrentVehicle(
+  { quiet = false } = {}
+) {
+  if (!state.vehicle) {
+    return false;
   }
+
+  clearTimeout(state.saveTimer);
+
+  try {
+    if (!window.vehicleCloud?.updateVehicle) {
+      throw new Error(
+        "The cloud vehicle save service did not load."
+      );
+    }
+
+    setSaveState("Saving...", "dirty");
+
+    const nextCustom = {
+      ...(state.vehicle.custom || {}),
+      ...collectCustomForm()
+    };
+
+    const savedCloudVehicle =
+      await window.vehicleCloud.updateVehicle(
+        state.vehicle.modelName,
+        customToCloudChanges(nextCustom)
+      );
+
+    state.vehicle.custom = nextCustom;
+
+    state.vehicle.updatedAt =
+      savedCloudVehicle.updatedAt ||
+      new Date().toISOString();
+
+    await store.putVehicle(state.vehicle);
+
+    setSaveState("Saved to cloud", "saved");
+
+    renderIdentity();
+
+    if (!quiet) {
+      setStatus(
+        `Saved cloud library details for ${state.vehicle.modelName}.`,
+        "good"
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error(error);
+
+    setSaveState("Save failed", "bad");
+
+    if (!quiet) {
+      setStatus(
+        error.message ||
+        "The vehicle details could not be saved.",
+        "bad"
+      );
+    }
+
+    return false;
+  }
+}
 
   function scheduleSave() {
     setSaveState("Unsaved changes", "dirty");
@@ -363,8 +450,16 @@
     location.href = `vehicle-details.html?model=${encodeURIComponent(state.vehicles[nextIndex].modelName)}`;
   }
 
-  async function loadVehicle(modelName) {
-    const vehicle = await store.getVehicle(modelName);
+ async function loadVehicle(modelName) {
+  const normalizedModel =
+    String(modelName || "").toLowerCase();
+
+  const vehicle =
+    state.vehicles.find(candidate =>
+      String(candidate.modelName || "")
+        .toLowerCase() === normalizedModel
+    ) ||
+    await store.getVehicle(modelName);
     if (!vehicle) {
       setStatus(`Vehicle ${modelName || "record"} was not found. Return to the library and import the source files first.`, "bad");
       el("vdPage").hidden = true;
@@ -383,7 +478,16 @@
     renderPopgroups();
     renderSources();
     populateCustomForm();
-    setStatus(`Loaded ${vehicle.modelName} from the local Vehicle Library.`, "good");
+setStatus(
+  `Loaded ${vehicle.modelName} from the ${
+    state.source === "cloud"
+      ? "cloud"
+      : "local fallback"
+  } Vehicle Library.`,
+  state.source === "cloud"
+    ? "good"
+    : "warn"
+);
   }
 
   function bindEvents() {
@@ -402,22 +506,61 @@
       el(CUSTOM_IDS[field]).addEventListener("change", scheduleSave);
     });
 
-    el("vdInstallButton").addEventListener("click", async () => {
-      const installed = !(state.vehicle.custom?.installed === true);
-      state.vehicle.custom = state.vehicle.custom || {};
-      state.vehicle.custom.installed = installed;
-      if (installed && !state.vehicle.custom.installDate) {
-        state.vehicle.custom.installDate = new Date().toISOString().slice(0, 10);
-      }
-      el("vdInstalled").checked = installed;
-      el("vdInstallDate").value = state.vehicle.custom.installDate || "";
-      state.vehicle.updatedAt = new Date().toISOString();
-      await store.putVehicle(state.vehicle);
-      renderIdentity();
-      setSaveState("Saved", "saved");
-      setStatus(installed ? "Marked as installed in the current GTA game." : "Removed installed status.", "good");
-    });
+el("vdInstallButton").addEventListener(
+  "click",
+  async () => {
+    const previousInstalled =
+      state.vehicle.custom?.installed === true;
 
+    const nextInstalled =
+      !previousInstalled;
+
+    state.vehicle.custom =
+      state.vehicle.custom || {};
+
+    state.vehicle.custom.installed =
+      nextInstalled;
+
+    if (
+      nextInstalled &&
+      !state.vehicle.custom.installDate
+    ) {
+      state.vehicle.custom.installDate =
+        new Date().toISOString().slice(0, 10);
+    }
+
+    el("vdInstalled").checked =
+      nextInstalled;
+
+    el("vdInstallDate").value =
+      state.vehicle.custom.installDate || "";
+
+    const saved =
+      await saveCurrentVehicle({
+        quiet: true
+      });
+
+    if (!saved) {
+      state.vehicle.custom.installed =
+        previousInstalled;
+
+      el("vdInstalled").checked =
+        previousInstalled;
+
+      renderIdentity();
+      return;
+    }
+
+    renderIdentity();
+
+    setStatus(
+      nextInstalled
+        ? "Marked as installed in the cloud library."
+        : "Removed installed status from the cloud library.",
+      "good"
+    );
+  }
+);
     el("vdInstalled").addEventListener("change", () => {
       if (el("vdInstalled").checked && !el("vdInstallDate").value) {
         el("vdInstallDate").value = new Date().toISOString().slice(0, 10);
@@ -425,14 +568,44 @@
       scheduleSave();
     });
 
-    el("vdFavorite").addEventListener("click", async () => {
-      state.vehicle.custom = state.vehicle.custom || {};
-      state.vehicle.custom.favorite = !state.vehicle.custom.favorite;
-      state.vehicle.updatedAt = new Date().toISOString();
-      await store.putVehicle(state.vehicle);
+  el("vdFavorite").addEventListener(
+  "click",
+  async () => {
+    state.vehicle.custom =
+      state.vehicle.custom || {};
+
+    const previousFavorite =
+      state.vehicle.custom.favorite === true;
+
+    const nextFavorite =
+      !previousFavorite;
+
+    state.vehicle.custom.favorite =
+      nextFavorite;
+
+    const saved =
+      await saveCurrentVehicle({
+        quiet: true
+      });
+
+    if (!saved) {
+      state.vehicle.custom.favorite =
+        previousFavorite;
+
       renderIdentity();
-      setStatus(state.vehicle.custom.favorite ? "Added to favorites." : "Removed from favorites.", "good");
-    });
+      return;
+    }
+
+    renderIdentity();
+
+    setStatus(
+      nextFavorite
+        ? "Added to cloud favorites."
+        : "Removed from cloud favorites.",
+      "good"
+    );
+  }
+);
 
     el("vdChooseImage").addEventListener("click", () => el("vdImagePicker").click());
     el("vdImagePicker").addEventListener("change", async event => {
@@ -464,23 +637,90 @@
     });
   }
 
-  async function initialize() {
-    bindEvents();
-    try {
-      await store.openDatabase();
-      state.vehicles = (await store.getVehicles()).sort((a, b) => displayTitle(a).localeCompare(displayTitle(b)));
-      if (!state.vehicles.length) {
-        setStatus("The Vehicle Library is empty. Import source files on the library page first.", "warn");
-        el("vdVehicleSelect").innerHTML = `<option value="">No vehicles available</option>`;
-        return;
+async function initialize() {
+  bindEvents();
+
+  try {
+    await store.openDatabase();
+
+    const [
+      localVehicles,
+      localHandlingProfiles
+    ] = await Promise.all([
+      store.getVehicles(),
+      store.getHandlingProfiles()
+    ]);
+
+    let vehicles = localVehicles;
+    let handlingProfiles =
+      localHandlingProfiles;
+
+    state.source = "local";
+
+    if (window.vehicleCloud?.getLibraryData) {
+      try {
+        const cloudData =
+          await window.vehicleCloud.getLibraryData(
+            localVehicles
+          );
+
+        if (cloudData.vehicles.length > 0) {
+          vehicles = cloudData.vehicles;
+
+          handlingProfiles =
+            cloudData.handlingProfiles;
+
+          await Promise.all([
+            store.putVehicles(vehicles),
+
+            store.putHandlingProfiles(
+              handlingProfiles
+            )
+          ]);
+
+          state.source = "cloud";
+        }
+      } catch (error) {
+        console.warn(
+          "Cloud details unavailable. Using IndexedDB fallback.",
+          error
+        );
       }
-      const requested = currentModelFromUrl() || state.vehicles[0].modelName;
-      await loadVehicle(requested);
-    } catch (error) {
-      console.error(error);
-      setStatus("The local Vehicle Library database could not be opened.", "bad");
     }
+
+    state.vehicles = vehicles.sort(
+      (a, b) =>
+        displayTitle(a).localeCompare(
+          displayTitle(b)
+        )
+    );
+
+    if (!state.vehicles.length) {
+      setStatus(
+        "The Vehicle Library is empty.",
+        "warn"
+      );
+
+      el("vdVehicleSelect").innerHTML =
+        `<option value="">No vehicles available</option>`;
+
+      return;
+    }
+
+    const requested =
+      currentModelFromUrl() ||
+      state.vehicles[0].modelName;
+
+    await loadVehicle(requested);
+  } catch (error) {
+    console.error(error);
+
+    setStatus(
+      "The Vehicle Library could not be opened.",
+      "bad"
+    );
   }
+}
 
   document.addEventListener("DOMContentLoaded", initialize);
 })();
