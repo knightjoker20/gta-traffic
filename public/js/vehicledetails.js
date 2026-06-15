@@ -289,213 +289,105 @@ const el = id => document.getElementById(id);
     setSaveState("Saved", "saved");
   }
 
- function customToCloudChanges(custom) {
-  return {
-    displayName: custom.displayName || "",
-    rockstarDlc: custom.rockstarDlc || "",
-    sourcePack: custom.sourcePack || "",
-    gameVersion: custom.gameVersion || "",
-    installDate: custom.installDate || "",
+  function collectCustomForm() {
+    const values = {};
 
-    installationType:
-      custom.installType || "",
+    CUSTOM_FIELDS.forEach(field => {
+      values[field] = el(CUSTOM_IDS[field]).value.trim();
+    });
 
-    replacementSlot:
-      custom.replacementFor || "",
+    values.installed = el("vdInstalled").checked;
 
-    installedDlcFolder:
-      custom.dlcFolderPath || "",
+    if (values.installed && !values.installDate) {
+      values.installDate = new Date().toISOString().slice(0, 10);
+    }
 
-    yftPath: custom.yftPath || "",
-
-    hiYftPath:
-      custom.yftHiPath || "",
-
-    ytdPath: custom.ytdPath || "",
-
-    vehiclesMetaPath:
-      custom.vehiclesMetaPath || "",
-
-    handlingMetaPath:
-      custom.handlingMetaPath || "",
-
-    downloadUrl: custom.downloadUrl || "",
-    tags: custom.tags || "",
-    notes: custom.notes || "",
-
-    installed: custom.installed === true,
-    favorite: custom.favorite === true
-  };
-}
-async function saveCurrentVehicle(
-  { quiet = false } = {}
-) {
-  if (!state.vehicle) {
-    return false;
+    return values;
   }
-  
+
   function customToCloudChanges(custom) {
-  return {
-    displayName: custom.displayName || "",
-    rockstarDlc: custom.rockstarDlc || "",
-    sourcePack: custom.sourcePack || "",
-    gameVersion: custom.gameVersion || "",
-    installDate: custom.installDate || "",
-
-    installationType:
-      custom.installType || "",
-
-    replacementSlot:
-      custom.replacementFor || "",
-
-    installedDlcFolder:
-      custom.dlcFolderPath || "",
-
-    yftPath: custom.yftPath || "",
-
-    hiYftPath:
-      custom.yftHiPath || "",
-
-    ytdPath: custom.ytdPath || "",
-
-    vehiclesMetaPath:
-      custom.vehiclesMetaPath || "",
-
-    handlingMetaPath:
-      custom.handlingMetaPath || "",
-
-    downloadUrl: custom.downloadUrl || "",
-    tags: custom.tags || "",
-    notes: custom.notes || "",
-
-    installed: custom.installed === true,
-    favorite: custom.favorite === true
-  };
-}
-
-async function saveCurrentVehicle(
-  { quiet = false } = {}
-) {
-  if (!state.vehicle) {
-=======
-  clearTimeout(state.saveTimer);
-
-  try {
-    if (!window.vehicleCloud?.updateVehicle) {
-      throw new Error(
-        "The cloud vehicle save service did not load."
-      );
-    }
-
-    setSaveState("Saving...", "dirty");
-
-    const nextCustom = {
-      ...(state.vehicle.custom || {}),
-      ...collectCustomForm()
+    return {
+      displayName: custom.displayName || "",
+      rockstarDlc: custom.rockstarDlc || "",
+      sourcePack: custom.sourcePack || "",
+      gameVersion: custom.gameVersion || "",
+      installDate: custom.installDate || "",
+      installationType: custom.installType || "",
+      replacementSlot: custom.replacementFor || "",
+      installedDlcFolder: custom.dlcFolderPath || "",
+      yftPath: custom.yftPath || "",
+      hiYftPath: custom.yftHiPath || "",
+      ytdPath: custom.ytdPath || "",
+      vehiclesMetaPath: custom.vehiclesMetaPath || "",
+      handlingMetaPath: custom.handlingMetaPath || "",
+      downloadUrl: custom.downloadUrl || "",
+      tags: custom.tags || "",
+      notes: custom.notes || "",
+      installed: custom.installed === true,
+      favorite: custom.favorite === true
     };
-
-    const savedCloudVehicle =
-      await window.vehicleCloud.updateVehicle(
-        state.vehicle.modelName,
-        customToCloudChanges(nextCustom)
-      );
-
-    state.vehicle.custom = nextCustom;
-
-    state.vehicle.updatedAt =
-      savedCloudVehicle.updatedAt ||
-      new Date().toISOString();
-
-    await store.putVehicle(state.vehicle);
-
-    setSaveState("Saved to cloud", "saved");
-
-    renderIdentity();
-
-    if (!quiet) {
-      setStatus(
-        `Saved cloud library details for ${state.vehicle.modelName}.`,
-        "good"
-      );
-    }
-
-    return true;
-  } catch (error) {
-    console.error(error);
-
-    setSaveState("Save failed", "bad");
-
-    if (!quiet) {
-      setStatus(
-        error.message ||
-        "The vehicle details could not be saved.",
-        "bad"
-      );
-    }
-
->>>>>>> Stashed changes
-    return false;
   }
-}
 
-  clearTimeout(state.saveTimer);
-
-  try {
-    if (!window.vehicleCloud?.updateVehicle) {
-      throw new Error(
-        "The cloud vehicle save service did not load."
-      );
+  async function saveCurrentVehicle({ quiet = false } = {}) {
+    if (!state.vehicle) {
+      return false;
     }
 
-    setSaveState("Saving...", "dirty");
+    clearTimeout(state.saveTimer);
 
-    const nextCustom = {
-      ...(state.vehicle.custom || {}),
-      ...collectCustomForm()
-    };
+    try {
+      if (!window.vehicleCloud?.updateVehicle) {
+        throw new Error(
+          "The cloud vehicle save service did not load."
+        );
+      }
 
-    const savedCloudVehicle =
-      await window.vehicleCloud.updateVehicle(
-        state.vehicle.modelName,
-        customToCloudChanges(nextCustom)
-      );
+      setSaveState("Saving...", "dirty");
 
-    state.vehicle.custom = nextCustom;
+      const nextCustom = {
+        ...(state.vehicle.custom || {}),
+        ...collectCustomForm()
+      };
 
-    state.vehicle.updatedAt =
-      savedCloudVehicle.updatedAt ||
-      new Date().toISOString();
+      const savedCloudVehicle =
+        await window.vehicleCloud.updateVehicle(
+          state.vehicle.modelName,
+          customToCloudChanges(nextCustom)
+        );
 
-    await store.putVehicle(state.vehicle);
+      state.vehicle.custom = nextCustom;
+      state.vehicle.updatedAt =
+        savedCloudVehicle.updatedAt ||
+        new Date().toISOString();
 
-    setSaveState("Saved to cloud", "saved");
+      await store.putVehicle(state.vehicle);
 
-    renderIdentity();
+      setSaveState("Saved to cloud", "saved");
+      renderIdentity();
 
-    if (!quiet) {
-      setStatus(
-        `Saved cloud library details for ${state.vehicle.modelName}.`,
-        "good"
-      );
+      if (!quiet) {
+        setStatus(
+          `Saved cloud library details for ${state.vehicle.modelName}.`,
+          "good"
+        );
+      }
+
+      return true;
+    } catch (error) {
+      console.error(error);
+      setSaveState("Save failed", "bad");
+
+      if (!quiet) {
+        setStatus(
+          error.message ||
+            "The vehicle details could not be saved.",
+          "bad"
+        );
+      }
+
+      return false;
     }
-
-    return true;
-  } catch (error) {
-    console.error(error);
-
-    setSaveState("Save failed", "bad");
-
-    if (!quiet) {
-      setStatus(
-        error.message ||
-        "The vehicle details could not be saved.",
-        "bad"
-      );
-    }
-
-    return false;
   }
-}
 
   function scheduleSave() {
     setSaveState("Unsaved changes", "dirty");
@@ -878,6 +770,8 @@ el("vdImagePicker").addEventListener(
     }
   }
 );
+
+  }
 
 async function initialize() {
   bindEvents();
