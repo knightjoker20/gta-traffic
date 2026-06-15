@@ -462,7 +462,142 @@ function clearLibraryWriteToken() {
     LIBRARY_WRITE_TOKEN_KEY
   );
 }
+const IMAGE_UPLOAD_TOKEN_KEY =
+  "gtaTrafficImageUploadToken";
 
+function getImageUploadToken() {
+  let token = sessionStorage.getItem(
+    IMAGE_UPLOAD_TOKEN_KEY
+  );
+
+  if (!token) {
+    token = window.prompt(
+      "Enter the GTA Traffic image upload token:"
+    );
+
+    token = String(token || "").trim();
+
+    if (token) {
+      sessionStorage.setItem(
+        IMAGE_UPLOAD_TOKEN_KEY,
+        token
+      );
+    }
+  }
+
+  return token;
+}
+
+async function readImageApiResponse(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {
+      ok: false,
+      error:
+        "The vehicle image response was not valid JSON."
+    };
+  }
+}
+
+async function uploadVehicleImage(
+  modelName,
+  file
+) {
+  if (!(file instanceof Blob)) {
+    throw new Error(
+      "A valid image file was not supplied."
+    );
+  }
+
+  const token = getImageUploadToken();
+
+  if (!token) {
+    throw new Error(
+      "The image upload token was not entered."
+    );
+  }
+
+  const response = await fetch(
+    `/api/vehicle-images/${encodeURIComponent(modelName)}`,
+    {
+      method: "PUT",
+
+      headers: {
+        Accept: "application/json",
+        "Content-Type":
+          file.type || "application/octet-stream",
+        "X-Upload-Token": token
+      },
+
+      body: file
+    }
+  );
+
+  const result =
+    await readImageApiResponse(response);
+
+  if (!response.ok || !result.ok) {
+    if (response.status === 401) {
+      sessionStorage.removeItem(
+        IMAGE_UPLOAD_TOKEN_KEY
+      );
+    }
+
+    throw new Error(
+      result.error ||
+      `Image upload failed with status ${response.status}.`
+    );
+  }
+
+  return result.image;
+}
+
+async function deleteVehicleImage(modelName) {
+  const token = getImageUploadToken();
+
+  if (!token) {
+    throw new Error(
+      "The image upload token was not entered."
+    );
+  }
+
+  const response = await fetch(
+    `/api/vehicle-images/${encodeURIComponent(modelName)}`,
+    {
+      method: "DELETE",
+
+      headers: {
+        Accept: "application/json",
+        "X-Upload-Token": token
+      }
+    }
+  );
+
+  const result =
+    await readImageApiResponse(response);
+
+  if (!response.ok || !result.ok) {
+    if (response.status === 401) {
+      sessionStorage.removeItem(
+        IMAGE_UPLOAD_TOKEN_KEY
+      );
+    }
+
+    throw new Error(
+      result.error ||
+      `Image deletion failed with status ${response.status}.`
+    );
+  }
+
+  return result.image;
+}
+
+function clearImageUploadToken() {
+  sessionStorage.removeItem(
+    IMAGE_UPLOAD_TOKEN_KEY
+  );
+}
 window.vehicleCloud = {
   getVehicles,
   getHandlingProfiles,
@@ -471,5 +606,8 @@ window.vehicleCloud = {
   getLibraryData,
   updateVehicle,
   clearLibraryWriteToken,
+  uploadVehicleImage,
+  deleteVehicleImage,
+  clearImageUploadToken
 };
 })();

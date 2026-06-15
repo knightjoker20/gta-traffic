@@ -719,35 +719,173 @@ el("vdInstallButton").addEventListener(
   }
 );
 
-    el("vdChooseImage").addEventListener("click", () => el("vdImagePicker").click());
-    el("vdImagePicker").addEventListener("change", async event => {
-      const file = event.target.files[0];
-      event.target.value = "";
-      if (!file) return;
-      setStatus("Preparing and saving the vehicle image...", "warn");
-      try {
-        const dataUrl = await resizeImage(file);
-        state.vehicle.custom = state.vehicle.custom || {};
-        state.vehicle.custom.imageDataUrl = dataUrl;
-        state.vehicle.updatedAt = new Date().toISOString();
-        await store.putVehicle(state.vehicle);
-        renderImage();
-        setStatus("Vehicle image saved to the local library.", "good");
-      } catch (error) {
-        console.error(error);
-        setStatus(error.message || "The image could not be saved.", "bad");
-      }
-    });
+  el("vdChooseImage").addEventListener(
+  "click",
+  () => el("vdImagePicker").click()
+);
 
-    el("vdRemoveImage").addEventListener("click", async () => {
-      if (!state.vehicle.custom?.imageDataUrl) return;
-      state.vehicle.custom.imageDataUrl = "";
-      state.vehicle.updatedAt = new Date().toISOString();
-      await store.putVehicle(state.vehicle);
+el("vdImagePicker").addEventListener(
+  "change",
+  async event => {
+    const file = event.target.files[0];
+
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (
+      ![
+        "image/png",
+        "image/jpeg",
+        "image/webp"
+      ].includes(file.type)
+    ) {
+      setStatus(
+        "Choose a PNG, JPEG, or WebP image.",
+        "bad"
+      );
+
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setStatus(
+        "Choose an image that is 10 MB or smaller.",
+        "bad"
+      );
+
+      return;
+    }
+
+    if (!window.vehicleCloud?.uploadVehicleImage) {
+      setStatus(
+        "The cloud image upload service did not load.",
+        "bad"
+      );
+
+      return;
+    }
+
+    const chooseButton =
+      el("vdChooseImage");
+
+    chooseButton.disabled = true;
+
+    setStatus(
+      `Uploading ${file.name} to cloud storage...`,
+      "warn"
+    );
+
+    try {
+      const uploadedImage =
+        await window.vehicleCloud.uploadVehicleImage(
+          state.vehicle.modelName,
+          file
+        );
+
+      state.vehicle.custom =
+        state.vehicle.custom || {};
+
+      state.vehicle.custom.imageDataUrl =
+        uploadedImage.imageUrl;
+
+      state.vehicle.updatedAt =
+        new Date().toISOString();
+
+      await store.putVehicle(
+        state.vehicle
+      );
+
       renderImage();
-      setStatus("Vehicle image removed.", "good");
-    });
+
+      setStatus(
+        "Vehicle image saved to R2 cloud storage.",
+        "good"
+      );
+    } catch (error) {
+      console.error(error);
+
+      setStatus(
+        error.message ||
+        "The vehicle image could not be uploaded.",
+        "bad"
+      );
+    } finally {
+      chooseButton.disabled = false;
+    }
   }
+);
+
+    el("vdRemoveImage").addEventListener(
+  "click",
+  async () => {
+    if (!state.vehicle.custom?.imageDataUrl) {
+      return;
+    }
+
+    if (!window.vehicleCloud?.deleteVehicleImage) {
+      setStatus(
+        "The cloud image deletion service did not load.",
+        "bad"
+      );
+
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Remove the cloud image for ${state.vehicle.modelName}?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const removeButton =
+      el("vdRemoveImage");
+
+    removeButton.disabled = true;
+
+    setStatus(
+      "Removing the vehicle image from cloud storage...",
+      "warn"
+    );
+
+    try {
+      await window.vehicleCloud.deleteVehicleImage(
+        state.vehicle.modelName
+      );
+
+      state.vehicle.custom.imageDataUrl = "";
+
+      state.vehicle.updatedAt =
+        new Date().toISOString();
+
+      await store.putVehicle(
+        state.vehicle
+      );
+
+      renderImage();
+
+      setStatus(
+        "Vehicle image removed from R2 cloud storage.",
+        "good"
+      );
+    } catch (error) {
+      console.error(error);
+
+      setStatus(
+        error.message ||
+        "The vehicle image could not be removed.",
+        "bad"
+      );
+    } finally {
+      removeButton.disabled =
+        !state.vehicle.custom?.imageDataUrl;
+    }
+  }
+);
 
 async function initialize() {
   bindEvents();

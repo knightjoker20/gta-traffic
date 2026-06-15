@@ -1590,6 +1590,16 @@ if (
     vehicleImageRoute[1]
   );
 }
+if (
+  vehicleImageRoute &&
+  request.method === "DELETE"
+) {
+  return await handleVehicleImageDelete(
+    request,
+    env,
+    vehicleImageRoute[1]
+  );
+}
       if (
         request.method === "POST" &&
         url.pathname === "/api/vehicles/import"
