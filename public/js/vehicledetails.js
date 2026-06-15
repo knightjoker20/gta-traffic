@@ -8,15 +8,22 @@
   "use strict";
 
   const store = window.vehicleLibraryStore;
+<<<<<<< Updated upstream
   
  const state = {
+=======
+const state = {
+>>>>>>> Stashed changes
   vehicles: [],
   vehicle: null,
   handling: null,
   saveTimer: null,
   source: "local"
 };
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
   const el = id => document.getElementById(id);
 
   function escapeHTML(value) {
@@ -290,17 +297,7 @@
     setSaveState("Saved", "saved");
   }
 
-  function collectCustomForm() {
-    const values = {};
-    CUSTOM_FIELDS.forEach(field => {
-      values[field] = el(CUSTOM_IDS[field]).value.trim();
-    });
-    values.installed = el("vdInstalled").checked;
-    if (values.installed && !values.installDate) values.installDate = new Date().toISOString().slice(0, 10);
-    return values;
-  }
-  
-  function customToCloudChanges(custom) {
+ function customToCloudChanges(custom) {
   return {
     displayName: custom.displayName || "",
     rockstarDlc: custom.rockstarDlc || "",
@@ -338,13 +335,117 @@
     favorite: custom.favorite === true
   };
 }
-
 async function saveCurrentVehicle(
   { quiet = false } = {}
 ) {
   if (!state.vehicle) {
     return false;
   }
+  
+  function customToCloudChanges(custom) {
+  return {
+    displayName: custom.displayName || "",
+    rockstarDlc: custom.rockstarDlc || "",
+    sourcePack: custom.sourcePack || "",
+    gameVersion: custom.gameVersion || "",
+    installDate: custom.installDate || "",
+
+<<<<<<< Updated upstream
+    installationType:
+      custom.installType || "",
+
+    replacementSlot:
+      custom.replacementFor || "",
+
+    installedDlcFolder:
+      custom.dlcFolderPath || "",
+
+    yftPath: custom.yftPath || "",
+
+    hiYftPath:
+      custom.yftHiPath || "",
+
+    ytdPath: custom.ytdPath || "",
+
+    vehiclesMetaPath:
+      custom.vehiclesMetaPath || "",
+
+    handlingMetaPath:
+      custom.handlingMetaPath || "",
+
+    downloadUrl: custom.downloadUrl || "",
+    tags: custom.tags || "",
+    notes: custom.notes || "",
+
+    installed: custom.installed === true,
+    favorite: custom.favorite === true
+  };
+}
+
+async function saveCurrentVehicle(
+  { quiet = false } = {}
+) {
+  if (!state.vehicle) {
+=======
+  clearTimeout(state.saveTimer);
+
+  try {
+    if (!window.vehicleCloud?.updateVehicle) {
+      throw new Error(
+        "The cloud vehicle save service did not load."
+      );
+    }
+
+    setSaveState("Saving...", "dirty");
+
+    const nextCustom = {
+      ...(state.vehicle.custom || {}),
+      ...collectCustomForm()
+    };
+
+    const savedCloudVehicle =
+      await window.vehicleCloud.updateVehicle(
+        state.vehicle.modelName,
+        customToCloudChanges(nextCustom)
+      );
+
+    state.vehicle.custom = nextCustom;
+
+    state.vehicle.updatedAt =
+      savedCloudVehicle.updatedAt ||
+      new Date().toISOString();
+
+    await store.putVehicle(state.vehicle);
+
+    setSaveState("Saved to cloud", "saved");
+
+    renderIdentity();
+
+    if (!quiet) {
+      setStatus(
+        `Saved cloud library details for ${state.vehicle.modelName}.`,
+        "good"
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error(error);
+
+    setSaveState("Save failed", "bad");
+
+    if (!quiet) {
+      setStatus(
+        error.message ||
+        "The vehicle details could not be saved.",
+        "bad"
+      );
+    }
+
+>>>>>>> Stashed changes
+    return false;
+  }
+}
 
   clearTimeout(state.saveTimer);
 
@@ -450,7 +551,11 @@ async function saveCurrentVehicle(
     location.href = `vehicle-details.html?model=${encodeURIComponent(state.vehicles[nextIndex].modelName)}`;
   }
 
+<<<<<<< Updated upstream
  async function loadVehicle(modelName) {
+=======
+  async function loadVehicle(modelName) {
+>>>>>>> Stashed changes
   const normalizedModel =
     String(modelName || "").toLowerCase();
 
@@ -461,7 +566,14 @@ async function saveCurrentVehicle(
     ) ||
     await store.getVehicle(modelName);
     if (!vehicle) {
-      setStatus(`Vehicle ${modelName || "record"} was not found. Return to the library and import the source files first.`, "bad");
+     setStatus(
+  `Loaded ${vehicle.modelName} from the ${
+    state.source === "cloud"
+      ? "cloud"
+      : "local fallback"
+  } Vehicle Library.`,
+  state.source === "cloud" ? "good" : "warn"
+);
       el("vdPage").hidden = true;
       return;
     }
