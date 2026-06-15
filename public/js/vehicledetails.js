@@ -7,25 +7,17 @@
 (() => {
   "use strict";
 
-  const store = window.vehicleLibraryStore;
-<<<<<<< Updated upstream
-  
- const state = {
-=======
+const store = window.vehicleLibraryStore;
+
 const state = {
->>>>>>> Stashed changes
   vehicles: [],
   vehicle: null,
   handling: null,
   saveTimer: null,
   source: "local"
 };
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
-  const el = id => document.getElementById(id);
-
+const el = id => document.getElementById(id);
   function escapeHTML(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -350,7 +342,6 @@ async function saveCurrentVehicle(
     gameVersion: custom.gameVersion || "",
     installDate: custom.installDate || "",
 
-<<<<<<< Updated upstream
     installationType:
       custom.installType || "",
 
@@ -551,11 +542,7 @@ async function saveCurrentVehicle(
     location.href = `vehicle-details.html?model=${encodeURIComponent(state.vehicles[nextIndex].modelName)}`;
   }
 
-<<<<<<< Updated upstream
- async function loadVehicle(modelName) {
-=======
-  async function loadVehicle(modelName) {
->>>>>>> Stashed changes
+async function loadVehicle(modelName) {
   const normalizedModel =
     String(modelName || "").toLowerCase();
 
@@ -565,42 +552,47 @@ async function saveCurrentVehicle(
         .toLowerCase() === normalizedModel
     ) ||
     await store.getVehicle(modelName);
-    if (!vehicle) {
-     setStatus(
-  `Loaded ${vehicle.modelName} from the ${
-    state.source === "cloud"
-      ? "cloud"
-      : "local fallback"
-  } Vehicle Library.`,
-  state.source === "cloud" ? "good" : "warn"
-);
-      el("vdPage").hidden = true;
-      return;
-    }
 
-    state.vehicle = vehicle;
-    state.handling = vehicle.vehiclesMeta?.handlingId
-      ? await store.getHandlingProfile(vehicle.vehiclesMeta.handlingId)
-      : null;
-    el("vdPage").hidden = false;
-    populateVehicleSelector();
-    renderIdentity();
-    renderVehicleMeta();
-    renderHandling();
-    renderPopgroups();
-    renderSources();
-    populateCustomForm();
-setStatus(
-  `Loaded ${vehicle.modelName} from the ${
-    state.source === "cloud"
-      ? "cloud"
-      : "local fallback"
-  } Vehicle Library.`,
-  state.source === "cloud"
-    ? "good"
-    : "warn"
-);
+  if (!vehicle) {
+    setStatus(
+      `Vehicle ${modelName || "record"} was not found. Return to the library and import the source files first.`,
+      "bad"
+    );
+
+    el("vdPage").hidden = true;
+    return;
   }
+
+  state.vehicle = vehicle;
+
+  state.handling =
+    vehicle.vehiclesMeta?.handlingId
+      ? await store.getHandlingProfile(
+          vehicle.vehiclesMeta.handlingId
+        )
+      : null;
+
+  el("vdPage").hidden = false;
+
+  populateVehicleSelector();
+  renderIdentity();
+  renderVehicleMeta();
+  renderHandling();
+  renderPopgroups();
+  renderSources();
+  populateCustomForm();
+
+  setStatus(
+    `Loaded ${vehicle.modelName} from the ${
+      state.source === "cloud"
+        ? "cloud"
+        : "local fallback"
+    } Vehicle Library.`,
+    state.source === "cloud"
+      ? "good"
+      : "warn"
+  );
+}
 
   function bindEvents() {
     el("vdVehicleSelect").addEventListener("change", event => {
