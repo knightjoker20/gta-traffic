@@ -318,24 +318,23 @@ function buildVehicleMetaUpsertStatement(body, env) {
       swankness =
         excluded.swankness,
 
-      rockstar_dlc =
-        CASE
-          WHEN rockstar_dlc IS NULL
-            OR TRIM(rockstar_dlc) = ''
-          THEN excluded.rockstar_dlc
-          ELSE rockstar_dlc
-        END,
+     rockstar_dlc =
+  COALESCE(
+    excluded.rockstar_dlc,
+    rockstar_dlc
+  ),
 
-      source_pack =
-        CASE
-          WHEN source_pack IS NULL
-            OR TRIM(source_pack) = ''
-          THEN excluded.source_pack
-          ELSE source_pack
-        END,
+source_pack =
+  COALESCE(
+    excluded.source_pack,
+    source_pack
+  ),
 
-      vehicles_meta_path =
-        excluded.vehicles_meta_path,
+vehicles_meta_path =
+  COALESCE(
+    excluded.vehicles_meta_path,
+    vehicles_meta_path
+  ),
 
       raw_record_json =
         excluded.raw_record_json,
@@ -742,9 +741,11 @@ function splitTags(value) {
 }
 
 function flattenLibraryVehicle(record) {
-  const meta = record?.vehiclesMeta || {};
-  const custom = record?.custom || {};
-  const sources = record?.sources || {};
+const meta = record?.vehiclesMeta || {};
+const custom = record?.custom || {};
+const sources = record?.sources || {};
+const importSource =
+  record?.importSource || {};
 
   const vehicleMetaSources = Array.isArray(sources.vehiclesMeta)
     ? sources.vehiclesMeta
@@ -790,10 +791,14 @@ function flattenLibraryVehicle(record) {
 
     installDate: optionalText(custom.installDate),
 
-    rockstarDlc: optionalText(custom.rockstarDlc),
-    sourcePack:
-      optionalText(custom.sourcePack) ||
-      optionalText(vehicleMetaSources[0]),
+	rockstarDlc:
+	optionalText(importSource.dlcFolder) ||
+	optionalText(custom.rockstarDlc),
+
+	sourcePack:
+	optionalText(importSource.sourceLabel) ||
+	optionalText(custom.sourcePack) ||
+	optionalText(vehicleMetaSources[0]),
 
     downloadUrl: optionalText(custom.downloadUrl),
 
@@ -802,8 +807,9 @@ function flattenLibraryVehicle(record) {
     ytdPath: optionalText(custom.ytdPath),
 
     vehiclesMetaPath:
-      optionalText(custom.vehiclesMetaPath) ||
-      optionalText(vehicleMetaSources[0]),
+  optionalText(importSource.sourcePath) ||
+  optionalText(custom.vehiclesMetaPath) ||
+  optionalText(vehicleMetaSources[0]),
 
     handlingMetaPath:
       optionalText(custom.handlingMetaPath),
