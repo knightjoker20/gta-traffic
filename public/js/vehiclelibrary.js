@@ -191,7 +191,54 @@
 
     return memberships;
   }
+function getImportSourceDetails(file) {
+  const sourceLabel =
+    el("vlImportSourceLabel").value.trim();
 
+  const dlcFolder =
+    el("vlImportDlcFolder").value.trim();
+
+  const sourceDirectory =
+    el("vlImportSourcePath").value
+      .trim()
+      .replaceAll("\\", "/")
+      .replace(/^\/+|\/+$/g, "");
+
+  if (!sourceLabel) {
+    throw new Error(
+      "Enter a Source Label before importing files."
+    );
+  }
+
+  const sourcePath = sourceDirectory
+    ? `${sourceDirectory}/${file.name}`
+    : file.name;
+
+  return {
+    sourceLabel,
+    dlcFolder,
+    sourceDirectory,
+    sourcePath,
+    sourceFile: sourcePath,
+    originalFileName: file.name
+  };
+}
+
+function splitIntoBatches(records, batchSize = 50) {
+  const batches = [];
+
+  for (
+    let index = 0;
+    index < records.length;
+    index += batchSize
+  ) {
+    batches.push(
+      records.slice(index, index + batchSize)
+    );
+  }
+
+  return batches;
+}
   async function importVehicleFiles(files) {
     let imported = 0;
     for (const file of files) {
@@ -212,24 +259,110 @@
     setStatus(`Imported or updated ${imported.toLocaleString()} vehicle records from vehicles.meta.`, "good");
   }
 
-  async function importHandlingFiles(files) {
-    let imported = 0;
-    for (const file of files) {
-      const text = await file.text();
-      const profiles = parseHandlingMeta(text, file.name);
-      if (!profiles.length) throw new Error(`No handling profiles were found in ${file.name}.`);
-      await store.putHandlingProfiles(profiles);
-      await store.putSource({
-        id: `handling:${file.name.toLowerCase()}`,
-        type: "handling.meta",
-        fileName: file.name,
-        recordCount: profiles.length,
-        importedAt: new Date().toISOString()
-      });
-      imported += profiles.length;
-    }
-    setStatus(`Imported or updated ${imported.toLocaleString()} handling profiles.`, "good");
+async function importHandlingFiles(files) {
+  if (!window.vehicleCloud?.importLibraryBatch) {
+    throw new Error(
+      "The cloud import service did not load."
+    );
   }
+
+  let imported = 0;
+  let completedBatches = 0;
+
+  for (const file of files) {
+    const source =
+      getImportSourceDetails(file);
+
+    const text = await file.text();
+
+    const profiles = parseHandlingMeta(
+      text,
+      source.sourceFile
+    ).map(profile => ({
+      ...profile,
+
+      sourceFile: source.sourceFile,
+      sourceLabel: source.sourceLabel,
+      dlcFolder: source.dlcFolder,
+      sourceDirectory: source.sourceDirectory,
+      sourcePath: source.sourcePath,
+      originalFileName:
+        source.originalFileName,
+
+      updatedAt: new Date().toISOString()
+    }));
+
+    if (!profiles.length) {
+      throw new Error(
+        `No handling profiles were found in ${file.name}.`
+      );
+    }
+
+    const batches =
+      splitIntoBatches(profiles, 50);
+
+    for (
+      let batchIndex = 0;
+      batchIndex < batches.length;
+      batchIndex++
+    ) {
+      const batch = batches[batchIndex];
+
+      setStatus(
+        `Uploading ${file.name}: batch ${
+          batchIndex + 1
+        } of ${batches.length}...`,
+        "warn"
+      );
+
+      const result =
+        await window.vehicleCloud.importLibraryBatch({
+          vehicles: [],
+          handlingProfiles: batch
+        });
+
+      imported += Number(
+        result.handlingProfilesImported ??
+        batch.length
+      );
+
+      completedBatches++;
+    }
+
+    await store.putHandlingProfiles(
+      profiles
+    );
+
+    await store.putSource({
+      id:
+        `handling:` +
+        [
+          source.sourceLabel,
+          source.dlcFolder,
+          source.sourcePath
+        ]
+          .join("|")
+          .toLowerCase(),
+
+      type: "handling.meta",
+      fileName: file.name,
+      sourceLabel: source.sourceLabel,
+      dlcFolder: source.dlcFolder,
+      sourceDirectory:
+        source.sourceDirectory,
+      sourcePath: source.sourcePath,
+      recordCount: profiles.length,
+      importedAt: new Date().toISOString()
+    });
+  }
+
+  setStatus(
+    `Imported or updated ${imported.toLocaleString()} ` +
+    `handling profiles in ${completedBatches.toLocaleString()} ` +
+    `cloud batch${completedBatches === 1 ? "" : "es"}.`,
+    "good"
+  );
+}
 
   async function importPopgroupsFiles(files) {
     let membershipCount = 0;
