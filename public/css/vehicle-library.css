@@ -54,7 +54,47 @@
   border-color: rgba(249,115,22,.6);
   background: rgba(249,115,22,.10);
 }
+.vl-source-fields {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 16px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .18);
+}
 
+.vl-source-fields label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: rgba(255, 255, 255, .72);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.vl-source-fields input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .28);
+  color: #fff;
+  font: inherit;
+}
+
+.vl-source-fields input:focus {
+  outline: none;
+  border-color: rgba(249, 115, 22, .75);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, .12);
+}
+
+.vl-source-fields .small {
+  margin: 0;
+  line-height: 1.35;
+}
 .vl-status {
   margin-top: 12px;
   padding: 10px 11px;

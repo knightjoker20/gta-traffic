@@ -456,7 +456,65 @@ async function updateVehicle(
 
   return result.vehicle;
 }
+async function importLibraryBatch(payload) {
+  const token = getLibraryWriteToken();
 
+  if (!token) {
+    throw new Error(
+      "The library write token was not entered."
+    );
+  }
+
+  const response = await fetch(
+    "/api/library/import-v2",
+    {
+      method: "POST",
+
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Library-Token": token
+      },
+
+      body: JSON.stringify(payload)
+    }
+  );
+
+  let result;
+
+  try {
+    result = await response.json();
+  } catch {
+    result = {
+      ok: false,
+      error:
+        "The cloud import response was not valid JSON."
+    };
+  }
+
+  if (!response.ok || !result.ok) {
+    if (response.status === 401) {
+      sessionStorage.removeItem(
+        LIBRARY_WRITE_TOKEN_KEY
+      );
+    }
+
+    const details =
+      Array.isArray(result.details) &&
+      result.details.length
+        ? ` ${result.details.join(" ")}`
+        : "";
+
+    throw new Error(
+      (
+        result.error ||
+        `Cloud import failed with status ${response.status}.`
+      ) + details
+    );
+  }
+
+  return result;
+}
 function clearLibraryWriteToken() {
   sessionStorage.removeItem(
     LIBRARY_WRITE_TOKEN_KEY
@@ -599,12 +657,13 @@ function clearImageUploadToken() {
   );
 }
 window.vehicleCloud = {
-  getVehicles,
+   getVehicles,
   getHandlingProfiles,
   getVehiclePopgroups,
   getVehicleImages,
   getLibraryData,
   updateVehicle,
+  importLibraryBatch,
   clearLibraryWriteToken,
   uploadVehicleImage,
   deleteVehicleImage,

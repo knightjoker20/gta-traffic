@@ -793,6 +793,13 @@ async function importVehiclePopgroups(records, env) {
 }
 
 async function handleLibraryV2Import(request, env) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
   const parsed = await readJsonRequest(request);
 
   if (parsed.error) {

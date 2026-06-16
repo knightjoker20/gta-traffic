@@ -37,7 +37,42 @@
         <section class="panel vl-import-panel">
           <h2>Import Sources</h2>
           <p class="vl-muted vl-compact-copy">Import one or several files. Existing records are updated without erasing your images, paths, or notes.</p>
+<div class="vl-source-fields">
+  <label>
+    Source Label
+    <input
+      id="vlImportSourceLabel"
+      type="text"
+      placeholder="Example: Rockstar Summer 2026 DLC"
+      autocomplete="off"
+    >
+  </label>
 
+  <label>
+    DLC / Mod Folder
+    <input
+      id="vlImportDlcFolder"
+      type="text"
+      placeholder="Example: mp2026summer"
+      autocomplete="off"
+    >
+  </label>
+
+  <label>
+    Original Source Path
+    <input
+      id="vlImportSourcePath"
+      type="text"
+      placeholder="Example: update/x64/dlcpacks/mp2026summer/common/data"
+      autocomplete="off"
+    >
+  </label>
+
+  <p class="small vl-muted">
+    The selected filename is added automatically. These values identify
+    which Rockstar DLC or mod pack supplied the imported records.
+  </p>
+</div>
           <button class="vl-import-button" type="button" data-pick="vlPopgroupsPicker">
             <span>Popgroups</span><small>Groups and traffic membership</small>
           </button>
