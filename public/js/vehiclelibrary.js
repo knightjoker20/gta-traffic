@@ -239,25 +239,221 @@ function splitIntoBatches(records, batchSize = 50) {
 
   return batches;
 }
-  async function importVehicleFiles(files) {
-    let imported = 0;
-    for (const file of files) {
-      const text = await file.text();
-      const parsed = parseVehiclesMeta(text, file.name);
-      const existingMap = new Map((await store.getVehicles()).map(vehicle => [vehicle.id, vehicle]));
-      const merged = parsed.map(record => store.mergeVehicle(existingMap.get(store.normalizeId(record.modelName)), record));
-      await store.putVehicles(merged);
-      await store.putSource({
-        id: `vehicles:${file.name.toLowerCase()}`,
-        type: "vehicles.meta",
-        fileName: file.name,
-        recordCount: parsed.length,
-        importedAt: new Date().toISOString()
-      });
-      imported += parsed.length;
-    }
-    setStatus(`Imported or updated ${imported.toLocaleString()} vehicle records from vehicles.meta.`, "good");
+async function importVehicleFiles(files) {
+  if (!window.vehicleCloud?.importLibraryBatch) {
+    throw new Error(
+      "The cloud import service did not load."
+    );
   }
+
+  let imported = 0;
+  let completedBatches = 0;
+  let completedFiles = 0;
+
+  for (const file of files) {
+    const source =
+      getImportSourceDetails(file);
+
+    const text = await file.text();
+
+    const parsed = parseVehiclesMeta(
+      text,
+      source.sourceFile
+    );
+
+    if (!parsed.length) {
+      throw new Error(
+        `No vehicle records were found in ${file.name}.`
+      );
+    }
+
+    /*
+     * These records are sent to D1.
+     * Source information is included without changing
+     * the vehicle's model identity.
+     */
+    const cloudRecords = parsed.map(record => ({
+      ...record,
+
+      custom: {
+        ...(record.custom || {}),
+
+        rockstarDlc:
+          source.dlcFolder,
+
+        sourcePack:
+          source.sourceLabel,
+
+        vehiclesMetaPath:
+          source.sourcePath
+      },
+
+      sources: {
+        ...(record.sources || {}),
+
+        vehiclesMeta: [
+          source.sourcePath
+        ],
+
+        popgroups:
+          record.sources?.popgroups || []
+      },
+
+      importSource: {
+        sourceLabel:
+          source.sourceLabel,
+
+        dlcFolder:
+          source.dlcFolder,
+
+        sourceDirectory:
+          source.sourceDirectory,
+
+        sourcePath:
+          source.sourcePath,
+
+        originalFileName:
+          source.originalFileName
+      }
+    }));
+
+    const batches =
+      splitIntoBatches(
+        cloudRecords,
+        50
+      );
+
+    for (
+      let batchIndex = 0;
+      batchIndex < batches.length;
+      batchIndex++
+    ) {
+      const batch =
+        batches[batchIndex];
+
+      setStatus(
+        `Uploading ${file.name}: batch ${
+          batchIndex + 1
+        } of ${batches.length}...`,
+        "warn"
+      );
+
+      const result =
+        await window.vehicleCloud.importLibraryBatch({
+          importMode: "vehicles-meta",
+          vehicles: batch,
+          handlingProfiles: []
+        });
+
+      imported += Number(
+        result.vehiclesImported ??
+        batch.length
+      );
+
+      completedBatches++;
+    }
+
+    /*
+     * Update IndexedDB as a local fallback.
+     * Do not pass the cloud custom fields here because
+     * mergeVehicle would overwrite saved local details.
+     */
+    const existingMap = new Map(
+      (await store.getVehicles()).map(
+        vehicle => [
+          vehicle.id,
+          vehicle
+        ]
+      )
+    );
+
+    const localRecords =
+      parsed.map(record => {
+        const localRecord = {
+          ...record,
+
+          sources: {
+            ...(record.sources || {}),
+
+            vehiclesMeta: [
+              source.sourcePath
+            ],
+
+            popgroups:
+              record.sources?.popgroups || []
+          },
+
+          importSource: {
+            sourceLabel:
+              source.sourceLabel,
+
+            dlcFolder:
+              source.dlcFolder,
+
+            sourceDirectory:
+              source.sourceDirectory,
+
+            sourcePath:
+              source.sourcePath,
+
+            originalFileName:
+              source.originalFileName
+          }
+        };
+
+        return store.mergeVehicle(
+          existingMap.get(
+            store.normalizeId(
+              record.modelName
+            )
+          ),
+          localRecord
+        );
+      });
+
+    await store.putVehicles(
+      localRecords
+    );
+
+    await store.putSource({
+      id:
+        `vehicles:` +
+        [
+          source.sourceLabel,
+          source.dlcFolder,
+          source.sourcePath
+        ]
+          .join("|")
+          .toLowerCase(),
+
+      type: "vehicles.meta",
+      fileName: file.name,
+      sourceLabel:
+        source.sourceLabel,
+      dlcFolder:
+        source.dlcFolder,
+      sourceDirectory:
+        source.sourceDirectory,
+      sourcePath:
+        source.sourcePath,
+      recordCount:
+        parsed.length,
+      importedAt:
+        new Date().toISOString()
+    });
+
+    completedFiles++;
+  }
+
+  setStatus(
+    `Imported or updated ${imported.toLocaleString()} ` +
+    `vehicle records from ${completedFiles.toLocaleString()} ` +
+    `file${completedFiles === 1 ? "" : "s"} in ` +
+    `${completedBatches.toLocaleString()} cloud ` +
+    `batch${completedBatches === 1 ? "" : "es"}.`,
+    "good"
+  );
+}
 
 async function importHandlingFiles(files) {
   if (!window.vehicleCloud?.importLibraryBatch) {

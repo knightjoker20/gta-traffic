@@ -243,7 +243,130 @@ function buildVehicleUpsertStatement(body, env) {
     rawRecord
   );
 }
+function buildVehicleMetaUpsertStatement(body, env) {
+  const modelName =
+    optionalText(body.modelName);
 
+  const id = crypto.randomUUID();
+
+  const rawRecord =
+    JSON.stringify(body);
+
+  return env.DB.prepare(`
+    INSERT INTO vehicles (
+      id,
+      model_name,
+      game_name,
+      make_name,
+      vehicle_class,
+      vehicle_type,
+      handling_id,
+      audio_name,
+      layout_name,
+      frequency,
+      max_num,
+      max_num_of_same_color,
+      identical_model_spawn_distance,
+      swankness,
+      rockstar_dlc,
+      source_pack,
+      vehicles_meta_path,
+      raw_record_json,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?,
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    )
+    ON CONFLICT(model_name) DO UPDATE SET
+      game_name =
+        excluded.game_name,
+
+      make_name =
+        excluded.make_name,
+
+      vehicle_class =
+        excluded.vehicle_class,
+
+      vehicle_type =
+        excluded.vehicle_type,
+
+      handling_id =
+        excluded.handling_id,
+
+      audio_name =
+        excluded.audio_name,
+
+      layout_name =
+        excluded.layout_name,
+
+      frequency =
+        excluded.frequency,
+
+      max_num =
+        excluded.max_num,
+
+      max_num_of_same_color =
+        excluded.max_num_of_same_color,
+
+      identical_model_spawn_distance =
+        excluded.identical_model_spawn_distance,
+
+      swankness =
+        excluded.swankness,
+
+      rockstar_dlc =
+        CASE
+          WHEN rockstar_dlc IS NULL
+            OR TRIM(rockstar_dlc) = ''
+          THEN excluded.rockstar_dlc
+          ELSE rockstar_dlc
+        END,
+
+      source_pack =
+        CASE
+          WHEN source_pack IS NULL
+            OR TRIM(source_pack) = ''
+          THEN excluded.source_pack
+          ELSE source_pack
+        END,
+
+      vehicles_meta_path =
+        excluded.vehicles_meta_path,
+
+      raw_record_json =
+        excluded.raw_record_json,
+
+      updated_at =
+        CURRENT_TIMESTAMP
+  `).bind(
+    id,
+    modelName,
+    optionalText(body.gameName),
+    optionalText(body.makeName),
+    optionalText(body.vehicleClass),
+    optionalText(body.vehicleType),
+    optionalText(body.handlingId),
+    optionalText(body.audioName),
+    optionalText(body.layoutName),
+    optionalInteger(body.frequency),
+    optionalInteger(body.maxNum),
+    optionalInteger(
+      body.maxNumOfSameColor
+    ),
+    optionalInteger(
+      body.identicalModelSpawnDistance
+    ),
+    optionalText(body.swankness),
+    optionalText(body.rockstarDlc),
+    optionalText(body.sourcePack),
+    optionalText(body.vehiclesMetaPath),
+    rawRecord
+  );
+}
 async function readJsonRequest(request) {
   const contentType = request.headers.get("content-type") || "";
 
@@ -807,7 +930,10 @@ async function handleLibraryV2Import(request, env) {
   }
 
   const body = parsed.body || {};
-
+  
+  const importMode =
+  optionalText(body.importMode);
+  
   const vehicleRecords = Array.isArray(body.vehicles)
     ? body.vehicles
     : [];
@@ -874,14 +1000,21 @@ async function handleLibraryV2Import(request, env) {
     );
   }
 
-  if (flattenedVehicles.length > 0) {
-    const vehicleStatements = flattenedVehicles.map(
-      vehicle =>
-        buildVehicleUpsertStatement(vehicle, env)
+if (flattenedVehicles.length > 0) {
+  const buildStatement =
+    importMode === "vehicles-meta"
+      ? buildVehicleMetaUpsertStatement
+      : buildVehicleUpsertStatement;
+
+  const vehicleStatements =
+    flattenedVehicles.map(vehicle =>
+      buildStatement(vehicle, env)
     );
 
-    await env.DB.batch(vehicleStatements);
-  }
+  await env.DB.batch(
+    vehicleStatements
+  );
+}
 
   let popgroupsImported = 0;
 
@@ -906,6 +1039,7 @@ async function handleLibraryV2Import(request, env) {
     {
       ok: true,
       message: "Library V2 batch imported",
+	  importMode: importMode || "library",
       vehiclesImported: flattenedVehicles.length,
       handlingProfilesImported:
         handlingProfiles.length,
