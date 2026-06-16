@@ -862,8 +862,11 @@ function buildHandlingUpsertStatement(profile, env) {
   );
 }
 
-async function importVehiclePopgroups(records, env) {
-  let imported = 0;
+async function importVehiclePopgroups(
+  records,
+  env,
+  sourceFileOverride = null
+) {
 
   for (const record of records) {
     const modelName =
@@ -906,10 +909,11 @@ async function importVehiclePopgroups(records, env) {
           DO UPDATE SET
             source_file = excluded.source_file
         `).bind(
-          vehicle.id,
-          optionalText(group.groupName),
-          optionalText(group.sourceFile)
-        )
+		vehicle.id,
+		optionalText(group.groupName),
+		optionalText(sourceFileOverride) ||
+		optionalText(group.sourceFile)
+)
       );
 
     if (statements.length > 0) {
@@ -921,6 +925,44 @@ async function importVehiclePopgroups(records, env) {
   return imported;
 }
 
+async function ensurePopgroupVehicles(
+  records,
+  env
+) {
+  const statements = records
+    .map(record =>
+      optionalText(record?.modelName) ||
+      optionalText(
+        record?.vehiclesMeta?.modelName
+      )
+    )
+    .filter(Boolean)
+    .map(modelName =>
+      env.DB.prepare(`
+        INSERT INTO vehicles (
+          id,
+          model_name,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ?,
+          ?,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+        ON CONFLICT(model_name)
+        DO NOTHING
+      `).bind(
+        crypto.randomUUID(),
+        modelName
+      )
+    );
+
+  if (statements.length > 0) {
+    await env.DB.batch(statements);
+  }
+}
 async function handleLibraryV2Import(request, env) {
   const authorizationError =
     checkLibraryWriteAuthorization(request, env);
@@ -939,7 +981,11 @@ async function handleLibraryV2Import(request, env) {
   
   const importMode =
   optionalText(body.importMode);
-  
+  const sourceFile =
+  optionalText(body.sourceFile);
+
+  const replaceSource =
+  body.replaceSource === true;
   const vehicleRecords = Array.isArray(body.vehicles)
     ? body.vehicles
     : [];
@@ -1006,7 +1052,38 @@ async function handleLibraryV2Import(request, env) {
     );
   }
 
-if (flattenedVehicles.length > 0) {
+if (importMode === "popgroups") {
+  if (!sourceFile) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "sourceFile is required for a Popgroups import"
+      },
+      400
+    );
+  }
+
+  /*
+   * Only the first batch for a file requests replacement.
+   * This removes relationships that belonged to the older
+   * version of this exact source file.
+   */
+  if (replaceSource) {
+    await env.DB
+      .prepare(`
+        DELETE FROM vehicle_popgroups
+        WHERE source_file = ?
+      `)
+      .bind(sourceFile)
+      .run();
+  }
+
+  await ensurePopgroupVehicles(
+    vehicleRecords,
+    env
+  );
+} else if (flattenedVehicles.length > 0) {
   const buildStatement =
     importMode === "vehicles-meta"
       ? buildVehicleMetaUpsertStatement
@@ -1026,10 +1103,13 @@ if (flattenedVehicles.length > 0) {
 
   if (vehicleRecords.length > 0) {
     popgroupsImported =
-      await importVehiclePopgroups(
-        vehicleRecords,
-        env
-      );
+  await importVehiclePopgroups(
+    vehicleRecords,
+    env,
+    importMode === "popgroups"
+      ? sourceFile
+      : null
+  );
   }
 
   if (handlingProfiles.length > 0) {
@@ -1046,6 +1126,10 @@ if (flattenedVehicles.length > 0) {
       ok: true,
       message: "Library V2 batch imported",
 	  importMode: importMode || "library",
+	  sourceFile,
+	  replacedSource:
+     importMode === "popgroups" &&
+      replaceSource,
       vehiclesImported: flattenedVehicles.length,
       handlingProfilesImported:
         handlingProfiles.length,
