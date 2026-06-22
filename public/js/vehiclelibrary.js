@@ -560,46 +560,231 @@ async function importHandlingFiles(files) {
   );
 }
 
-  async function importPopgroupsFiles(files) {
-    let membershipCount = 0;
-    for (const file of files) {
-      const text = await file.text();
-      const memberships = parsePopgroups(text, file.name);
-      let fileMembershipCount = 0;
-      const current = await store.getVehicles();
-      const currentMap = new Map(current.map(vehicle => [vehicle.id, vehicle]));
-
-      currentMap.forEach(vehicle => {
-        vehicle.popgroups = (vehicle.popgroups || []).filter(group => group.sourceFile !== file.name);
-        vehicle.sources = vehicle.sources || { vehiclesMeta: [], popgroups: [] };
-        vehicle.sources.popgroups = (vehicle.sources.popgroups || []).filter(name => name !== file.name);
-      });
-
-      memberships.forEach((entry, id) => {
-        const vehicle = currentMap.get(id) || store.createVehicleSkeleton(entry.modelName);
-        const combinedGroups = [...(vehicle.popgroups || []), ...entry.groups];
-        vehicle.popgroups = combinedGroups.filter((group, index, list) =>
-          list.findIndex(candidate => candidate.groupName === group.groupName && candidate.sourceFile === group.sourceFile) === index
-        );
-        vehicle.sources = vehicle.sources || { vehiclesMeta: [], popgroups: [] };
-        vehicle.sources.popgroups = store.unique([...(vehicle.sources.popgroups || []), file.name]);
-        vehicle.updatedAt = new Date().toISOString();
-        currentMap.set(id, vehicle);
-        membershipCount += entry.groups.length;
-        fileMembershipCount += entry.groups.length;
-      });
-
-      await store.putVehicles([...currentMap.values()]);
-      await store.putSource({
-        id: `popgroups:${file.name.toLowerCase()}`,
-        type: "Popgroups",
-        fileName: file.name,
-        recordCount: fileMembershipCount,
-        importedAt: new Date().toISOString()
-      });
-    }
-    setStatus(`Imported ${membershipCount.toLocaleString()} vehicle-to-group memberships from Popgroups.`, "good");
+async function importPopgroupsFiles(files) {
+  if (!window.vehicleCloud?.importLibraryBatch) {
+    throw new Error(
+      "The cloud import service did not load."
+    );
   }
+
+  let membershipCount = 0;
+  let completedBatches = 0;
+  let completedFiles = 0;
+
+  for (const file of files) {
+    const source =
+      getImportSourceDetails(file);
+
+    const text = await file.text();
+
+    const memberships =
+      parsePopgroups(
+        text,
+        source.sourceFile
+      );
+
+    const records = [
+      ...memberships.values()
+    ].map(entry => ({
+      modelName: entry.modelName,
+
+      popgroups: entry.groups.map(group => ({
+        groupName: group.groupName,
+        sourceFile: source.sourceFile
+      })),
+
+      sources: {
+        vehiclesMeta: [],
+        popgroups: [
+          source.sourceFile
+        ]
+      },
+
+      importSource: {
+        sourceLabel:
+          source.sourceLabel,
+
+        dlcFolder:
+          source.dlcFolder,
+
+        sourceDirectory:
+          source.sourceDirectory,
+
+        sourcePath:
+          source.sourcePath,
+
+        originalFileName:
+          source.originalFileName
+      }
+    }));
+
+    if (!records.length) {
+      throw new Error(
+        `No Popgroups vehicle memberships were found in ${file.name}.`
+      );
+    }
+
+    const batches =
+      splitIntoBatches(
+        records,
+        50
+      );
+
+    for (
+      let batchIndex = 0;
+      batchIndex < batches.length;
+      batchIndex++
+    ) {
+      const batch =
+        batches[batchIndex];
+
+      setStatus(
+        `Uploading ${file.name}: batch ${
+          batchIndex + 1
+        } of ${batches.length}...`,
+        "warn"
+      );
+
+      const result =
+        await window.vehicleCloud.importLibraryBatch({
+          importMode: "popgroups",
+          sourceFile: source.sourceFile,
+          replaceSource: batchIndex === 0,
+          vehicles: batch,
+          handlingProfiles: []
+        });
+
+      membershipCount += Number(
+        result.popgroupsImported ??
+        batch.reduce(
+          (total, record) =>
+            total + record.popgroups.length,
+          0
+        )
+      );
+
+      completedBatches++;
+    }
+
+    const current =
+      await store.getVehicles();
+
+    const currentMap =
+      new Map(
+        current.map(vehicle => [
+          vehicle.id,
+          vehicle
+        ])
+      );
+
+    currentMap.forEach(vehicle => {
+      vehicle.popgroups =
+        (vehicle.popgroups || []).filter(
+          group =>
+            group.sourceFile !== source.sourceFile
+        );
+
+      vehicle.sources =
+        vehicle.sources || {
+          vehiclesMeta: [],
+          popgroups: []
+        };
+
+      vehicle.sources.popgroups =
+        (vehicle.sources.popgroups || []).filter(
+          name => name !== source.sourceFile
+        );
+    });
+
+    records.forEach(record => {
+      const id =
+        store.normalizeId(
+          record.modelName
+        );
+
+      const vehicle =
+        currentMap.get(id) ||
+        store.createVehicleSkeleton(
+          record.modelName
+        );
+
+      vehicle.popgroups = [
+        ...(vehicle.popgroups || []),
+        ...record.popgroups
+      ].filter(
+        (group, index, list) =>
+          list.findIndex(candidate =>
+            candidate.groupName === group.groupName &&
+            candidate.sourceFile === group.sourceFile
+          ) === index
+      );
+
+      vehicle.sources =
+        vehicle.sources || {
+          vehiclesMeta: [],
+          popgroups: []
+        };
+
+      vehicle.sources.popgroups =
+        store.unique([
+          ...(vehicle.sources.popgroups || []),
+          source.sourceFile
+        ]);
+
+      vehicle.updatedAt =
+        new Date().toISOString();
+
+      currentMap.set(id, vehicle);
+    });
+
+    await store.putVehicles([
+      ...currentMap.values()
+    ]);
+
+    await store.putSource({
+      id:
+        `popgroups:` +
+        [
+          source.sourceLabel,
+          source.dlcFolder,
+          source.sourcePath
+        ]
+          .join("|")
+          .toLowerCase(),
+
+      type: "Popgroups",
+      fileName: file.name,
+      sourceLabel:
+        source.sourceLabel,
+      dlcFolder:
+        source.dlcFolder,
+      sourceDirectory:
+        source.sourceDirectory,
+      sourcePath:
+        source.sourcePath,
+      recordCount:
+        records.reduce(
+          (total, record) =>
+            total + record.popgroups.length,
+          0
+        ),
+      importedAt:
+        new Date().toISOString()
+    });
+
+    completedFiles++;
+  }
+
+  setStatus(
+    `Imported ${membershipCount.toLocaleString()} ` +
+    `vehicle-to-group memberships from ` +
+    `${completedFiles.toLocaleString()} ` +
+    `Popgroups file${completedFiles === 1 ? "" : "s"} ` +
+    `in ${completedBatches.toLocaleString()} cloud ` +
+    `batch${completedBatches === 1 ? "" : "es"}.`,
+    "good"
+  );
+}
 
   function vehicleIdFromAssetFile(fileName) {
     const name = String(fileName || "").trim();
