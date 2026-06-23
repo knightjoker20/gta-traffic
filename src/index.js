@@ -23,19 +23,6 @@ function safeParseTags(value) {
 
 function normalizeVehicle(row) {
   return {
-	    id: row.id,
-    sourceType: row.source_type,
-    sourceLabel: row.source_label,
-    sourceContainer: row.source_container,
-    sourceDirectory: row.source_directory,
-    sourcePath: row.source_path,
-    originalFileName: row.original_file_name,
-    recordCount: row.record_count,
-    importMode: row.import_mode,
-    importedAt: row.imported_at,
-    status: row.status,
-    notes: row.notes,
-    rawImportJson: row.raw_import_json
     id: row.id,
     modelName: row.model_name,
     gameName: row.game_name,
@@ -78,6 +65,24 @@ function normalizeVehicle(row) {
 
     createdAt: row.created_at,
     updatedAt: row.updated_at
+  };
+}
+
+function normalizeSourceHistory(row) {
+  return {
+    id: row.id,
+    sourceType: row.source_type,
+    sourceLabel: row.source_label,
+    sourceContainer: row.source_container,
+    sourceDirectory: row.source_directory,
+    sourcePath: row.source_path,
+    originalFileName: row.original_file_name,
+    recordCount: row.record_count,
+    importMode: row.import_mode,
+    importedAt: row.imported_at,
+    status: row.status,
+    notes: row.notes,
+    rawImportJson: row.raw_import_json
   };
 }
 
