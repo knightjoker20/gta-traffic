@@ -23,6 +23,19 @@ function safeParseTags(value) {
 
 function normalizeVehicle(row) {
   return {
+	    id: row.id,
+    sourceType: row.source_type,
+    sourceLabel: row.source_label,
+    sourceContainer: row.source_container,
+    sourceDirectory: row.source_directory,
+    sourcePath: row.source_path,
+    originalFileName: row.original_file_name,
+    recordCount: row.record_count,
+    importMode: row.import_mode,
+    importedAt: row.imported_at,
+    status: row.status,
+    notes: row.notes,
+    rawImportJson: row.raw_import_json
     id: row.id,
     modelName: row.model_name,
     gameName: row.game_name,
@@ -1077,6 +1090,129 @@ async function ensurePopgroupVehicles(
     await env.DB.batch(statements);
   }
 }
+async function handleSourceHistoryList(
+  request,
+  env
+) {
+  const url = new URL(request.url);
+
+  const type =
+    optionalText(url.searchParams.get("type"));
+
+  const search =
+    optionalText(url.searchParams.get("search"));
+
+  const rawLimit =
+    Number.parseInt(
+      url.searchParams.get("limit") || "100",
+      10
+    );
+
+  const rawOffset =
+    Number.parseInt(
+      url.searchParams.get("offset") || "0",
+      10
+    );
+
+  const limit =
+    Number.isFinite(rawLimit)
+      ? Math.min(Math.max(rawLimit, 1), 250)
+      : 100;
+
+  const offset =
+    Number.isFinite(rawOffset)
+      ? Math.max(rawOffset, 0)
+      : 0;
+
+  const whereClauses = [];
+  const bindings = [];
+
+  if (type) {
+    whereClauses.push(
+      "source_type = ?"
+    );
+    bindings.push(type);
+  }
+
+  if (search) {
+    const pattern = `%${search}%`;
+
+    whereClauses.push(`
+      (
+        source_label LIKE ?
+        OR source_container LIKE ?
+        OR source_directory LIKE ?
+        OR source_path LIKE ?
+        OR original_file_name LIKE ?
+        OR import_mode LIKE ?
+      )
+    `);
+
+    bindings.push(
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern
+    );
+  }
+
+  const whereSql = whereClauses.length
+    ? `WHERE ${whereClauses.join(" AND ")}`
+    : "";
+
+  const countRow = await env.DB
+    .prepare(`
+      SELECT COUNT(*) AS total
+      FROM source_history
+      ${whereSql}
+    `)
+    .bind(...bindings)
+    .first();
+
+  const result = await env.DB
+    .prepare(`
+      SELECT
+        id,
+        source_type,
+        source_label,
+        source_container,
+        source_directory,
+        source_path,
+        original_file_name,
+        record_count,
+        import_mode,
+        imported_at,
+        status,
+        notes,
+        raw_import_json
+      FROM source_history
+      ${whereSql}
+      ORDER BY imported_at DESC
+      LIMIT ?
+      OFFSET ?
+    `)
+    .bind(
+      ...bindings,
+      limit,
+      offset
+    )
+    .all();
+
+  const rows = Array.isArray(result.results)
+    ? result.results
+    : [];
+
+  return jsonResponse({
+    ok: true,
+    total: Number(countRow?.total || 0),
+    limit,
+    offset,
+    sourceHistory:
+      rows.map(normalizeSourceHistory)
+  });
+}
 async function handleLibraryV2Import(request, env) {
   const authorizationError =
     checkLibraryWriteAuthorization(request, env);
@@ -1939,6 +2075,15 @@ if (
   url.pathname === "/api/vehicle-popgroups"
 ) {
   return await handleVehiclePopgroupList(env);
+}
+if (
+  request.method === "GET" &&
+  url.pathname === "/api/source-history"
+) {
+  return await handleSourceHistoryList(
+    request,
+    env
+  );
 }
 if (
   request.method === "GET" &&
