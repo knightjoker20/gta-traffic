@@ -980,7 +980,8 @@ async function importVehiclePopgroups(
   env,
   sourceFileOverride = null
 ) {
-
+  let imported = 0;
+  
   for (const record of records) {
     const modelName =
       optionalText(record?.modelName) ||
