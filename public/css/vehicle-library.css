@@ -566,7 +566,7 @@
 .vd-custom-form { display: grid; gap: 11px; }
 .vd-custom-form textarea { resize: vertical; min-height: 140px; font-family: inherit; }
 
-@media (max-width: 1150px) {
+@media (max-width: 900px) {
   .vl-layout { grid-template-columns: 1fr; }
   .vl-sidebar { position: static; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .vl-import-panel,.vl-category-panel { grid-row: span 2; }
