@@ -56,6 +56,31 @@ function parsePopgroups(text, filename) {
   if (typeof renderWorkspaceStatus === "function") {
     renderWorkspaceStatus(`Saved recent project: ${filename}`);
   }
+
+  if (typeof syncMainPagePopgroupsToCloud === "function") {
+    syncMainPagePopgroupsToCloud(filename)
+      .then(result => {
+        if (result?.ok) {
+          updateStatus(
+            `Loaded ${filename}: ${parsedData.vehicles.length} vehicle groups, ` +
+            `${parsedData.peds.length} ped groups | ` +
+            `Cloud synced ${Number(result.imported || 0).toLocaleString()} Popgroups memberships.`
+          );
+        }
+      })
+      .catch(error => {
+        console.warn("Main page Popgroups cloud sync failed.", error);
+
+        if (els?.status) {
+          els.status.innerHTML += `
+            <br>
+            <span class="warning">
+              Cloud sync failed: ${escapeHTML(error.message || "Unknown error")}
+            </span>
+          `;
+        }
+      });
+  }
 }
 
 function parseSection(xml, xmlTag, targetKey) {
