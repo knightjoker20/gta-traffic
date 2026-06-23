@@ -861,7 +861,120 @@ function buildHandlingUpsertStatement(profile, env) {
     JSON.stringify(profile)
   );
 }
+function sourceHistoryTypeFromImport(
+  importMode,
+  body
+) {
+  if (importMode === "vehicles-meta") {
+    return "vehicles.meta";
+  }
 
+  if (importMode === "popgroups") {
+    return "Popgroups";
+  }
+
+  if (
+    Array.isArray(body?.handlingProfiles) &&
+    body.handlingProfiles.length > 0
+  ) {
+    return "handling.meta";
+  }
+
+  return "library";
+}
+
+function buildSourceHistoryStatement({
+  body,
+  env,
+  importMode,
+  recordCount
+}) {
+  const source =
+    body?.importSource || {};
+
+  const sourceType =
+    sourceHistoryTypeFromImport(
+      importMode,
+      body
+    );
+
+  const sourcePath =
+    optionalText(source.sourcePath) ||
+    optionalText(body?.sourceFile);
+
+  if (!sourcePath) {
+    return null;
+  }
+
+  const id =
+    optionalText(body?.importSessionId) ||
+    [
+      sourceType,
+      sourcePath,
+      crypto.randomUUID()
+    ].join(":");
+
+  const rawImportJson =
+    JSON.stringify({
+      importMode: importMode || "library",
+      sourceFile:
+        optionalText(body?.sourceFile),
+      replaceSource:
+        body?.replaceSource === true,
+      recordCount
+    });
+
+  return env.DB.prepare(`
+    INSERT INTO source_history (
+      id,
+      source_type,
+      source_label,
+      source_container,
+      source_directory,
+      source_path,
+      original_file_name,
+      record_count,
+      import_mode,
+      imported_at,
+      status,
+      raw_import_json
+    )
+    VALUES (
+      ?, ?, ?, ?, ?, ?, ?,
+      ?,
+      ?,
+      CURRENT_TIMESTAMP,
+      'current',
+      ?
+    )
+    ON CONFLICT(id) DO UPDATE SET
+      record_count =
+        COALESCE(source_history.record_count, 0) +
+        COALESCE(excluded.record_count, 0),
+
+      imported_at =
+        CURRENT_TIMESTAMP,
+
+      status =
+        'current',
+
+      raw_import_json =
+        excluded.raw_import_json
+  `).bind(
+    id,
+    sourceType,
+    optionalText(source.sourceLabel),
+    optionalText(source.dlcFolder),
+    optionalText(source.sourceDirectory),
+    sourcePath,
+    optionalText(source.originalFileName),
+    Number.isFinite(recordCount)
+      ? recordCount
+      : 0,
+    importMode || "library",
+    rawImportJson
+  );
+}
 async function importVehiclePopgroups(
   records,
   env,
@@ -1112,16 +1225,51 @@ if (importMode === "popgroups") {
   );
   }
 
-  if (handlingProfiles.length > 0) {
-    const handlingStatements =
-      handlingProfiles.map(profile =>
-        buildHandlingUpsertStatement(profile, env)
-      );
+if (handlingProfiles.length > 0) {
+  const handlingStatements =
+    handlingProfiles.map(profile =>
+      buildHandlingUpsertStatement(profile, env)
+    );
 
-    await env.DB.batch(handlingStatements);
+  await env.DB.batch(handlingStatements);
+}
+
+const sourceHistoryRecordCount =
+  importMode === "popgroups"
+    ? popgroupsImported
+    : handlingProfiles.length > 0
+      ? handlingProfiles.length
+      : flattenedVehicles.length;
+
+const sourceHistoryStatement =
+  buildSourceHistoryStatement({
+    body,
+    env,
+    importMode,
+    recordCount:
+      sourceHistoryRecordCount
+  });
+
+let sourceHistoryLogged = false;
+let sourceHistoryError = null;
+
+if (sourceHistoryStatement) {
+  try {
+    await sourceHistoryStatement.run();
+    sourceHistoryLogged = true;
+  } catch (error) {
+    console.error(
+      "Source history logging failed",
+      error
+    );
+
+    sourceHistoryError =
+      error?.message ||
+      "Source history logging failed";
   }
+}
 
-  return jsonResponse(
+return jsonResponse(
     {
       ok: true,
       message: "Library V2 batch imported",
@@ -1134,7 +1282,9 @@ if (importMode === "popgroups") {
       handlingProfilesImported:
         handlingProfiles.length,
       popgroupsImported,
-      sourceFilesImported: 0
+     sourceFilesImported: 0,
+     sourceHistoryLogged,
+     sourceHistoryError
     },
     201
   );
