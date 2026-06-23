@@ -33,13 +33,19 @@
 
   <main class="vehicle-library-main">
     <div class="vl-layout">
+      <aside class="vl-sidebar">
+        <section class="panel vl-import-panel">
+          <h2>Import Sources</h2>
+          <p class="vl-muted vl-compact-copy">Import one or several files. Existing records are updated without erasing your images, paths, or notes.</p>
+<div class="vl-source-fields">
   <label>
     Source Label
     <input
       id="vlImportSourceLabel"
       type="text"
       placeholder="Example: Rockstar Summer 2026 DLC"
-      autocomplete="off">
+      autocomplete="off"
+    >
   </label>
 
   <label>
@@ -107,7 +113,6 @@
             <div><strong>0</strong><span>Installed</span></div>
           </div>
         </section>
-
 
         <section class="panel vl-category-panel">
           <h2>Categories</h2>
@@ -205,24 +210,6 @@
         <div id="vlPagination" class="vl-pagination"></div>
       </section>
     </div>
-	<section class="panel vl-source-history-panel vl-source-history-wide">
-  <div class="vl-source-history-heading">
-    <div>
-      <h2>Recent Source History</h2>
-      <p class="vl-muted vl-compact-copy">
-        Latest imported vehicles.meta, handling.meta, and Popgroups source files.
-      </p>
-    </div>
-
-    <button id="vlRefreshSourceHistory" type="button">Refresh</button>
-  </div>
-
-  <div id="vlSourceHistoryList" class="vl-source-history-list">
-    <div class="vl-source-history-empty">
-      Source history has not loaded yet.
-    </div>
-  </div>
-</section>
 
     <section class="panel vl-source-history-panel vl-source-history-wide">
       <div class="vl-source-history-heading">
