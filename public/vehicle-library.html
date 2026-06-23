@@ -34,6 +34,15 @@
   <main class="vehicle-library-main">
     <div class="vl-layout">
       <aside class="vl-sidebar">
+  <label>
+    Source Label
+    <input
+      id="vlImportSourceLabel"
+      type="text"
+      placeholder="Example: Rockstar Summer 2026 DLC"
+      autocomplete="off"
+    >
+  </label>
 
   <label>
     DLC / Mod Folder
@@ -100,22 +109,7 @@
             <div><strong>0</strong><span>Installed</span></div>
           </div>
         </section>
-		<section class="panel vl-source-history-panel">
-  <div class="vl-source-history-heading">
-    <h2>Recent Source History</h2>
-    <button id="vlRefreshSourceHistory" type="button">Refresh</button>
-  </div>
 
-  <p class="vl-muted vl-compact-copy">
-    Shows the latest imported vehicles.meta, handling.meta, and Popgroups source files.
-  </p>
-
-  <div id="vlSourceHistoryList" class="vl-source-history-list">
-    <div class="vl-source-history-empty">
-      Source history has not loaded yet.
-    </div>
-  </div>
-</section>
 
         <section class="panel vl-category-panel">
           <h2>Categories</h2>
@@ -213,7 +207,7 @@
         <div id="vlPagination" class="vl-pagination"></div>
       </section>
     </div>
-<section class="panel vl-source-history-panel vl-source-history-wide">
+	<section class="panel vl-source-history-panel vl-source-history-wide">
   <div class="vl-source-history-heading">
     <div>
       <h2>Recent Source History</h2>
