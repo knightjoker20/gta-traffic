@@ -342,6 +342,38 @@ function attachImagesToVehicles(
     };
   });
 }
+async function getSourceHistory(options = {}) {
+  const params = new URLSearchParams();
+
+  if (options.type) {
+    params.set("type", options.type);
+  }
+
+  if (options.search) {
+    params.set("search", options.search);
+  }
+
+  params.set(
+    "limit",
+    String(options.limit || 6)
+  );
+
+  const query = params.toString();
+
+  const result = await fetchCloudJson(
+    `/api/source-history${query ? `?${query}` : ""}`,
+    "Source history"
+  );
+
+  if (!Array.isArray(result.sourceHistory)) {
+    throw new Error(
+      "Source history response was invalid."
+    );
+  }
+
+  return result.sourceHistory;
+}
+
 async function getLibraryData(
   localVehicles = []
 ) {
@@ -667,6 +699,7 @@ window.vehicleCloud = {
   clearLibraryWriteToken,
   uploadVehicleImage,
   deleteVehicleImage,
-  clearImageUploadToken
+  clearImageUploadToken,
+  getSourceHistory
 };
 })();

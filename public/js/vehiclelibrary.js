@@ -13,6 +13,7 @@
   const state = {
     vehicles: [],
     handlingMap: new Map(),
+	sourceHistory: [],
     category: "ALL",
     page: 1,
     view: "grid",
@@ -995,6 +996,12 @@ const importSource =
 
   populateFilters();
   renderAll();
+  refreshSourceHistory(false).catch(error => {
+  console.warn(
+    "Source history refresh failed.",
+    error
+  );
+});
 
   if (source === "cloud") {
     setStatus(
@@ -1132,7 +1139,138 @@ const importSource =
       <div><strong>${installed.toLocaleString()}</strong><span>Installed</span></div>
     `;
   }
+function formatSourceHistoryDate(value) {
+  if (!value) {
+    return "No date";
+  }
 
+  const normalized =
+    String(value).includes("T")
+      ? String(value)
+      : String(value).replace(" ", "T") + "Z";
+
+  const date = new Date(normalized);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString();
+}
+
+function renderSourceHistory() {
+  const host = el("vlSourceHistoryList");
+
+  if (!host) {
+    return;
+  }
+
+  if (!state.sourceHistory.length) {
+    host.innerHTML = `
+      <div class="vl-source-history-empty">
+        No source history records found.
+      </div>
+    `;
+    return;
+  }
+
+  host.innerHTML = state.sourceHistory
+    .slice(0, 6)
+    .map(entry => {
+      const title =
+        entry.sourceLabel ||
+        entry.originalFileName ||
+        entry.sourcePath ||
+        "Unknown source";
+
+      const sourceType =
+        entry.sourceType ||
+        "unknown";
+
+      const recordCount =
+        Number(entry.recordCount || 0);
+
+      return `
+        <article class="vl-source-history-item">
+          <div class="vl-source-history-topline">
+            <strong>${escapeHTML(title)}</strong>
+            <span>${escapeHTML(sourceType)}</span>
+          </div>
+
+          <div class="vl-source-history-path" title="${escapeHTML(entry.sourcePath || "")}">
+            ${escapeHTML(entry.sourcePath || "No source path")}
+          </div>
+
+          <div class="vl-source-history-meta">
+            <span>${recordCount.toLocaleString()} records</span>
+            <span>${escapeHTML(formatSourceHistoryDate(entry.importedAt))}</span>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function refreshSourceHistory(showStatus = false) {
+  const host = el("vlSourceHistoryList");
+
+  if (!window.vehicleCloud?.getSourceHistory) {
+    if (host) {
+      host.innerHTML = `
+        <div class="vl-source-history-empty">
+          Source history is not available in this build.
+        </div>
+      `;
+    }
+
+    return;
+  }
+
+  if (host) {
+    host.innerHTML = `
+      <div class="vl-source-history-empty">
+        Loading recent imports...
+      </div>
+    `;
+  }
+
+  try {
+    state.sourceHistory =
+      await window.vehicleCloud.getSourceHistory({
+        limit: 6
+      });
+
+    renderSourceHistory();
+
+    if (showStatus) {
+      setStatus(
+        "Source History refreshed.",
+        "good"
+      );
+    }
+  } catch (error) {
+    console.warn(
+      "Source history could not be loaded.",
+      error
+    );
+
+    if (host) {
+      host.innerHTML = `
+        <div class="vl-source-history-empty">
+          Source history could not be loaded.
+        </div>
+      `;
+    }
+
+    if (showStatus) {
+      setStatus(
+        error.message ||
+        "Source history could not be loaded.",
+        "warn"
+      );
+    }
+  }
+}
 
   function setupStaticImageFallbacks(host) {
     host.querySelectorAll("img[data-vl-static-model]").forEach(image => {
@@ -1388,7 +1526,8 @@ grid.querySelectorAll(
     el("vlPopgroupsPicker").addEventListener("change", event => handleImport(event.target, importPopgroupsFiles));
     el("vlVehiclesPicker").addEventListener("change", event => handleImport(event.target, importVehicleFiles));
     el("vlHandlingPicker").addEventListener("change", event => handleImport(event.target, importHandlingFiles));
-
+	el("vlRefreshSourceHistory").addEventListener("click",() => refreshSourceHistory(true));
+	
     const installDropZone = el("vlInstallDropZone");
     const installPicker = el("vlInstallFilesPicker");
     el("vlInstallBrowse").addEventListener("click", event => {
