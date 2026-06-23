@@ -7,8 +7,27 @@
 (() => {
   "use strict";
 
-  const store = window.vehicleLibraryStore;
-  const PAGE_SIZE = 24;
+ const store = window.vehicleLibraryStore;
+ const PAGE_SIZE_STORAGE_KEY = "gtaTraffic.vehicleLibrary.pageSize";
+ const DEFAULT_PAGE_SIZE = 50;
+ const PAGE_SIZE_OPTIONS = new Set([25, 50, 100]);
+
+function getSavedPageSize() {
+  try {
+    const saved = Number(localStorage.getItem(PAGE_SIZE_STORAGE_KEY));
+    return PAGE_SIZE_OPTIONS.has(saved) ? saved : DEFAULT_PAGE_SIZE;
+  } catch (error) {
+    return DEFAULT_PAGE_SIZE;
+  }
+}
+
+function savePageSize(value) {
+  try {
+    localStorage.setItem(PAGE_SIZE_STORAGE_KEY, String(value));
+  } catch (error) {
+    console.warn("Page size could not be saved.", error);
+  }
+}
 
   const state = {
     vehicles: [],
@@ -16,6 +35,7 @@
 	sourceHistory: [],
     category: "ALL",
     page: 1,
+	pageSize: getSavedPageSize(),
     view: "grid",
     filters: {
       search: "",
@@ -1289,52 +1309,69 @@ async function refreshSourceHistory(showStatus = false) {
     });
   }
 
-  function cardHtml(vehicle) {
-    const handling = linkedHandling(vehicle);
-    const title = displayTitle(vehicle);
-    const image = vehicle.custom?.imageDataUrl;
-    const classLabel = cleanClassName(vehicle.vehiclesMeta?.vehicleClass);
-    const installType = inferInstallType(vehicle);
-    const detailsUrl = `vehicle-details.html?model=${encodeURIComponent(vehicle.modelName)}`;
+function cardHtml(vehicle) {
+  const handling = linkedHandling(vehicle);
+  const title = displayTitle(vehicle);
+  const image = vehicle.custom?.imageDataUrl;
+  const classLabel = cleanClassName(vehicle.vehiclesMeta?.vehicleClass);
+  const installType = inferInstallType(vehicle);
+  const detailsUrl = `vehicle-details.html?model=${encodeURIComponent(vehicle.modelName)}`;
 
-    return `
-      <article class="vl-vehicle-card" data-model="${escapeHTML(vehicle.modelName)}">
-        <div class="vl-vehicle-card-image">
-          ${image ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(title)}">` : `<img data-vl-static-model="${escapeHTML(vehicle.modelName.toLowerCase())}" data-vl-initials="${escapeHTML(initials(title))}" src="images/${encodeURIComponent(vehicle.modelName.toLowerCase())}.jpg" alt="${escapeHTML(title)}">`}
-          <button class="vl-favorite-button ${vehicle.custom?.favorite ? "active" : ""}" type="button" data-favorite="${escapeHTML(vehicle.modelName)}" title="Toggle favorite">${vehicle.custom?.favorite ? "★" : "☆"}</button>
-          <button class="vl-installed-button ${vehicle.custom?.installed === true ? "active" : ""}" type="button" data-installed="${escapeHTML(vehicle.modelName)}" title="${vehicle.custom?.installed === true ? "Mark not installed" : "Mark installed"}">${vehicle.custom?.installed === true ? "INSTALLED" : "+ INSTALL"}</button>
-          <div class="vl-card-source-dots">
-            <span class="vl-source-dot ${vehicle.vehiclesMeta?.modelName ? "ready" : ""}">META</span>
-            <span class="vl-source-dot ${handling ? "ready" : ""}">HANDLING</span>
-            <span class="vl-source-dot ${(vehicle.popgroups || []).length ? "ready" : ""}">GROUPS</span>
-          </div>
+  const imageHtml = image
+    ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(title)}">`
+    : `<img data-vl-static-model="${escapeHTML(vehicle.modelName.toLowerCase())}" data-vl-initials="${escapeHTML(initials(title))}" src="images/${encodeURIComponent(vehicle.modelName.toLowerCase())}.jpg" alt="${escapeHTML(title)}">`;
+
+  return `
+    <article class="vl-vehicle-card" data-model="${escapeHTML(vehicle.modelName)}">
+      <div class="vl-vehicle-card-image">
+        <a class="vl-vehicle-photo-link" href="${escapeHTML(detailsUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${escapeHTML(title)} details in a new tab">
+          ${imageHtml}
+        </a>
+
+        <button class="vl-favorite-button ${vehicle.custom?.favorite ? "active" : ""}" type="button" data-favorite="${escapeHTML(vehicle.modelName)}" title="Toggle favorite">${vehicle.custom?.favorite ? "★" : "☆"}</button>
+
+        <button class="vl-installed-button ${vehicle.custom?.installed === true ? "active" : ""}" type="button" data-installed="${escapeHTML(vehicle.modelName)}" title="${vehicle.custom?.installed === true ? "Mark not installed" : "Mark installed"}">${vehicle.custom?.installed === true ? "INSTALLED" : "+ INSTALL"}</button>
+
+        <div class="vl-card-source-dots">
+          <span class="vl-source-dot ${vehicle.vehiclesMeta?.modelName ? "ready" : ""}">META</span>
+          <span class="vl-source-dot ${handling ? "ready" : ""}">HANDLING</span>
+          <span class="vl-source-dot ${(vehicle.popgroups || []).length ? "ready" : ""}">GROUPS</span>
         </div>
-        <div class="vl-card-copy">
-          <div class="vl-card-title-row"><h3 class="vl-card-title">${escapeHTML(title)}</h3></div>
-          <div class="vl-card-model">${escapeHTML(vehicle.modelName)}</div>
-          <div class="vl-card-make">${escapeHTML(vehicle.vehiclesMeta?.vehicleMakeName || "Make not listed")}</div>
-          <div class="vl-card-badges">
-            <span class="vl-badge">${escapeHTML(classLabel)}</span>
-            ${handling?.AIHandling ? `<span class="vl-badge ai">${escapeHTML(handling.AIHandling)}</span>` : ""}
-            ${vehicle.custom?.installed === true ? `<span class="vl-badge installed-status">INSTALLED</span>` : ""}
-            ${installType !== "Unknown" ? `<span class="vl-badge install">${escapeHTML(installType)}</span>` : ""}
-          </div>
-          <div class="vl-card-actions"><a href="${detailsUrl}">Open Vehicle Details</a></div>
+      </div>
+
+      <div class="vl-card-copy">
+        <div class="vl-card-title-row">
+          <h3 class="vl-card-title">${escapeHTML(title)}</h3>
         </div>
-      </article>
-    `;
-  }
+
+        <p class="vl-card-model">${escapeHTML(vehicle.modelName)}</p>
+
+        <div class="vl-card-badges">
+          <span class="vl-badge">${escapeHTML(classLabel)}</span>
+          ${handling?.AIHandling ? `<span class="vl-badge ai">${escapeHTML(handling.AIHandling)}</span>` : ""}
+          ${vehicle.custom?.installed === true ? `<span class="vl-badge installed-status">INSTALLED</span>` : ""}
+          ${installType !== "Unknown" ? `<span class="vl-badge install">${escapeHTML(installType)}</span>` : ""}
+        </div>
+
+        <div class="vl-card-actions">
+          <a href="${escapeHTML(detailsUrl)}">Open Vehicle Details</a>
+        </div>
+      </div>
+    </article>
+  `;
+}
 
   function renderGrid() {
     const filtered = getFilteredVehicles();
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    state.page = Math.min(state.page, totalPages);
-    const start = (state.page - 1) * PAGE_SIZE;
-    const visible = filtered.slice(start, start + PAGE_SIZE);
+	const pageSize = state.pageSize || DEFAULT_PAGE_SIZE;
+	const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+	state.page = Math.min(state.page, totalPages);
+	const start = (state.page - 1) * pageSize;
+	const visible = filtered.slice(start, start + pageSize);
 
-    el("vlResultCount").textContent = filtered.length
-      ? `Showing ${start + 1}-${Math.min(start + PAGE_SIZE, filtered.length)} of ${filtered.length.toLocaleString()} vehicles`
-      : "0 vehicles";
+	el("vlResultCount").textContent = filtered.length
+  ? `Showing ${start + 1}-${Math.min(start + pageSize, filtered.length)} of ${filtered.length.toLocaleString()} vehicles`
+  : "0 vehicles";
 
     const grid = el("vlVehicleGrid");
     grid.classList.toggle("list-view", state.view === "list");
@@ -1594,7 +1631,19 @@ grid.querySelectorAll(
       state.page = 1;
       renderGrid();
     });
-
+    const pageSizeSelect = el("vlPageSize");
+if (pageSizeSelect) {
+  pageSizeSelect.value = String(state.pageSize);
+  pageSizeSelect.addEventListener("change", event => {
+    const nextPageSize = Number(event.target.value);
+    state.pageSize = PAGE_SIZE_OPTIONS.has(nextPageSize)
+      ? nextPageSize
+      : DEFAULT_PAGE_SIZE;
+    savePageSize(state.pageSize);
+    state.page = 1;
+    renderGrid();
+  });
+}
     el("vlGridView").addEventListener("click", () => {
       state.view = "grid";
       el("vlGridView").classList.add("active");
