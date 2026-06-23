@@ -239,6 +239,41 @@ function splitIntoBatches(records, batchSize = 50) {
 
   return batches;
 }
+function createImportSessionId(type, source) {
+  const randomId =
+    crypto?.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2)}`;
+
+  return [
+    type,
+    source.sourcePath,
+    randomId
+  ].join(":");
+}
+
+function buildImportSourcePayload(source) {
+  return {
+    sourceLabel:
+      source.sourceLabel,
+
+    dlcFolder:
+      source.dlcFolder,
+
+    sourceDirectory:
+      source.sourceDirectory,
+
+    sourcePath:
+      source.sourcePath,
+
+    originalFileName:
+      source.originalFileName
+  };
+}
+
+
 async function importVehicleFiles(files) {
   if (!window.vehicleCloud?.importLibraryBatch) {
     throw new Error(
@@ -322,7 +357,15 @@ async function importVehicleFiles(files) {
         cloudRecords,
         50
       );
+	  
+	const importSessionId =
+	createImportSessionId(
+    "vehicles.meta",
+    source
+  );
 
+	const importSource =
+	buildImportSourcePayload(source);
     for (
       let batchIndex = 0;
       batchIndex < batches.length;
@@ -339,12 +382,15 @@ async function importVehicleFiles(files) {
       );
 
       const result =
-        await window.vehicleCloud.importLibraryBatch({
-          importMode: "vehicles-meta",
-          vehicles: batch,
-          handlingProfiles: []
-        });
-
+  await window.vehicleCloud.importLibraryBatch({
+    importMode: "vehicles-meta",
+    importSessionId,
+    importSource,
+    sourceFile:
+      source.sourceFile,
+    vehicles: batch,
+    handlingProfiles: []
+  });
       imported += Number(
         result.vehiclesImported ??
         batch.length
@@ -496,7 +542,16 @@ async function importHandlingFiles(files) {
 
     const batches =
       splitIntoBatches(profiles, 50);
+	  
+const importSessionId =
+  createImportSessionId(
+    "handling.meta",
+    source
+  );
 
+const importSource =
+  buildImportSourcePayload(source);
+  
     for (
       let batchIndex = 0;
       batchIndex < batches.length;
@@ -512,10 +567,15 @@ async function importHandlingFiles(files) {
       );
 
       const result =
-        await window.vehicleCloud.importLibraryBatch({
-          vehicles: [],
-          handlingProfiles: batch
-        });
+  await window.vehicleCloud.importLibraryBatch({
+    importMode: "handling-meta",
+    importSessionId,
+    importSource,
+    sourceFile:
+      source.sourceFile,
+    vehicles: [],
+    handlingProfiles: batch
+  });
 
       imported += Number(
         result.handlingProfilesImported ??
@@ -629,7 +689,14 @@ async function importPopgroupsFiles(files) {
         records,
         50
       );
+const importSessionId =
+  createImportSessionId(
+    "popgroups",
+    source
+  );
 
+const importSource =
+  buildImportSourcePayload(source);
     for (
       let batchIndex = 0;
       batchIndex < batches.length;
@@ -646,13 +713,17 @@ async function importPopgroupsFiles(files) {
       );
 
       const result =
-        await window.vehicleCloud.importLibraryBatch({
-          importMode: "popgroups",
-          sourceFile: source.sourceFile,
-          replaceSource: batchIndex === 0,
-          vehicles: batch,
-          handlingProfiles: []
-        });
+  await window.vehicleCloud.importLibraryBatch({
+    importMode: "popgroups",
+    importSessionId,
+    importSource,
+    sourceFile:
+      source.sourceFile,
+    replaceSource:
+      batchIndex === 0,
+    vehicles: batch,
+    handlingProfiles: []
+  });
 
       membershipCount += Number(
         result.popgroupsImported ??
