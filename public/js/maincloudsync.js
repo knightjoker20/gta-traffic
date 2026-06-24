@@ -5,6 +5,57 @@
    ===================================================== */
 
 const MAIN_CLOUD_BATCH_SIZE = 50;
+let mainCloudVehicleImageMap = new Map();
+
+function getMainCloudVehicleImageUrl(model) {
+  const key = String(model || "").trim().toLowerCase();
+
+  if (!key) {
+    return "";
+  }
+
+  return mainCloudVehicleImageMap.get(key) || "";
+}
+
+async function loadMainCloudVehicleImages(options = {}) {
+  if (!window.vehicleCloud?.getVehicleImages) {
+    console.warn("Cloud image sync skipped: vehicleCloud.getVehicleImages is not available.");
+    return;
+  }
+
+  try {
+    const images = await window.vehicleCloud.getVehicleImages();
+
+    mainCloudVehicleImageMap = new Map(
+      images
+        .filter(image => image?.modelName && image?.imageUrl)
+        .map(image => [
+          String(image.modelName).toLowerCase(),
+          image.imageUrl
+        ])
+    );
+
+    if (!options.silent && typeof updateStatus === "function") {
+      updateStatus(
+        `Loaded ${mainCloudVehicleImageMap.size.toLocaleString()} cloud vehicle image references.`
+      );
+    }
+
+    if (typeof renderSection === "function" && typeof currentSection !== "undefined") {
+      renderSection(currentSection);
+    }
+
+    if (typeof renderVehicleLibrary === "function") {
+      renderVehicleLibrary();
+    }
+  } catch (error) {
+    console.warn("Cloud vehicle images could not be loaded.", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadMainCloudVehicleImages({ silent: true });
+});
 
 function mainCloudCanSync() {
   return Boolean(window.vehicleCloud?.importLibraryBatch);

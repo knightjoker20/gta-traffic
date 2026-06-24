@@ -23,20 +23,34 @@ function refreshImages() {
 }
 
 function renderVehicleImage(model, cssClass) {
-  const safeModel = escapeAttribute(model.toLowerCase());
+  const normalizedModel = String(model || "").toLowerCase();
+  const safeModel = escapeAttribute(normalizedModel);
   const altText = escapeAttribute(model);
+  const cloudImageUrl =
+    typeof getMainCloudVehicleImageUrl === "function"
+      ? getMainCloudVehicleImageUrl(model)
+      : "";
+
+  const imageSrc = cloudImageUrl ||
+    `images/${safeModel}.jpg?v=${imageRefreshVersion}`;
+
+  const fallbackStep = cloudImageUrl ? -1 : 0;
 
   return `
     <img
       class="${cssClass}"
-      src="images/${safeModel}.jpg?v=${imageRefreshVersion}"
-      onerror="tryNextImage(this, '${safeModel}', 0)"
+      src="${escapeAttribute(imageSrc)}"
+      onerror="tryNextImage(this, '${safeModel}', ${fallbackStep})"
       alt="${altText}"
     >
   `;
 }
-
 function tryNextImage(img, model, step) {
+ if (step < 0) {
+    img.onerror = () => tryNextImage(img, model, 0);
+    img.src = `images/${model}.jpg?v=${imageRefreshVersion}`;
+    return;
+  }
   if (step === 0) {
     img.onerror = () => tryNextImage(img, model, 1);
     img.src = `images/${model}.png?v=${imageRefreshVersion}`;
