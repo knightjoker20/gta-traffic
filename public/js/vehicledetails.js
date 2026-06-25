@@ -1,3 +1,26 @@
+function normalizeInstallType(value) {
+  const raw = String(value || "").trim();
+  const key = raw.toLowerCase();
+
+  if (!key) {
+    return "";
+  }
+
+  if (key === "stock" || key === "vanilla") {
+    return "Vanilla";
+  }
+
+  if (key === "add-on" || key === "addon" || key === "add on") {
+    return "Add-On";
+  }
+
+  if (key === "replacement") {
+    return "Replacement";
+  }
+
+  return raw;
+}
+
 // =====================================================
 // GTA Traffic Vehicle Details V1.0
 // Displays merged parsed data and saves custom reference
@@ -130,7 +153,7 @@ const el = id => document.getElementById(id);
       meta.vehicleType ? `<span class="vd-badge">${escapeHTML(meta.vehicleType)}</span>` : "",
       handling?.AIHandling ? `<span class="vd-badge green">AI: ${escapeHTML(handling.AIHandling)}</span>` : "",
       vehicle.custom?.installed === true ? `<span class="vd-badge installed">INSTALLED</span>` : "",
-      vehicle.custom?.installType ? `<span class="vd-badge green">${escapeHTML(vehicle.custom.installType)}</span>` : ""
+      normalizeInstallType(vehicle.custom?.installType) ? `<span class="vd-badge green">${escapeHTML(normalizeInstallType(vehicle.custom.installType))}</span>` : ""
     ].filter(Boolean);
     el("vdIdentityBadges").innerHTML = badges.join("");
 
@@ -312,7 +335,7 @@ const el = id => document.getElementById(id);
       sourcePack: custom.sourcePack || "",
       gameVersion: custom.gameVersion || "",
       installDate: custom.installDate || "",
-      installationType: custom.installType || "",
+      installationType: normalizeInstallType(custom.installType) || "",
       replacementSlot: custom.replacementFor || "",
       installedDlcFolder: custom.dlcFolderPath || "",
       yftPath: custom.yftPath || "",

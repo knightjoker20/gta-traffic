@@ -89,10 +89,52 @@ function savePageSize(value) {
     return doc;
   }
 
+  function normalizeInstallType(value) {
+    const raw = String(value || "").trim();
+    const key = raw.toLowerCase();
+
+    if (!key) {
+      return "";
+    }
+
+    if (key === "stock" || key === "vanilla") {
+      return "Vanilla";
+    }
+
+    if (key === "add-on" || key === "addon" || key === "add on") {
+      return "Add-On";
+    }
+
+    if (key === "replacement") {
+      return "Replacement";
+    }
+
+    return raw;
+  }
+
+  function installTypeClass(value) {
+    return normalizeInstallType(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "unknown";
+  }
+
   function inferInstallType(vehicle) {
-    const customType = vehicle.custom?.installType;
-    if (customType) return customType;
-    if (vehicle.vehiclesMeta?.modelName && vehicle.sources?.vehiclesMeta?.length) return "Unknown";
+    const customType = normalizeInstallType(
+      vehicle.custom?.installType
+    );
+
+    if (customType) {
+      return customType;
+    }
+
+    if (
+      vehicle.vehiclesMeta?.modelName &&
+      vehicle.sources?.vehiclesMeta?.length
+    ) {
+      return "Unknown";
+    }
+
     return "Unknown";
   }
 
@@ -1315,6 +1357,10 @@ function cardHtml(vehicle) {
   const image = vehicle.custom?.imageDataUrl;
   const classLabel = cleanClassName(vehicle.vehiclesMeta?.vehicleClass);
   const installType = inferInstallType(vehicle);
+  const installTypeTag =
+    installType !== "Unknown"
+      ? `<span class="vl-image-install-tag ${escapeHTML(installTypeClass(installType))}">${escapeHTML(installType.toUpperCase())}</span>`
+      : "";
   const detailsUrl = `vehicle-details.html?model=${encodeURIComponent(vehicle.modelName)}`;
 
   const imageHtml = image
@@ -1327,6 +1373,8 @@ function cardHtml(vehicle) {
         <a class="vl-vehicle-photo-link" href="${escapeHTML(detailsUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${escapeHTML(title)} details in a new tab">
           ${imageHtml}
         </a>
+
+        ${installTypeTag}
 
         <button class="vl-favorite-button ${vehicle.custom?.favorite ? "active" : ""}" type="button" data-favorite="${escapeHTML(vehicle.modelName)}" title="Toggle favorite">${vehicle.custom?.favorite ? "★" : "☆"}</button>
 
