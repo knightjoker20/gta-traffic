@@ -121,6 +121,16 @@ function savePageSize(value) {
     return `install-${normalized}`;
   }
 
+  function installTypeTagLabel(value) {
+    const normalized = normalizeInstallType(value);
+
+    if (normalized === "Replacement") {
+      return "REPLACE";
+    }
+
+    return normalized.toUpperCase();
+  }
+
   function inferInstallType(vehicle) {
     const customType = normalizeInstallType(
       vehicle.custom?.installType
@@ -1361,7 +1371,7 @@ function cardHtml(vehicle) {
   const installType = inferInstallType(vehicle);
   const installTypeTag =
     installType !== "Unknown"
-      ? `<span class="vl-image-install-tag ${escapeHTML(installTypeClass(installType))}">${escapeHTML(installType.toUpperCase())}</span>`
+      ? `<span class="vl-image-install-tag ${escapeHTML(installTypeClass(installType))}">${escapeHTML(installTypeTagLabel(installType))}</span>`
       : "";
   const detailsUrl = `vehicle-details.html?model=${encodeURIComponent(vehicle.modelName)}`;
 
@@ -1379,8 +1389,6 @@ function cardHtml(vehicle) {
         ${installTypeTag}
 
         <button class="vl-favorite-button ${vehicle.custom?.favorite ? "active" : ""}" type="button" data-favorite="${escapeHTML(vehicle.modelName)}" title="Toggle favorite">${vehicle.custom?.favorite ? "★" : "☆"}</button>
-
-        <button class="vl-installed-button ${vehicle.custom?.installed === true ? "active" : ""}" type="button" data-installed="${escapeHTML(vehicle.modelName)}" title="${vehicle.custom?.installed === true ? "Mark not installed" : "Mark installed"}">${vehicle.custom?.installed === true ? "INSTALLED" : "+ INSTALL"}</button>
 
         <div class="vl-card-source-dots">
           <span class="vl-source-dot ${vehicle.vehiclesMeta?.modelName ? "ready" : ""}">META</span>
