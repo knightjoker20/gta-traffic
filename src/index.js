@@ -1431,6 +1431,482 @@ return jsonResponse(
     201
   );
 }
+
+const DEFAULT_WORKSPACE_ID = "default";
+
+function normalizeWorkspaceId(value) {
+  const workspaceId = optionalText(value) || DEFAULT_WORKSPACE_ID;
+
+  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(workspaceId)) {
+    return DEFAULT_WORKSPACE_ID;
+  }
+
+  return workspaceId;
+}
+
+function sanitizePackKey(value) {
+  const key = String(value || "pack")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  return key || `pack_${crypto.randomUUID()}`;
+}
+
+function normalizeModelName(value) {
+  const modelName = optionalText(value);
+
+  if (!modelName) {
+    return "";
+  }
+
+  return modelName.toLowerCase();
+}
+
+function normalizePackRow(row) {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    packKey: row.pack_key,
+    name: row.name,
+    creator: row.creator,
+    dlcFolder: row.dlc_folder,
+    version: row.version,
+    website: row.website,
+    notes: row.notes,
+    sourceFileId: row.source_file_id,
+    sourceType: row.source_type,
+    sourceLabel: row.source_label,
+    vehicleCount: Number(row.vehicle_count || 0),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function normalizeVehiclePackRow(row) {
+  return {
+    membershipId: row.membership_id,
+    workspaceId: row.workspace_id,
+    modelName: row.model_name,
+    relationshipType: row.relationship_type,
+    pack: {
+      id: row.pack_id,
+      packKey: row.pack_key,
+      name: row.name,
+      creator: row.creator,
+      dlcFolder: row.dlc_folder,
+      version: row.version,
+      website: row.website,
+      notes: row.notes,
+      sourceType: row.source_type,
+      sourceLabel: row.source_label,
+      createdAt: row.pack_created_at,
+      updatedAt: row.pack_updated_at
+    }
+  };
+}
+
+async function handlePackList(request, env) {
+  const url = new URL(request.url);
+  const workspaceId = normalizeWorkspaceId(
+    url.searchParams.get("workspaceId")
+  );
+
+  const result = await env.DB
+    .prepare(`
+      SELECT
+        p.id,
+        p.workspace_id,
+        p.pack_key,
+        p.name,
+        p.creator,
+        p.dlc_folder,
+        p.version,
+        p.website,
+        p.notes,
+        p.source_file_id,
+        p.source_type,
+        p.source_label,
+        p.created_at,
+        p.updated_at,
+        COUNT(vpm.id) AS vehicle_count
+      FROM pack_records p
+      LEFT JOIN vehicle_pack_memberships vpm
+        ON vpm.pack_id = p.id
+       AND vpm.workspace_id = p.workspace_id
+      WHERE p.workspace_id = ?
+      GROUP BY p.id
+      ORDER BY p.name COLLATE NOCASE ASC
+    `)
+    .bind(workspaceId)
+    .all();
+
+  const packs = Array.isArray(result.results)
+    ? result.results.map(normalizePackRow)
+    : [];
+
+  return jsonResponse({
+    ok: true,
+    workspaceId,
+    total: packs.length,
+    packs
+  });
+}
+
+async function handleVehiclePackList(request, env) {
+  const url = new URL(request.url);
+
+  const workspaceId = normalizeWorkspaceId(
+    url.searchParams.get("workspaceId")
+  );
+
+  const modelName = normalizeModelName(
+    url.searchParams.get("modelName")
+  );
+
+  if (!modelName) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "modelName is required"
+      },
+      400
+    );
+  }
+
+  const result = await env.DB
+    .prepare(`
+      SELECT
+        vpm.id AS membership_id,
+        vpm.workspace_id,
+        vpm.model_name,
+        vpm.relationship_type,
+        p.id AS pack_id,
+        p.pack_key,
+        p.name,
+        p.creator,
+        p.dlc_folder,
+        p.version,
+        p.website,
+        p.notes,
+        p.source_type,
+        p.source_label,
+        p.created_at AS pack_created_at,
+        p.updated_at AS pack_updated_at
+      FROM vehicle_pack_memberships vpm
+      INNER JOIN pack_records p
+        ON p.id = vpm.pack_id
+       AND p.workspace_id = vpm.workspace_id
+      WHERE vpm.workspace_id = ?
+        AND vpm.model_name = ? COLLATE NOCASE
+      ORDER BY p.name COLLATE NOCASE ASC
+    `)
+    .bind(workspaceId, modelName)
+    .all();
+
+  const memberships = Array.isArray(result.results)
+    ? result.results.map(normalizeVehiclePackRow)
+    : [];
+
+  return jsonResponse({
+    ok: true,
+    workspaceId,
+    modelName,
+    total: memberships.length,
+    memberships
+  });
+}
+
+function normalizePackImportBody(body) {
+  const workspaceId = normalizeWorkspaceId(body?.workspaceId);
+
+  const packsObject =
+    body?.packs &&
+    typeof body.packs === "object" &&
+    !Array.isArray(body.packs)
+      ? body.packs
+      : {};
+
+  const vehiclePackMap =
+    body?.vehiclePackMap &&
+    typeof body.vehiclePackMap === "object" &&
+    !Array.isArray(body.vehiclePackMap)
+      ? body.vehiclePackMap
+      : {};
+
+  const packs = Object.entries(packsObject)
+    .map(([fallbackKey, pack]) => {
+      if (!pack || typeof pack !== "object") {
+        return null;
+      }
+
+      const packKey = sanitizePackKey(
+        pack.id ||
+        pack.packKey ||
+        fallbackKey ||
+        pack.name
+      );
+
+      const name =
+        optionalText(pack.name) ||
+        packKey.replace(/_/g, " ");
+
+      return {
+        id: `${workspaceId}:pack:${packKey}`,
+        workspaceId,
+        packKey,
+        name,
+        creator: optionalText(pack.creator),
+        dlcFolder: optionalText(pack.dlcFolder),
+        version: optionalText(pack.version),
+        website: optionalText(pack.website),
+        notes: optionalText(pack.notes),
+        sourceType: optionalText(body?.sourceType) || "pack-database",
+        sourceLabel:
+          optionalText(body?.sourceLabel) ||
+          optionalText(pack.name) ||
+          name,
+        rawPackJson: JSON.stringify(pack)
+      };
+    })
+    .filter(Boolean);
+
+  const packKeyByOriginalId = new Map();
+
+  Object.entries(packsObject).forEach(([fallbackKey, pack]) => {
+    if (!pack || typeof pack !== "object") {
+      return;
+    }
+
+    const packKey = sanitizePackKey(
+      pack.id ||
+      pack.packKey ||
+      fallbackKey ||
+      pack.name
+    );
+
+    [
+      fallbackKey,
+      pack.id,
+      pack.packKey,
+      pack.name
+    ].forEach(value => {
+      const textValue = optionalText(value);
+
+      if (textValue) {
+        packKeyByOriginalId.set(textValue, packKey);
+      }
+    });
+  });
+
+  const memberships = Object.entries(vehiclePackMap)
+    .map(([modelName, originalPackId]) => {
+      const cleanModelName = normalizeModelName(modelName);
+      const originalId = optionalText(originalPackId);
+
+      if (!cleanModelName || !originalId) {
+        return null;
+      }
+
+      const packKey =
+        packKeyByOriginalId.get(originalId) ||
+        sanitizePackKey(originalId);
+
+      return {
+        id:
+          `${workspaceId}:membership:${packKey}:${cleanModelName}:included`,
+        workspaceId,
+        packId: `${workspaceId}:pack:${packKey}`,
+        modelName: cleanModelName,
+        relationshipType: "included",
+        rawMembershipJson: JSON.stringify({
+          modelName: cleanModelName,
+          packId: originalId
+        })
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    workspaceId,
+    packs,
+    memberships
+  };
+}
+
+async function handlePackImport(request, env) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const parsed = await readJsonRequest(request);
+
+  if (parsed.error) {
+    return parsed.error;
+  }
+
+  const {
+    workspaceId,
+    packs,
+    memberships
+  } = normalizePackImportBody(parsed.body || {});
+
+  if (packs.length === 0) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "At least one pack is required"
+      },
+      400
+    );
+  }
+
+  if (packs.length > 100) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "A maximum of 100 packs may be imported per request"
+      },
+      400
+    );
+  }
+
+  if (memberships.length > 5000) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "A maximum of 5000 vehicle pack memberships may be imported per request"
+      },
+      400
+    );
+  }
+
+  await env.DB
+    .prepare(`
+      INSERT OR IGNORE INTO workspaces (
+        id,
+        owner_user_id,
+        name,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ?,
+        NULL,
+        'Default Workspace',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+    `)
+    .bind(workspaceId)
+    .run();
+
+  const packStatements = packs.map(pack =>
+    env.DB.prepare(`
+      INSERT INTO pack_records (
+        id,
+        workspace_id,
+        pack_key,
+        name,
+        creator,
+        dlc_folder,
+        version,
+        website,
+        notes,
+        source_type,
+        source_label,
+        raw_pack_json,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT(workspace_id, pack_key)
+      DO UPDATE SET
+        name = excluded.name,
+        creator = excluded.creator,
+        dlc_folder = excluded.dlc_folder,
+        version = excluded.version,
+        website = excluded.website,
+        notes = excluded.notes,
+        source_type = excluded.source_type,
+        source_label = excluded.source_label,
+        raw_pack_json = excluded.raw_pack_json,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(
+      pack.id,
+      pack.workspaceId,
+      pack.packKey,
+      pack.name,
+      pack.creator,
+      pack.dlcFolder,
+      pack.version,
+      pack.website,
+      pack.notes,
+      pack.sourceType,
+      pack.sourceLabel,
+      pack.rawPackJson
+    )
+  );
+
+  if (packStatements.length > 0) {
+    await env.DB.batch(packStatements);
+  }
+
+  const membershipStatements = memberships.map(membership =>
+    env.DB.prepare(`
+      INSERT INTO vehicle_pack_memberships (
+        id,
+        workspace_id,
+        pack_id,
+        model_name,
+        relationship_type,
+        raw_membership_json,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ?, ?, ?, ?, ?, ?,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT(workspace_id, pack_id, model_name, relationship_type)
+      DO UPDATE SET
+        raw_membership_json = excluded.raw_membership_json,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(
+      membership.id,
+      membership.workspaceId,
+      membership.packId,
+      membership.modelName,
+      membership.relationshipType,
+      membership.rawMembershipJson
+    )
+  );
+
+  if (membershipStatements.length > 0) {
+    await env.DB.batch(membershipStatements);
+  }
+
+  return jsonResponse(
+    {
+      ok: true,
+      message: "Pack database imported",
+      workspaceId,
+      packsImported: packs.length,
+      membershipsImported: memberships.length
+    },
+    201
+  );
+}
+
 const VEHICLE_IMAGE_PREFIX = "vehicles/";
 const MAX_VEHICLE_IMAGE_BYTES = 10 * 1024 * 1024;
 
@@ -2151,6 +2627,27 @@ if (
 ) {
   return await handleLibraryV2Import(request, env);
 }
+if (
+  request.method === "GET" &&
+  url.pathname === "/api/packs"
+) {
+  return await handlePackList(request, env);
+}
+
+if (
+  request.method === "GET" &&
+  url.pathname === "/api/vehicle-packs"
+) {
+  return await handleVehiclePackList(request, env);
+}
+
+if (
+  request.method === "POST" &&
+  url.pathname === "/api/packs/import"
+) {
+  return await handlePackImport(request, env);
+}
+
 const vehiclePatchRoute =
   url.pathname.match(
     /^\/api\/vehicles\/([a-zA-Z0-9_-]{1,100})$/

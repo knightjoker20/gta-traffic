@@ -169,7 +169,134 @@ function updateActivePackBox() {
 
 function savePackDatabase() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(packDatabase));
+  schedulePackCloudSync();
 }
+
+let packCloudSyncTimer = null;
+let packCloudSyncInFlight = false;
+let packCloudSyncQueued = false;
+
+function hasStoredLibraryWriteToken() {
+  try {
+    return Boolean(
+      localStorage.getItem("gtaTrafficLibraryWriteToken")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function schedulePackCloudSync() {
+  if (!hasStoredLibraryWriteToken()) {
+    return;
+  }
+
+  clearTimeout(packCloudSyncTimer);
+
+  packCloudSyncTimer = setTimeout(() => {
+    syncPackDatabaseToCloud({ quiet: true });
+  }, 800);
+}
+
+async function syncPackDatabaseToCloud(options = {}) {
+  const quiet = options.quiet === true;
+  const force = options.force === true;
+
+  if (!window.vehicleCloud?.importPackDatabaseToCloud) {
+    if (!quiet && els?.packStatus) {
+      els.packStatus.innerHTML =
+        '<span class="warning">Cloud pack sync is not available on this page.</span>';
+    }
+
+    return {
+      ok: false,
+      skipped: true,
+      reason: "cloud-service-unavailable"
+    };
+  }
+
+  if (!force && !hasStoredLibraryWriteToken()) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: "missing-library-token"
+    };
+  }
+
+  const packCount = Object.keys(packDatabase.packs || {}).length;
+
+  if (packCount === 0) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: "no-packs"
+    };
+  }
+
+  if (packCloudSyncInFlight) {
+    packCloudSyncQueued = true;
+
+    return {
+      ok: false,
+      skipped: true,
+      reason: "sync-in-flight"
+    };
+  }
+
+  packCloudSyncInFlight = true;
+
+  if (!quiet && els?.packStatus) {
+    els.packStatus.innerHTML =
+      '<span class="saved">Syncing Pack Tracker to cloud...</span>';
+  }
+
+  try {
+    const result =
+      await window.vehicleCloud.importPackDatabaseToCloud(
+        packDatabase,
+        {
+          workspaceId: "default",
+          sourceType: "pack-tracker",
+          sourceLabel: "Pack Tracker"
+        }
+      );
+
+    if (!quiet && els?.packStatus) {
+      els.packStatus.innerHTML =
+        '<span class="saved">Pack Tracker synced to cloud: ' +
+        result.packsImported +
+        ' pack(s), ' +
+        result.membershipsImported +
+        ' vehicle assignment(s).</span>';
+    }
+
+    return result;
+  } catch (error) {
+    console.warn("Pack Tracker cloud sync failed.", error);
+
+    if (!quiet && els?.packStatus) {
+      els.packStatus.innerHTML =
+        '<span class="warning">Pack cloud sync failed: ' +
+        escapeHTML(error.message || "Unknown error") +
+        '</span>';
+    }
+
+    return {
+      ok: false,
+      error
+    };
+  } finally {
+    packCloudSyncInFlight = false;
+
+    if (packCloudSyncQueued) {
+      packCloudSyncQueued = false;
+      schedulePackCloudSync();
+    }
+  }
+}
+
+window.syncPackDatabaseToCloud = syncPackDatabaseToCloud;
+
 
 function loadPackDatabase() {
   const raw = localStorage.getItem(STORAGE_KEY);

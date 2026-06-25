@@ -374,6 +374,109 @@ async function getSourceHistory(options = {}) {
   return result.sourceHistory;
 }
 
+
+async function getPacks(options = {}) {
+  const params = new URLSearchParams();
+
+  if (options.workspaceId) {
+    params.set("workspaceId", options.workspaceId);
+  }
+
+  const query = params.toString();
+
+  const result = await fetchCloudJson(
+    `/api/packs${query ? `?${query}` : ""}`,
+    "Cloud pack database"
+  );
+
+  if (!Array.isArray(result.packs)) {
+    throw new Error("Cloud pack response was invalid.");
+  }
+
+  return result.packs;
+}
+
+async function getVehiclePacks(modelName, options = {}) {
+  const normalizedModelName =
+    String(modelName || "").trim();
+
+  if (!normalizedModelName) {
+    return [];
+  }
+
+  const params = new URLSearchParams();
+  params.set("modelName", normalizedModelName);
+
+  if (options.workspaceId) {
+    params.set("workspaceId", options.workspaceId);
+  }
+
+  const result = await fetchCloudJson(
+    `/api/vehicle-packs?${params.toString()}`,
+    "Vehicle pack memberships"
+  );
+
+  if (!Array.isArray(result.memberships)) {
+    throw new Error("Vehicle pack membership response was invalid.");
+  }
+
+  return result.memberships;
+}
+
+async function importPackDatabaseToCloud(packData, options = {}) {
+  const token = getLibraryWriteToken();
+
+  if (!token) {
+    throw new Error(
+      "The library write token was not entered."
+    );
+  }
+
+  const payload = {
+    workspaceId: options.workspaceId || "default",
+    sourceType: options.sourceType || "pack-database",
+    sourceLabel: options.sourceLabel || "Pack Tracker",
+    packs: packData?.packs || {},
+    vehiclePackMap: packData?.vehiclePackMap || {}
+  };
+
+  const response = await fetch(
+    "/api/packs/import",
+    {
+      method: "POST",
+
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Library-Token": token
+      },
+
+      body: JSON.stringify(payload)
+    }
+  );
+
+  let result;
+
+  try {
+    result = await response.json();
+  } catch {
+    result = {
+      ok: false,
+      error: "Pack import returned a non-JSON response."
+    };
+  }
+
+  if (!response.ok || result.ok === false) {
+    throw new Error(
+      result.error ||
+      result.message ||
+      "Pack database could not be imported."
+    );
+  }
+
+  return result;
+}
+
 async function getLibraryData(
   localVehicles = []
 ) {
@@ -693,9 +796,12 @@ window.vehicleCloud = {
   getHandlingProfiles,
   getVehiclePopgroups,
   getVehicleImages,
+  getPacks,
+  getVehiclePacks,
   getLibraryData,
   updateVehicle,
   importLibraryBatch,
+  importPackDatabaseToCloud,
   clearLibraryWriteToken,
   uploadVehicleImage,
   deleteVehicleImage,
