@@ -5,6 +5,7 @@
    ===================================================== */
 
 const MAIN_CLOUD_BATCH_SIZE = 50;
+
 let mainCloudVehicleImageMap = new Map();
 
 function getMainCloudVehicleImageUrl(model) {
@@ -53,10 +54,6 @@ async function loadMainCloudVehicleImages(options = {}) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadMainCloudVehicleImages({ silent: true });
-});
-
 function mainCloudCanSync() {
   return Boolean(window.vehicleCloud?.importLibraryBatch);
 }
@@ -95,9 +92,23 @@ function mainCloudBuildImportSource(sourceType, sourceFile) {
     dlcFolder: "",
     sourceDirectory: "",
     sourcePath: fileName,
+    sourceFile: fileName,
     originalFileName: fileName,
     sourceType
   };
+}
+
+function mainCloudGetActivePackForImport() {
+  if (
+    typeof activePackId === "undefined" ||
+    !activePackId ||
+    typeof packDatabase === "undefined" ||
+    !packDatabase?.packs
+  ) {
+    return null;
+  }
+
+  return packDatabase.packs[activePackId] || null;
 }
 
 function mainCloudBuildPopgroupsRecords(sourceFile) {
@@ -142,9 +153,68 @@ function mainCloudBuildPopgroupsRecords(sourceFile) {
   return [...memberships.values()];
 }
 
+function mainCloudBuildVehiclesMetaRecords(records, sourceFile) {
+  const importSource = mainCloudBuildImportSource(
+    "vehicles.meta",
+    sourceFile
+  );
+
+  const activePack = mainCloudGetActivePackForImport();
+
+  return (Array.isArray(records) ? records : [])
+    .map(meta => {
+      const modelName = mainCloudNormalizeModel(meta?.modelName);
+
+      if (!modelName) {
+        return null;
+      }
+
+      return {
+        modelName,
+
+        vehiclesMeta: {
+          modelName,
+          txdName: meta.txdName || "",
+          handlingId: meta.handlingId || "",
+          gameName: meta.gameName || "",
+          vehicleMakeName: meta.vehicleMakeName || "",
+          vehicleClass: meta.vehicleClass || "",
+          vehicleType: meta.vehicleType || "",
+          audioNameHash: meta.audioNameHash || "",
+          layout: meta.layout || "",
+          plateType: meta.plateType || "",
+          wheelType: meta.wheelType || "",
+          frequency: meta.frequency || "",
+          swankness: meta.swankness || "",
+          maxNum: meta.maxNum || "",
+          maxNumOfSameColor: meta.maxNumOfSameColor || "",
+          identicalModelSpawnDistance:
+            meta.identicalModelSpawnDistance || ""
+        },
+
+        custom: {
+          rockstarDlc: activePack?.dlcFolder || "",
+          sourcePack: activePack?.name || importSource.sourceLabel,
+          vehiclesMetaPath: importSource.sourcePath
+        },
+
+        sources: {
+          vehiclesMeta: [
+            importSource.sourcePath
+          ],
+          popgroups: []
+        },
+
+        importSource
+      };
+    })
+    .filter(Boolean);
+}
+
 async function syncMainPagePopgroupsToCloud(sourceFile) {
   if (!mainCloudCanSync()) {
     console.warn("Cloud sync skipped: vehicleCloud.importLibraryBatch is not available.");
+
     return {
       ok: false,
       skipped: true,
@@ -156,6 +226,7 @@ async function syncMainPagePopgroupsToCloud(sourceFile) {
 
   if (!records.length) {
     console.warn("Cloud sync skipped: no Popgroups vehicle records were found.");
+
     return {
       ok: false,
       skipped: true,
@@ -205,3 +276,84 @@ async function syncMainPagePopgroupsToCloud(sourceFile) {
     batches: batches.length
   };
 }
+
+async function syncMainPageVehiclesMetaToCloud(records, sourceFile) {
+  if (!mainCloudCanSync()) {
+    console.warn("Cloud sync skipped: vehicleCloud.importLibraryBatch is not available.");
+
+    return {
+      ok: false,
+      skipped: true,
+      reason: "cloud-service-unavailable"
+    };
+  }
+
+  const cloudRecords = mainCloudBuildVehiclesMetaRecords(
+    records,
+    sourceFile
+  );
+
+  if (!cloudRecords.length) {
+    console.warn("Cloud sync skipped: no vehicles.meta records were found.");
+
+    return {
+      ok: false,
+      skipped: true,
+      reason: "no-records"
+    };
+  }
+
+  const importSource = mainCloudBuildImportSource(
+    "vehicles.meta",
+    sourceFile
+  );
+
+  const importSessionId = mainCloudCreateImportSessionId(
+    "vehicles-meta",
+    sourceFile
+  );
+
+  const batches = mainCloudSplitIntoBatches(cloudRecords);
+  let imported = 0;
+
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
+
+    const result = await window.vehicleCloud.importLibraryBatch({
+      importMode: "vehicles-meta",
+      importSessionId,
+      importSource,
+      sourceFile,
+      vehicles: batch,
+      handlingProfiles: []
+    });
+
+    imported += Number(
+      result.vehiclesImported ??
+      batch.length
+    );
+  }
+
+  return {
+    ok: true,
+    records: cloudRecords.length,
+    imported,
+    batches: batches.length
+  };
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadMainCloudVehicleImages({ silent: true });
+});
+
+window.getMainCloudVehicleImageUrl =
+  getMainCloudVehicleImageUrl;
+
+window.loadMainCloudVehicleImages =
+  loadMainCloudVehicleImages;
+
+window.syncMainPagePopgroupsToCloud =
+  syncMainPagePopgroupsToCloud;
+
+window.syncMainPageVehiclesMetaToCloud =
+  syncMainPageVehiclesMetaToCloud;

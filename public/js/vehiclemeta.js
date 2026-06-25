@@ -67,6 +67,8 @@ function parseVehiclesMeta(
     "InitDatas > Item"
   );
 
+  const cloudVehiclesMetaRecords = [];
+
   items.forEach(item => {
     const modelName =
       getText(item, "modelName");
@@ -164,9 +166,13 @@ function parseVehiclesMeta(
       // LOD and source information
       // -----------------------------------------------
 
-      lodDistances,
+            lodDistances,
       sourceFile: filename
     };
+
+    cloudVehiclesMetaRecords.push(
+      vehicleMeta[key]
+    );
 
     if (activePackId) {
       packDatabase.vehiclePackMap[key] =
@@ -212,6 +218,37 @@ function parseVehiclesMeta(
   renderPackList();
   renderAssetSummary();
 
+  if (typeof window.syncMainPageVehiclesMetaToCloud === "function") {
+    window.syncMainPageVehiclesMetaToCloud(
+      cloudVehiclesMetaRecords,
+      filename
+    )
+      .then(result => {
+        if (result?.ok) {
+          els.metaStatus.innerHTML += `
+            <br>
+            <span class="saved">
+              Cloud synced ${Number(result.imported || 0).toLocaleString()}
+              vehicles.meta records.
+            </span>
+          `;
+        }
+      })
+      .catch(error => {
+        console.warn(
+          "Main page vehicles.meta cloud sync failed.",
+          error
+        );
+
+        els.metaStatus.innerHTML += `
+          <br>
+          <span class="warning">
+            Cloud sync failed:
+            ${escapeHTML(error.message || "Unknown error")}
+          </span>
+        `;
+      });
+  }
   if (typeof scheduleVehicleMetaCacheSave === "function") {
     scheduleVehicleMetaCacheSave();
   }
