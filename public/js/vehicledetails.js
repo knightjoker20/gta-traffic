@@ -328,21 +328,37 @@ const el = id => document.getElementById(id);
 
     host.innerHTML = memberships
       .map(membership => {
+        const pack = membership.pack || membership || {};
+
         const title =
-          membership.name ||
+          pack.name ||
           membership.packName ||
-          membership.packKey ||
+          pack.packKey ||
           membership.packId ||
           "Unknown pack";
 
-        const website = safeExternalUrl(membership.website);
+        const website = safeExternalUrl(
+          pack.website ||
+          membership.website
+        );
+
+        const notes =
+          pack.notes ||
+          membership.notes ||
+          "";
 
         const meta = [
-          ["Creator", membership.creator],
-          ["DLC Folder", membership.dlcFolder],
-          ["Version", membership.version],
+          ["Creator", pack.creator || membership.creator],
+          ["DLC Folder", pack.dlcFolder || membership.dlcFolder],
+          ["Version", pack.version || membership.version],
           ["Type", membership.relationshipType],
-          ["Source", membership.sourceLabel || membership.sourceType]
+          [
+            "Source",
+            pack.sourceLabel ||
+            membership.sourceLabel ||
+            pack.sourceType ||
+            membership.sourceType
+          ]
         ]
           .filter(([, value]) => String(value || "").trim())
           .map(([label, value]) =>
@@ -358,8 +374,8 @@ const el = id => document.getElementById(id);
           '<article class="vd-pack-entry">',
           '<h3>' + escapeHTML(title) + '</h3>',
           meta ? '<div class="vd-pack-meta">' + meta + '</div>' : '',
-          membership.notes
-            ? '<p class="vd-pack-notes">' + escapeHTML(membership.notes) + '</p>'
+          notes
+            ? '<p class="vd-pack-notes">' + escapeHTML(notes) + '</p>'
             : '',
           website
             ? '<a class="vd-pack-link" href="' +
@@ -591,6 +607,8 @@ async function loadVehicle(modelName) {
         )
       : null;
 
+  await loadPackMemberships(vehicle.modelName);
+
   el("vdPage").hidden = false;
 
   populateVehicleSelector();
@@ -598,6 +616,7 @@ async function loadVehicle(modelName) {
   renderVehicleMeta();
   renderHandling();
   renderPopgroups();
+  renderPackMemberships();
   renderSources();
   populateCustomForm();
 
