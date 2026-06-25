@@ -268,6 +268,110 @@ const el = id => document.getElementById(id);
       : `<div class="vd-no-data">This vehicle has not been found in an imported Popgroups file.</div>`;
   }
 
+  function safeExternalUrl(value) {
+    const url = String(value || "").trim();
+
+    if (!url || !/^https?:\/\//i.test(url)) {
+      return "";
+    }
+
+    return url;
+  }
+
+  async function loadPackMemberships(modelName) {
+    state.packMemberships = [];
+    state.packMembershipsError = "";
+
+    if (!window.vehicleCloud?.getVehiclePacks) {
+      state.packMembershipsError =
+        "Pack membership lookup is not available in this build.";
+      return;
+    }
+
+    try {
+      state.packMemberships =
+        await window.vehicleCloud.getVehiclePacks(
+          modelName,
+          { workspaceId: "default" }
+        );
+    } catch (error) {
+      console.warn("Pack memberships could not be loaded.", error);
+
+      state.packMembershipsError =
+        error.message ||
+        "Pack memberships could not be loaded.";
+    }
+  }
+
+  function renderPackMemberships() {
+    const host = el("vdPackMemberships");
+
+    if (!host) {
+      return;
+    }
+
+    if (state.packMembershipsError) {
+      host.innerHTML =
+        '<div class="vd-no-data">' +
+        escapeHTML(state.packMembershipsError) +
+        '</div>';
+      return;
+    }
+
+    const memberships = state.packMemberships || [];
+
+    if (!memberships.length) {
+      host.innerHTML =
+        '<div class="vd-no-data">No cloud pack membership found for this vehicle yet. Assign it in the Pack Tracker, then sync the Pack Tracker to cloud.</div>';
+      return;
+    }
+
+    host.innerHTML = memberships
+      .map(membership => {
+        const title =
+          membership.name ||
+          membership.packName ||
+          membership.packKey ||
+          membership.packId ||
+          "Unknown pack";
+
+        const website = safeExternalUrl(membership.website);
+
+        const meta = [
+          ["Creator", membership.creator],
+          ["DLC Folder", membership.dlcFolder],
+          ["Version", membership.version],
+          ["Type", membership.relationshipType],
+          ["Source", membership.sourceLabel || membership.sourceType]
+        ]
+          .filter(([, value]) => String(value || "").trim())
+          .map(([label, value]) =>
+            '<span><strong>' +
+            escapeHTML(label) +
+            ':</strong> ' +
+            escapeHTML(value) +
+            '</span>'
+          )
+          .join("");
+
+        return [
+          '<article class="vd-pack-entry">',
+          '<h3>' + escapeHTML(title) + '</h3>',
+          meta ? '<div class="vd-pack-meta">' + meta + '</div>' : '',
+          membership.notes
+            ? '<p class="vd-pack-notes">' + escapeHTML(membership.notes) + '</p>'
+            : '',
+          website
+            ? '<a class="vd-pack-link" href="' +
+              escapeHTML(website) +
+              '" target="_blank" rel="noopener noreferrer">Open source website</a>'
+            : '',
+          '</article>'
+        ].join("");
+      })
+      .join("");
+  }
+
   function renderSources() {
     const entries = [];
     (state.vehicle.sources?.vehiclesMeta || []).forEach(file => entries.push(["vehicles.meta", file]));
