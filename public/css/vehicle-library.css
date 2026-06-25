@@ -412,15 +412,15 @@
   backdrop-filter: blur(8px);
 }
 
-.vl-image-install-tag.vanilla {
+.vl-image-install-tag.install-vanilla {
   background: rgba(34, 197, 94, .86);
 }
 
-.vl-image-install-tag.add-on {
+.vl-image-install-tag.install-add-on {
   background: rgba(59, 130, 246, .86);
 }
 
-.vl-image-install-tag.replacement {
+.vl-image-install-tag.install-replacement {
   background: rgba(245, 158, 11, .9);
 }
 

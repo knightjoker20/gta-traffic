@@ -113,10 +113,12 @@ function savePageSize(value) {
   }
 
   function installTypeClass(value) {
-    return normalizeInstallType(value)
+    const normalized = normalizeInstallType(value)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "unknown";
+
+    return `install-${normalized}`;
   }
 
   function inferInstallType(vehicle) {
