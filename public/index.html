@@ -329,6 +329,16 @@
       <div class="search-wrap">
         <input id="librarySearchBox" placeholder="Search library vehicle, class, make, handling, pack...">
       </div>
+
+      <div class="main-library-filter-row" aria-label="Vehicle Library quick filters">
+        <button id="mainLibraryInstalledFilter" class="main-library-filter-btn" type="button" onclick="toggleMainLibraryFilter('installed')">
+          Installed
+        </button>
+        <button id="mainLibraryFavoritesFilter" class="main-library-filter-btn" type="button" onclick="toggleMainLibraryFilter('favorites')">
+          Favorites
+        </button>
+      </div>
+
       <div id="vehicleLibrary"></div>
     </section>
   </div>

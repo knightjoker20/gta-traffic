@@ -435,6 +435,87 @@ function renderTextCards(
 // Builds the searchable vehicle library and compact cards.
 // =====================================================
 
+window.mainLibraryInstalledOnly =
+  window.mainLibraryInstalledOnly === true;
+
+window.mainLibraryFavoritesOnly =
+  window.mainLibraryFavoritesOnly === true;
+
+function getMainLibraryVehicleFlags(meta) {
+  const model = meta?.modelName || "";
+
+  const cloudFlags =
+    typeof window.getMainCloudVehicleLibraryFlags === "function"
+      ? window.getMainCloudVehicleLibraryFlags(model)
+      : null;
+
+  return {
+    installed:
+      cloudFlags?.installed === true ||
+      meta?.custom?.installed === true,
+
+    favorite:
+      cloudFlags?.favorite === true ||
+      meta?.custom?.favorite === true
+  };
+}
+
+function syncMainLibraryFilterButtons() {
+  const installedButton =
+    document.getElementById("mainLibraryInstalledFilter");
+
+  const favoritesButton =
+    document.getElementById("mainLibraryFavoritesFilter");
+
+  if (installedButton) {
+    installedButton.classList.toggle(
+      "active",
+      window.mainLibraryInstalledOnly === true
+    );
+
+    installedButton.setAttribute(
+      "aria-pressed",
+      String(window.mainLibraryInstalledOnly === true)
+    );
+  }
+
+  if (favoritesButton) {
+    favoritesButton.classList.toggle(
+      "active",
+      window.mainLibraryFavoritesOnly === true
+    );
+
+    favoritesButton.setAttribute(
+      "aria-pressed",
+      String(window.mainLibraryFavoritesOnly === true)
+    );
+  }
+}
+
+function toggleMainLibraryFilter(filterName) {
+  if (filterName === "installed") {
+    window.mainLibraryInstalledOnly =
+      window.mainLibraryInstalledOnly !== true;
+  }
+
+  if (filterName === "favorites") {
+    window.mainLibraryFavoritesOnly =
+      window.mainLibraryFavoritesOnly !== true;
+  }
+
+  renderVehicleLibrary();
+
+  if (typeof scheduleWorkspaceUiSave === "function") {
+    scheduleWorkspaceUiSave();
+  }
+
+  if (typeof window.loadMainCloudVehicleLibraryFlags === "function") {
+    window.loadMainCloudVehicleLibraryFlags({ silent: false });
+  }
+}
+
+window.toggleMainLibraryFilter = toggleMainLibraryFilter;
+
 function renderVehicleLibrary() {
   els.vehicleLibrary.innerHTML = "";
 
@@ -442,8 +523,31 @@ function renderVehicleLibrary() {
     .toLowerCase()
     .trim();
 
-  const vehicles =
+  syncMainLibraryFilterButtons();
+
+  const sourceVehicles =
     Object.values(vehicleMeta);
+
+  const vehicles =
+    sourceVehicles.filter(meta => {
+      const flags = getMainLibraryVehicleFlags(meta);
+
+      if (
+        window.mainLibraryInstalledOnly === true &&
+        flags.installed !== true
+      ) {
+        return false;
+      }
+
+      if (
+        window.mainLibraryFavoritesOnly === true &&
+        flags.favorite !== true
+      ) {
+        return false;
+      }
+
+      return true;
+    });
 
   if (!vehicles.length) {
     els.vehicleLibrary.innerHTML = `

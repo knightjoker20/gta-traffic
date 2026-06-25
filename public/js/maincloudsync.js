@@ -7,6 +7,8 @@
 const MAIN_CLOUD_BATCH_SIZE = 50;
 
 let mainCloudVehicleImageMap = new Map();
+let mainCloudVehicleLibraryFlagMap = new Map();
+let mainCloudVehicleLibraryFlagsLoading = false;
 
 function getMainCloudVehicleImageUrl(model) {
   const key = String(model || "").trim().toLowerCase();
@@ -51,6 +53,70 @@ async function loadMainCloudVehicleImages(options = {}) {
     }
   } catch (error) {
     console.warn("Cloud vehicle images could not be loaded.", error);
+  }
+}
+
+function getMainCloudVehicleLibraryFlags(model) {
+  const key = mainCloudNormalizeModel(model);
+  return mainCloudVehicleLibraryFlagMap.get(key) || null;
+}
+
+async function loadMainCloudVehicleLibraryFlags(options = {}) {
+  if (mainCloudVehicleLibraryFlagsLoading) {
+    return { ok: false, skipped: true, reason: "already-loading" };
+  }
+
+  if (!window.vehicleCloud?.getVehicles) {
+    return { ok: false, skipped: true, reason: "cloud-service-unavailable" };
+  }
+
+  const localVehicles =
+    typeof vehicleMeta === "undefined"
+      ? []
+      : Object.values(vehicleMeta || {});
+
+  mainCloudVehicleLibraryFlagsLoading = true;
+
+  try {
+    const cloudVehicles =
+      await window.vehicleCloud.getVehicles(localVehicles);
+
+    mainCloudVehicleLibraryFlagMap = new Map(
+      (cloudVehicles || [])
+        .map(vehicle => {
+          const modelName =
+            vehicle?.modelName ||
+            vehicle?.id ||
+            vehicle?.vehiclesMeta?.modelName ||
+            "";
+
+          const key = mainCloudNormalizeModel(modelName);
+
+          if (!key) {
+            return null;
+          }
+
+          return [
+            key,
+            {
+              installed: vehicle?.custom?.installed === true,
+              favorite: vehicle?.custom?.favorite === true
+            }
+          ];
+        })
+        .filter(Boolean)
+    );
+
+    if (options.silent !== true && typeof renderVehicleLibrary === "function") {
+      renderVehicleLibrary();
+    }
+
+    return { ok: true, records: mainCloudVehicleLibraryFlagMap.size };
+  } catch (error) {
+    console.warn("Cloud vehicle library flags could not be loaded.", error);
+    return { ok: false, error };
+  } finally {
+    mainCloudVehicleLibraryFlagsLoading = false;
   }
 }
 
@@ -344,6 +410,7 @@ async function syncMainPageVehiclesMetaToCloud(records, sourceFile) {
 
 document.addEventListener("DOMContentLoaded", () => {
   loadMainCloudVehicleImages({ silent: true });
+  loadMainCloudVehicleLibraryFlags({ silent: false });
 });
 
 window.getMainCloudVehicleImageUrl =

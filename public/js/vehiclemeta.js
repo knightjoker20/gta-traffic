@@ -215,6 +215,10 @@ function parseVehiclesMeta(
 
   renderSection(currentSection);
   renderVehicleLibrary();
+
+  if (typeof window.loadMainCloudVehicleLibraryFlags === "function") {
+    window.loadMainCloudVehicleLibraryFlags({ silent: false });
+  }
   renderPackList();
   renderAssetSummary();
 
