@@ -6,11 +6,11 @@
   "workers_dev": true,
   "routes": [
     {
-      "pattern": "gta-traffic.com/api/*",
+      "pattern": "gta-traffic.com/*",
       "zone_name": "gta-traffic.com"
     },
     {
-      "pattern": "www.gta-traffic.com/api/*",
+      "pattern": "www.gta-traffic.com/*",
       "zone_name": "gta-traffic.com"
     }
   ],
