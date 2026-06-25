@@ -3,6 +3,17 @@
   "name": "gta-traffic",
   "main": "./src/index.js",
   "compatibility_date": "2026-06-12",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "gta-traffic.com/api/*",
+      "zone_name": "gta-traffic.com"
+    },
+    {
+      "pattern": "www.gta-traffic.com/api/*",
+      "zone_name": "gta-traffic.com"
+    }
+  ],
 
   "observability": {
     "enabled": true
