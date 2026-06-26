@@ -1,10 +1,10 @@
-# GTA Traffic Studio — Project Scope & Roadmap
+# GTA Traffic Studio ï¿½ Project Scope & Roadmap
 
 ## Core Product Goal
 
 Every feature must support the main purpose of GTA Traffic Studio:
 
-> Make editing GTA traffic easier, clearer, and more fun.
+> Make editing GTA traffic easier, clearer, and more fun ï¿½ with clean, user-friendly interfaces.
 
 If a feature does not help users understand, organize, edit, test, or enjoy GTA traffic modding, it should be postponed or removed.
 
@@ -18,7 +18,8 @@ Before building any feature, ask:
 2. Does this make vehicle/pack organization clearer?
 3. Does this reduce confusion or repetitive manual work?
 4. Does this support local users, premium users, or admin control in a clear way?
-5. Is this needed now, or is it future scope?
+5. Is the interface clean, user-friendly, and easy to understand?
+6. Is this needed now, or is it future scope?
 
 If the answer is unclear, the feature goes into the backlog instead of the current sprint.
 
@@ -131,7 +132,7 @@ Admin tools should prioritize safety:
 
 ## Immediate Roadmap
 
-### Step 21 — Pack Tracker Cloud UX Polish
+### Step 21 ï¿½ Pack Tracker Cloud UX Polish
 
 Goal:
 Clarify current cloud sync behavior.
@@ -141,7 +142,7 @@ Tasks:
 - Improve empty-local-data messages
 - Separate local save language from cloud publish language
 
-### Step 22 — Admin + User Foundation
+### Step 22 ï¿½ Admin + User Foundation
 
 Goal:
 Create the foundation for users, roles, permissions, and admin control.
@@ -154,7 +155,7 @@ Tasks:
 - Add admin audit log
 - Add workspace membership structure
 
-### Step 23 — Admin Pack & Library Management
+### Step 23 ï¿½ Admin Pack & Library Management
 
 Goal:
 Move pack/database maintenance out of the public UI.
@@ -166,7 +167,7 @@ Tasks:
 - View orphan memberships
 - Export/import pack database safely
 
-### Step 24 — Image / Photo Pack Admin
+### Step 24 ï¿½ Image / Photo Pack Admin
 
 Goal:
 Support curated vehicle images and screenshot packs.
