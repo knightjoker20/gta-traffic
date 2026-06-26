@@ -999,7 +999,7 @@ async function importVehiclePopgroups(
   sourceFileOverride = null
 ) {
   let imported = 0;
-  
+
   for (const record of records) {
     const modelName =
       optionalText(record?.modelName) ||
@@ -1233,7 +1233,7 @@ async function handleLibraryV2Import(request, env) {
   }
 
   const body = parsed.body || {};
-  
+
   const importMode =
   optionalText(body.importMode);
   const sourceFile =
@@ -2526,11 +2526,75 @@ async function handleVehiclePatch(
     vehicle: normalizeVehicle(savedVehicle)
   });
 }
+async function countAdminTableRows(env, tableName) {
+  try {
+    const row =
+      await env.DB.prepare(
+        `SELECT COUNT(*) AS count FROM ${tableName}`
+      ).first();
+
+    return Number(row?.count || 0);
+  } catch (error) {
+    console.warn(
+      `Admin summary count skipped for ${tableName}:`,
+      error?.message || error
+    );
+
+    return 0;
+  }
+}
+
+async function handleAdminSummary(request, env) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const [
+    users,
+    workspaces,
+    packs,
+    vehicleAssignments,
+    images,
+    importJobs
+  ] = await Promise.all([
+    countAdminTableRows(env, "users"),
+    countAdminTableRows(env, "workspaces"),
+    countAdminTableRows(env, "pack_records"),
+    countAdminTableRows(env, "vehicle_pack_memberships"),
+    countAdminTableRows(env, "media_assets"),
+    countAdminTableRows(env, "import_jobs")
+  ]);
+
+  return jsonResponse({
+    ok: true,
+    summary: {
+      users,
+      workspaces,
+      packs,
+      vehicleAssignments,
+      images,
+      importJobs,
+      generatedAt: new Date().toISOString()
+    }
+  });
+}
+
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    try {
+    try {      if (
+        request.method === "GET" &&
+        url.pathname === "/api/admin/summary"
+      ) {
+        return await handleAdminSummary(request, env);
+      }
+
+
       if (
         request.method === "GET" &&
         url.pathname === "/api/health"
