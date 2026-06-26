@@ -43,12 +43,62 @@
       </div>
 
       <div id="summaryGrid" class="summary-grid">
-        <div class="summary-card"><span>Users</span><strong>—</strong></div>
-        <div class="summary-card"><span>Workspaces</span><strong>—</strong></div>
-        <div class="summary-card"><span>Packs</span><strong>—</strong></div>
-        <div class="summary-card"><span>Vehicle Assignments</span><strong>—</strong></div>
-        <div class="summary-card"><span>Images</span><strong>—</strong></div>
-        <div class="summary-card"><span>Import Jobs</span><strong>—</strong></div>
+        <div class="summary-card"><span>Users</span><strong>ï¿½</strong></div>
+        <div class="summary-card"><span>Workspaces</span><strong>ï¿½</strong></div>
+        <div class="summary-card"><span>Packs</span><strong>ï¿½</strong></div>
+        <div class="summary-card"><span>Vehicle Assignments</span><strong>ï¿½</strong></div>
+        <div class="summary-card"><span>Images</span><strong>ï¿½</strong></div>
+        <div class="summary-card"><span>Import Jobs</span><strong>ï¿½</strong></div>
+      </div>
+    </section>
+
+    <section id="adminUsersPanel" class="admin-panel">
+      <div class="section-heading">
+        <div>
+          <h2>User Management</h2>
+          <p>Create and review user records. Login/password support comes later.</p>
+        </div>
+
+        <div class="admin-actions">
+          <input id="adminUserSearchInput" class="admin-small-input" placeholder="Search users...">
+          <button id="refreshUsersBtn">Refresh Users</button>
+        </div>
+      </div>
+
+      <div class="admin-form-grid">
+        <input id="adminUserEmailInput" placeholder="Email">
+        <input id="adminUserDisplayNameInput" placeholder="Display name">
+
+        <select id="adminUserRoleInput">
+          <option value="free_user">free_user</option>
+          <option value="premium_user">premium_user</option>
+          <option value="moderator">moderator</option>
+          <option value="admin">admin</option>
+          <option value="owner">owner</option>
+        </select>
+
+        <select id="adminUserPlanInput">
+          <option value="free">free</option>
+          <option value="premium">premium</option>
+          <option value="admin">admin</option>
+        </select>
+
+        <select id="adminUserStatusInput">
+          <option value="active">active</option>
+          <option value="pending">pending</option>
+          <option value="disabled">disabled</option>
+        </select>
+
+        <input id="adminUserNotesInput" placeholder="Notes">
+      </div>
+
+      <div class="admin-actions">
+        <button id="createAdminUserBtn">Create User</button>
+        <span id="adminUsersStatus" class="inline-status">Users not loaded yet.</span>
+      </div>
+
+      <div id="adminUsersList" class="admin-table-wrap">
+        <div class="empty-state">No users loaded yet.</div>
       </div>
     </section>
 

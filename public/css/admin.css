@@ -243,3 +243,133 @@ button:disabled {
     text-align: center;
   }
 }
+
+
+/* Admin user management */
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-small-input,
+.admin-form-grid input,
+.admin-form-grid select {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #0d1118;
+  color: var(--text);
+  padding: 12px 14px;
+  outline: none;
+}
+
+.admin-small-input {
+  min-width: 240px;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.inline-status {
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.inline-status.good {
+  color: var(--good);
+}
+
+.inline-status.warning {
+  color: var(--warning);
+}
+
+.inline-status.danger {
+  color: var(--danger);
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-top: 16px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 820px;
+}
+
+.admin-table th,
+.admin-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--muted);
+  font-size: .78rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  background: #0d1118;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.pill {
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--panel-soft);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.status-active {
+  color: var(--good);
+}
+
+.status-pending {
+  color: var(--warning);
+}
+
+.status-disabled {
+  color: var(--danger);
+}
+
+.empty-state {
+  color: var(--muted);
+  padding: 16px;
+}
+
+@media (max-width: 1100px) {
+  .admin-form-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-small-input,
+  .admin-form-grid {
+    width: 100%;
+  }
+
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
