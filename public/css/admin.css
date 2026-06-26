@@ -373,22 +373,3 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
-
-
-/* Admin user edit controls */
-.admin-row-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.small-btn {
-  padding: 7px 10px;
-  border-radius: 9px;
-  font-size: .78rem;
-}
-
-.danger-btn {
-  color: var(--danger);
-  border-color: rgba(239, 68, 68, .55);
-}

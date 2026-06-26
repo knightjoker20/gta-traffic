@@ -1,7 +1,5 @@
 const ADMIN_TOKEN_KEY = "gtaTrafficAdminToken";
 
-let editingAdminUserId = null;
-
 const els = {
   tokenInput: document.getElementById("adminTokenInput"),
   saveTokenBtn: document.getElementById("saveAdminTokenBtn"),
@@ -12,7 +10,6 @@ const els = {
   userSearchInput: document.getElementById("adminUserSearchInput"),
   refreshUsersBtn: document.getElementById("refreshUsersBtn"),
   createUserBtn: document.getElementById("createAdminUserBtn"),
-  cancelEditUserBtn: document.getElementById("cancelEditUserBtn"),
   userEmailInput: document.getElementById("adminUserEmailInput"),
   userDisplayNameInput: document.getElementById("adminUserDisplayNameInput"),
   userRoleInput: document.getElementById("adminUserRoleInput"),
@@ -72,28 +69,6 @@ function renderSummaryCard(label, value) {
       <strong>${value}</strong>
     </div>
   `;
-
-  els.usersList.querySelectorAll("[data-admin-user-edit]").forEach(button => {
-    button.addEventListener("click", () => {
-      const user =
-        users.find(item => item.id === button.dataset.adminUserEdit);
-
-      if (user) {
-        fillUserFormForEdit(user);
-      }
-    });
-  });
-
-  els.usersList.querySelectorAll("[data-admin-user-disable]").forEach(button => {
-    button.addEventListener("click", () => {
-      const user =
-        users.find(item => item.id === button.dataset.adminUserDisable);
-
-      if (user) {
-        disableAdminUser(user);
-      }
-    });
-  });
 }
 
 function getAdminHeaders(includeJson = false) {
@@ -130,65 +105,34 @@ function renderAdminUsers(users = []) {
     return;
   }
 
-  const rows = users.map(user => {
-    const disableAttribute =
-      user.status === "disabled" ? " disabled" : "";
-
-    return [
-      "<tr>",
-      "<td>" + escapeHTML(user.email) + "</td>",
-      "<td>" + escapeHTML(user.displayName || "�") + "</td>",
-      '<td><span class="pill">' + escapeHTML(user.role) + "</span></td>",
-      '<td><span class="pill">' + escapeHTML(user.plan) + "</span></td>",
-      '<td><span class="pill status-' + escapeHTML(user.status) + '">' + escapeHTML(user.status) + "</span></td>",
-      "<td>" + escapeHTML(user.createdAt || "�") + "</td>",
-      "<td>" + escapeHTML(user.notes || "") + "</td>",
-      '<td class="admin-row-actions">' +
-        '<button class="secondary small-btn" data-admin-user-edit="' + escapeHTML(user.id) + '">Edit</button>' +
-        '<button class="secondary small-btn danger-btn" data-admin-user-disable="' + escapeHTML(user.id) + '"' + disableAttribute + ">Disable</button>" +
-      "</td>",
-      "</tr>"
-    ].join("");
-  }).join("");
-
-  els.usersList.innerHTML =
-    '<table class="admin-table">' +
-      "<thead>" +
-        "<tr>" +
-          "<th>Email</th>" +
-          "<th>Name</th>" +
-          "<th>Role</th>" +
-          "<th>Plan</th>" +
-          "<th>Status</th>" +
-          "<th>Created</th>" +
-          "<th>Notes</th>" +
-          "<th>Actions</th>" +
-        "</tr>" +
-      "</thead>" +
-      "<tbody>" + rows + "</tbody>" +
-    "</table>";
-
-  els.usersList.querySelectorAll("[data-admin-user-edit]").forEach(button => {
-    button.addEventListener("click", () => {
-      const user =
-        users.find(item => item.id === button.dataset.adminUserEdit);
-
-      if (user) {
-        fillUserFormForEdit(user);
-      }
-    });
-  });
-
-  els.usersList.querySelectorAll("[data-admin-user-disable]").forEach(button => {
-    button.addEventListener("click", () => {
-      const user =
-        users.find(item => item.id === button.dataset.adminUserDisable);
-
-      if (user) {
-        disableAdminUser(user);
-      }
-    });
-  });
+  els.usersList.innerHTML = `
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Plan</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${users.map(user => `
+          <tr>
+            <td>${escapeHTML(user.email)}</td>
+            <td>${escapeHTML(user.displayName || "�")}</td>
+            <td><span class="pill">${escapeHTML(user.role)}</span></td>
+            <td><span class="pill">${escapeHTML(user.plan)}</span></td>
+            <td><span class="pill status-${escapeHTML(user.status)}">${escapeHTML(user.status)}</span></td>
+            <td>${escapeHTML(user.createdAt || "�")}</td>
+            <td>${escapeHTML(user.notes || "")}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
 }
 
 async function loadAdminUsers() {
@@ -231,56 +175,18 @@ async function loadAdminUsers() {
   }
 }
 
-function setUserFormMode(mode) {
-  const isEdit = mode === "edit";
-
-  if (els.createUserBtn) {
-    els.createUserBtn.textContent = isEdit ? "Save User Changes" : "Create User";
-  }
-
-  if (els.cancelEditUserBtn) {
-    els.cancelEditUserBtn.hidden = !isEdit;
-  }
-}
-
-function fillUserFormForEdit(user) {
-  editingAdminUserId = user.id;
-
-  if (els.userEmailInput) {
-    els.userEmailInput.value = user.email || "";
-    els.userEmailInput.disabled = true;
-  }
-
-  if (els.userDisplayNameInput) els.userDisplayNameInput.value = user.displayName || "";
-  if (els.userRoleInput) els.userRoleInput.value = user.role || "free_user";
-  if (els.userPlanInput) els.userPlanInput.value = user.plan || "free";
-  if (els.userStatusInput) els.userStatusInput.value = user.status || "active";
-  if (els.userNotesInput) els.userNotesInput.value = user.notes || "";
-
-  setUserFormMode("edit");
-  setUsersStatus("Editing user: " + user.email, "warning");
-}
-
 function clearCreateUserForm() {
-  editingAdminUserId = null;
-
-  if (els.userEmailInput) {
-    els.userEmailInput.value = "";
-    els.userEmailInput.disabled = false;
-  }
-
+  if (els.userEmailInput) els.userEmailInput.value = "";
   if (els.userDisplayNameInput) els.userDisplayNameInput.value = "";
   if (els.userRoleInput) els.userRoleInput.value = "free_user";
   if (els.userPlanInput) els.userPlanInput.value = "free";
   if (els.userStatusInput) els.userStatusInput.value = "active";
   if (els.userNotesInput) els.userNotesInput.value = "";
-
-  setUserFormMode("create");
 }
 
 async function createAdminUser() {
   if (!getAdminToken()) {
-    setUsersStatus("Admin token required before saving users.", "warning");
+    setUsersStatus("Admin token required before creating users.", "warning");
     return;
   }
 
@@ -293,33 +199,14 @@ async function createAdminUser() {
     notes: els.userNotesInput?.value?.trim() || ""
   };
 
-  if (!editingAdminUserId && !body.email) {
+  if (!body.email) {
     setUsersStatus("Email is required.", "warning");
     return;
   }
 
-  setUsersStatus(editingAdminUserId ? "Saving user changes..." : "Creating user...");
+  setUsersStatus("Creating user...");
 
   try {
-    if (editingAdminUserId) {
-      const updatedUser =
-        await updateAdminUser(
-          editingAdminUserId,
-          {
-            displayName: body.displayName,
-            role: body.role,
-            plan: body.plan,
-            status: body.status,
-            notes: body.notes
-          },
-          "Updated user."
-        );
-
-      clearCreateUserForm();
-      setUsersStatus("Updated user: " + updatedUser.email, "good");
-      return;
-    }
-
     const response = await fetch("/api/admin/users", {
       method: "POST",
       headers: getAdminHeaders(true),
@@ -342,12 +229,23 @@ async function createAdminUser() {
     await loadAdminUsers();
     await loadAdminSummary();
   } catch (error) {
-    console.warn("Admin user save failed.", error);
+    console.warn("Admin user create failed.", error);
     setUsersStatus(
-      "Save user failed: " + (error.message || "Unknown error"),
+      "Create user failed: " + (error.message || "Unknown error"),
       "danger"
     );
   }
+}
+
+function renderSummary(summary = {}) {
+  els.summaryGrid.innerHTML = [
+    renderSummaryCard("Users", summary.users ?? "�"),
+    renderSummaryCard("Workspaces", summary.workspaces ?? "�"),
+    renderSummaryCard("Packs", summary.packs ?? "�"),
+    renderSummaryCard("Vehicle Assignments", summary.vehicleAssignments ?? "�"),
+    renderSummaryCard("Images", summary.images ?? "�"),
+    renderSummaryCard("Import Jobs", summary.importJobs ?? "�")
+  ].join("");
 }
 
 async function loadAdminSummary() {
@@ -395,10 +293,6 @@ function initAdminDashboard() {
 
   els.refreshUsersBtn?.addEventListener("click", loadAdminUsers);
   els.createUserBtn?.addEventListener("click", createAdminUser);
-  els.cancelEditUserBtn?.addEventListener("click", () => {
-    clearCreateUserForm();
-    setUsersStatus("Edit canceled.", "warning");
-  });
   els.userSearchInput?.addEventListener("keydown", event => {
     if (event.key === "Enter") {
       loadAdminUsers();
