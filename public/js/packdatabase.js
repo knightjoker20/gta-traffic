@@ -296,6 +296,186 @@ async function syncPackDatabaseToCloud(options = {}) {
 }
 
 window.syncPackDatabaseToCloud = syncPackDatabaseToCloud;
+window.manualSyncPackDatabaseToCloud = manualSyncPackDatabaseToCloud;
+window.resetPackCloudToken = resetPackCloudToken;
+window.refreshPackCloudSummary = refreshPackCloudSummary;
+
+setTimeout(() => refreshPackCloudSummary({ quiet: true }), 0);
+
+function getPackCloudStatusHost() {
+  return document.getElementById("packCloudStatus") || els?.packStatus || null;
+}
+
+function setPackCloudStatus(message, tone = "") {
+  const host = getPackCloudStatusHost();
+
+  if (!host) {
+    return;
+  }
+
+  const className = tone || "saved";
+
+  host.innerHTML =
+    '<span class="' +
+    className +
+    '">' +
+    escapeHTML(message) +
+    "</span>";
+}
+
+function getCloudPackAssignmentCount(pack) {
+  return Number(
+    pack.vehicleCount ||
+    pack.membershipCount ||
+    pack.vehicle_count ||
+    0
+  ) || 0;
+}
+
+async function refreshPackCloudSummary(options = {}) {
+  const quiet = options.quiet === true;
+  const host = getPackCloudStatusHost();
+
+  if (!host) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: "missing-status-host"
+    };
+  }
+
+  if (!window.vehicleCloud?.getPacks) {
+    setPackCloudStatus(
+      "Cloud pack summary is not available in this build.",
+      "warning"
+    );
+
+    return {
+      ok: false,
+      skipped: true,
+      reason: "cloud-pack-summary-unavailable"
+    };
+  }
+
+  if (!quiet) {
+    setPackCloudStatus("Checking cloud Pack Tracker status...");
+  }
+
+  try {
+    const packs =
+      await window.vehicleCloud.getPacks({
+        workspaceId: "default"
+      });
+
+    const assignmentCount =
+      packs.reduce(
+        (total, pack) =>
+          total + getCloudPackAssignmentCount(pack),
+        0
+      );
+
+    setPackCloudStatus(
+      "Cloud Pack Tracker: " +
+      packs.length +
+      " pack(s), " +
+      assignmentCount +
+      " vehicle assignment(s)."
+    );
+
+    return {
+      ok: true,
+      packs,
+      assignmentCount
+    };
+  } catch (error) {
+    console.warn("Cloud Pack Tracker summary failed.", error);
+
+    setPackCloudStatus(
+      "Cloud Pack Tracker summary failed: " +
+      (error.message || "Unknown error"),
+      "warning"
+    );
+
+    return {
+      ok: false,
+      error
+    };
+  }
+}
+
+async function manualSyncPackDatabaseToCloud() {
+  const localPackCount =
+    Object.keys(packDatabase.packs || {}).length;
+
+  const localAssignmentCount =
+    Object.keys(packDatabase.vehiclePackMap || {}).length;
+
+  if (!localPackCount) {
+    setPackCloudStatus(
+      "No local Pack Tracker records to sync yet. Create/import a pack first, then sync to cloud.",
+      "warning"
+    );
+
+    await refreshPackCloudSummary({
+      quiet: true
+    });
+
+    return {
+      ok: false,
+      skipped: true,
+      reason: "no-local-packs"
+    };
+  }
+
+  setPackCloudStatus(
+    "Syncing " +
+    localPackCount +
+    " local pack(s) and " +
+    localAssignmentCount +
+    " vehicle assignment(s) to cloud..."
+  );
+
+  const result =
+    await syncPackDatabaseToCloud({
+      force: true,
+      quiet: false
+    });
+
+  if (result?.ok) {
+    await refreshPackCloudSummary({
+      quiet: true
+    });
+  } else if (result?.reason === "missing-library-token") {
+    setPackCloudStatus(
+      "Cloud sync needs your library write token before it can upload.",
+      "warning"
+    );
+  } else if (result?.reason === "no-packs") {
+    setPackCloudStatus(
+      "No local Pack Tracker records to sync yet. Create/import a pack first, then sync to cloud.",
+      "warning"
+    );
+  }
+
+  return result;
+}
+
+function resetPackCloudToken() {
+  try {
+    localStorage.removeItem("gtaTrafficLibraryWriteToken");
+  } catch {
+    // Ignore localStorage errors.
+  }
+
+  window.vehicleCloud?.clearLibraryWriteToken?.();
+
+  setPackCloudStatus(
+    "Library write token cleared. Click Sync Pack DB to Cloud to enter it again.",
+    "warning"
+  );
+}
+
+
 
 
 function loadPackDatabase() {

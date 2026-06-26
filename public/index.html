@@ -223,6 +223,8 @@
         <button class="secondary" onclick="clearActivePack()">No Active Pack</button>
         <button onclick="downloadPackDatabase()">Export Pack DB</button>
         <button class="secondary" onclick="document.getElementById('packDbImport').click()">Import Pack DB</button>
+        <button class="btn-green" onclick="manualSyncPackDatabaseToCloud()">Sync Pack DB to Cloud</button>
+        <button class="secondary" onclick="resetPackCloudToken()">Reset Cloud Token</button>
         <input type="file" id="packDbImport" accept=".json" style="display:none">
       </div>
 
@@ -231,6 +233,7 @@
       </div>
 
       <div id="packStatus"></div>
+      <div id="packCloudStatus" class="pack-cloud-status">Cloud sync: not checked yet.</div>
 
       <div class="search-wrap">
         <input id="packSearchBox" placeholder="Search packs or vehicles...">

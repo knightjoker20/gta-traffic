@@ -357,7 +357,7 @@ input::placeholder,textarea::placeholder{
   color:#dbeafe;
 }
 
-#status,#metaStatus,#packStatus,#packBuilderStatus{
+#status,#metaStatus,#packStatus,#packBuilderStatus,#packCloudStatus{
   margin:10px 0;
 }
 
@@ -1489,4 +1489,14 @@ input[type="file"]::-webkit-file-upload-button {
   border-color: rgba(34, 197, 94, .58);
   background: rgba(34, 197, 94, .18);
   color: #bbf7d0;
+}
+
+
+/* Pack Tracker cloud sync controls */
+.pack-cloud-status {
+  margin-top: 8px;
+  font-size: .85rem;
+}
+.pack-actions .btn-green {
+  font-weight: 800;
 }
