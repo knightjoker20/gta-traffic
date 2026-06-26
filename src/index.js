@@ -2627,6 +2627,43 @@ function normalizeAdminUserRow(row) {
   };
 }
 
+
+async function writeAdminAuditLog(env, entry = {}) {
+  try {
+    const id =
+      "audit:" +
+      new Date().toISOString() +
+      ":" +
+      Math.random().toString(36).slice(2);
+
+    await env.DB.prepare(`
+      INSERT INTO admin_audit_log (
+        id,
+        actor_user_id,
+        actor_label,
+        action,
+        entity_type,
+        entity_id,
+        details_json
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      id,
+      entry.actorUserId || null,
+      entry.actorLabel || "admin-token",
+      entry.action || "unknown",
+      entry.entityType || "unknown",
+      entry.entityId || null,
+      JSON.stringify(entry.details || {})
+    ).run();
+  } catch (error) {
+    console.warn(
+      "Admin audit log write skipped:",
+      error?.message || error
+    );
+  }
+}
+
 async function handleAdminUserList(request, env) {
   const authorizationError =
     checkLibraryWriteAuthorization(request, env);
@@ -2794,6 +2831,145 @@ async function handleAdminUserCreate(request, env) {
 }
 
 
+async function handleAdminUserUpdate(request, env, userId) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const existing =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        email,
+        display_name,
+        role,
+        plan,
+        status,
+        notes,
+        created_at,
+        updated_at,
+        last_login_at
+      FROM users
+      WHERE id = ?
+    `).bind(userId).first();
+
+  if (!existing) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "User not found"
+      },
+      404
+    );
+  }
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Invalid JSON body"
+      },
+      400
+    );
+  }
+
+  const displayName =
+    Object.prototype.hasOwnProperty.call(body, "displayName")
+      ? normalizeAdminUserText(body.displayName)
+      : existing.display_name;
+
+  const role =
+    Object.prototype.hasOwnProperty.call(body, "role")
+      ? normalizeAdminUserEnum(
+          body.role,
+          ["free_user", "premium_user", "moderator", "admin", "owner"],
+          existing.role || "free_user"
+        )
+      : existing.role;
+
+  const plan =
+    Object.prototype.hasOwnProperty.call(body, "plan")
+      ? normalizeAdminUserEnum(
+          body.plan,
+          ["free", "premium", "admin"],
+          existing.plan || "free"
+        )
+      : existing.plan;
+
+  const status =
+    Object.prototype.hasOwnProperty.call(body, "status")
+      ? normalizeAdminUserEnum(
+          body.status,
+          ["active", "disabled", "pending"],
+          existing.status || "active"
+        )
+      : existing.status;
+
+  const notes =
+    Object.prototype.hasOwnProperty.call(body, "notes")
+      ? normalizeAdminUserText(body.notes)
+      : existing.notes;
+
+  await env.DB.prepare(`
+    UPDATE users
+    SET
+      display_name = ?,
+      role = ?,
+      plan = ?,
+      status = ?,
+      notes = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(
+    displayName,
+    role,
+    plan,
+    status,
+    notes,
+    userId
+  ).run();
+
+  const updated =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        email,
+        display_name,
+        role,
+        plan,
+        status,
+        notes,
+        created_at,
+        updated_at,
+        last_login_at
+      FROM users
+      WHERE id = ?
+    `).bind(userId).first();
+
+  await writeAdminAuditLog(env, {
+    action: "admin.user.update",
+    entityType: "user",
+    entityId: userId,
+    details: {
+      before: normalizeAdminUserRow(existing),
+      after: normalizeAdminUserRow(updated)
+    }
+  });
+
+  return jsonResponse({
+    ok: true,
+    user: normalizeAdminUserRow(updated)
+  });
+}
+
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -2817,6 +2993,22 @@ export default {
         url.pathname === "/api/admin/users"
       ) {
         return await handleAdminUserCreate(request, env);
+      }
+
+      const adminUserPatchRoute =
+        url.pathname.match(
+          /^\/api\/admin\/users\/([^/]{1,240})$/
+        );
+
+      if (
+        adminUserPatchRoute &&
+        request.method === "PATCH"
+      ) {
+        return await handleAdminUserUpdate(
+          request,
+          env,
+          decodeURIComponent(adminUserPatchRoute[1])
+        );
       }
 
 
