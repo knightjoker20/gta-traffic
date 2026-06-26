@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GTA Traffic Studio Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <div>
+      <div class="eyebrow">GTA Traffic Studio</div>
+      <h1>Admin Dashboard</h1>
+      <p>Functional control center for users, packs, images, imports, workspaces, and database maintenance.</p>
+    </div>
+
+    <a class="public-link" href="/">Back to Studio</a>
+  </header>
+
+  <main class="admin-shell">
+    <section class="admin-panel admin-token-panel">
+      <div>
+        <h2>Admin Access</h2>
+        <p>Temporary admin access uses the existing library write token. Later this moves to user login and role permissions.</p>
+      </div>
+
+      <div class="token-row">
+        <input id="adminTokenInput" type="password" placeholder="Admin / library write token" autocomplete="off">
+        <button id="saveAdminTokenBtn">Save Token</button>
+        <button id="clearAdminTokenBtn" class="secondary">Clear</button>
+      </div>
+
+      <div id="adminStatus" class="admin-status">Admin dashboard loaded. Summary API not checked yet.</div>
+    </section>
+
+    <section class="admin-panel">
+      <div class="section-heading">
+        <div>
+          <h2>Site Summary</h2>
+          <p>Quick health and database overview.</p>
+        </div>
+        <button id="refreshSummaryBtn">Refresh Summary</button>
+      </div>
+
+      <div id="summaryGrid" class="summary-grid">
+        <div class="summary-card"><span>Users</span><strong>—</strong></div>
+        <div class="summary-card"><span>Workspaces</span><strong>—</strong></div>
+        <div class="summary-card"><span>Packs</span><strong>—</strong></div>
+        <div class="summary-card"><span>Vehicle Assignments</span><strong>—</strong></div>
+        <div class="summary-card"><span>Images</span><strong>—</strong></div>
+        <div class="summary-card"><span>Import Jobs</span><strong>—</strong></div>
+      </div>
+    </section>
+
+    <section class="admin-grid">
+      <article class="admin-card">
+        <h3>User Management</h3>
+        <p>Add users, disable users, change plans, and assign roles.</p>
+        <ul>
+          <li>Search users</li>
+          <li>Create user</li>
+          <li>Change role / plan</li>
+          <li>Disable account</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+
+      <article class="admin-card">
+        <h3>Workspace Management</h3>
+        <p>Control saved user workspaces and admin-curated workspaces.</p>
+        <ul>
+          <li>Create workspace</li>
+          <li>Assign owner</li>
+          <li>Archive workspace</li>
+          <li>Export backup</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+
+      <article class="admin-card">
+        <h3>Pack Management</h3>
+        <p>Add, edit, archive, and merge cloud pack records.</p>
+        <ul>
+          <li>Add pack</li>
+          <li>Edit pack metadata</li>
+          <li>Assign vehicles</li>
+          <li>Merge duplicates</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+
+      <article class="admin-card">
+        <h3>Vehicle Library Admin</h3>
+        <p>Maintain curated vehicle metadata and fix duplicate records.</p>
+        <ul>
+          <li>Edit vehicle record</li>
+          <li>Set display info</li>
+          <li>Review source pack</li>
+          <li>Hide bad records</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+
+      <article class="admin-card">
+        <h3>Image / Photo Packs</h3>
+        <p>Upload screenshots and assign images to vehicle model names.</p>
+        <ul>
+          <li>Upload image pack</li>
+          <li>Assign model name</li>
+          <li>Set primary image</li>
+          <li>Review unmapped images</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+
+      <article class="admin-card">
+        <h3>Import Jobs</h3>
+        <p>Preview, validate, and apply uploaded data safely.</p>
+        <ul>
+          <li>Upload source file</li>
+          <li>Dry run import</li>
+          <li>Review warnings</li>
+          <li>Apply import</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+
+      <article class="admin-card">
+        <h3>Database Tools</h3>
+        <p>Run safe maintenance tools without raw SQL at first.</p>
+        <ul>
+          <li>Table counts</li>
+          <li>Find orphan records</li>
+          <li>Find duplicate packs</li>
+          <li>Export backup</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+
+      <article class="admin-card">
+        <h3>Audit Log</h3>
+        <p>Track important admin changes for safety and troubleshooting.</p>
+        <ul>
+          <li>Recent admin actions</li>
+          <li>Changed entity</li>
+          <li>Actor / timestamp</li>
+          <li>Details JSON</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+    </section>
+  </main>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>
