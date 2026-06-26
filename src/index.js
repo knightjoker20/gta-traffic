@@ -2583,6 +2583,217 @@ async function handleAdminSummary(request, env) {
 }
 
 
+function normalizeAdminUserEmail(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeAdminUserText(value) {
+  const text = String(value || "").trim();
+  return text || null;
+}
+
+function normalizeAdminUserEnum(value, allowedValues, fallback) {
+  const text = String(value || "").trim().toLowerCase();
+
+  if (allowedValues.includes(text)) {
+    return text;
+  }
+
+  return fallback;
+}
+
+function createAdminUserId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return "user:" + crypto.randomUUID();
+  }
+
+  return "user:" + Date.now() + ":" + Math.random().toString(36).slice(2);
+}
+
+function normalizeAdminUserRow(row) {
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name || "",
+    role: row.role || "free_user",
+    plan: row.plan || "free",
+    status: row.status || "active",
+    notes: row.notes || "",
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null,
+    lastLoginAt: row.last_login_at || null
+  };
+}
+
+async function handleAdminUserList(request, env) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const url = new URL(request.url);
+  const query = String(url.searchParams.get("query") || "").trim();
+  const status = String(url.searchParams.get("status") || "all").trim().toLowerCase();
+  const limit = Math.min(
+    Math.max(Number(url.searchParams.get("limit") || 50), 1),
+    200
+  );
+
+  const where = [];
+  const bindings = [];
+
+  if (query) {
+    where.push("(email LIKE ? OR display_name LIKE ?)");
+    bindings.push("%" + query + "%", "%" + query + "%");
+  }
+
+  if (status !== "all") {
+    where.push("status = ?");
+    bindings.push(status);
+  }
+
+  const sql =
+    "SELECT id, email, display_name, role, plan, status, notes, created_at, updated_at, last_login_at " +
+    "FROM users " +
+    (where.length ? "WHERE " + where.join(" AND ") + " " : "") +
+    "ORDER BY created_at DESC " +
+    "LIMIT ?";
+
+  bindings.push(limit);
+
+  const result =
+    await env.DB.prepare(sql)
+      .bind(...bindings)
+      .all();
+
+  return jsonResponse({
+    ok: true,
+    users: (result.results || []).map(normalizeAdminUserRow)
+  });
+}
+
+async function handleAdminUserCreate(request, env) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Invalid JSON body"
+      },
+      400
+    );
+  }
+
+  const email = normalizeAdminUserEmail(body.email);
+
+  if (!email || !email.includes("@")) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Valid email is required"
+      },
+      400
+    );
+  }
+
+  const id = createAdminUserId();
+
+  const displayName = normalizeAdminUserText(body.displayName);
+  const role = normalizeAdminUserEnum(
+    body.role,
+    ["free_user", "premium_user", "moderator", "admin", "owner"],
+    "free_user"
+  );
+  const plan = normalizeAdminUserEnum(
+    body.plan,
+    ["free", "premium", "admin"],
+    "free"
+  );
+  const status = normalizeAdminUserEnum(
+    body.status,
+    ["active", "disabled", "pending"],
+    "active"
+  );
+  const notes = normalizeAdminUserText(body.notes);
+
+  try {
+    await env.DB.prepare(`
+      INSERT INTO users (
+        id,
+        email,
+        display_name,
+        role,
+        plan,
+        status,
+        notes
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      id,
+      email,
+      displayName,
+      role,
+      plan,
+      status,
+      notes
+    ).run();
+  } catch (error) {
+    const message = String(error?.message || error || "");
+
+    if (message.toLowerCase().includes("unique")) {
+      return jsonResponse(
+        {
+          ok: false,
+          error: "A user with that email already exists"
+        },
+        409
+      );
+    }
+
+    throw error;
+  }
+
+  const row =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        email,
+        display_name,
+        role,
+        plan,
+        status,
+        notes,
+        created_at,
+        updated_at,
+        last_login_at
+      FROM users
+      WHERE id = ?
+    `).bind(id).first();
+
+  return jsonResponse(
+    {
+      ok: true,
+      user: normalizeAdminUserRow(row)
+    },
+    201
+  );
+}
+
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -2592,6 +2803,20 @@ export default {
         url.pathname === "/api/admin/summary"
       ) {
         return await handleAdminSummary(request, env);
+      }
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/admin/users"
+      ) {
+        return await handleAdminUserList(request, env);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/users"
+      ) {
+        return await handleAdminUserCreate(request, env);
       }
 
 
