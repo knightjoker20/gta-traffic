@@ -1596,3 +1596,254 @@ input[type="file"]::-webkit-file-upload-button {
 .meta-file-picker span {
   background: linear-gradient(135deg, #2563eb, #7c3aed);
 }
+
+/* Cloud save feedback */
+.cloud-save-status {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 207, 47, .24);
+  border-radius: 14px;
+  background: rgba(2, 6, 10, .62);
+  color: rgba(248, 250, 252, .88);
+  font-weight: 800;
+}
+
+.cloud-save-status.is-busy {
+  border-color: rgba(250, 204, 21, .45);
+  background: rgba(250, 204, 21, .12);
+  color: #fde68a;
+}
+
+.cloud-save-status.is-success {
+  border-color: rgba(34, 197, 94, .45);
+  background: rgba(34, 197, 94, .12);
+  color: #bbf7d0;
+}
+
+.cloud-save-status.is-warning {
+  border-color: rgba(251, 146, 60, .48);
+  background: rgba(251, 146, 60, .12);
+  color: #fed7aa;
+}
+
+.cloud-save-status.is-error {
+  border-color: rgba(248, 113, 113, .5);
+  background: rgba(248, 113, 113, .12);
+  color: #fecaca;
+}
+
+.cloud-save-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9999;
+  max-width: min(420px, calc(100vw - 48px));
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 207, 47, .28);
+  border-radius: 16px;
+  background: rgba(5, 8, 15, .94);
+  color: #f8fafc;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  font-weight: 900;
+}
+
+.cloud-save-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cloud-save-toast.is-busy {
+  border-color: rgba(250, 204, 21, .48);
+  color: #fde68a;
+}
+
+.cloud-save-toast.is-success {
+  border-color: rgba(34, 197, 94, .5);
+  color: #bbf7d0;
+}
+
+.cloud-save-toast.is-warning {
+  border-color: rgba(251, 146, 60, .5);
+  color: #fed7aa;
+}
+
+.cloud-save-toast.is-error {
+  border-color: rgba(248, 113, 113, .5);
+  color: #fecaca;
+}
+
+/* Cloud save button state */
+button[data-save-popgroups-cloud].is-saving {
+  opacity: .78;
+  cursor: wait;
+  filter: saturate(1.25) brightness(1.08);
+}
+
+/* Inline cloud save result beside Save button */
+.cloud-save-inline-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 207, 47, .28);
+  border-radius: 999px;
+  background: rgba(2, 6, 10, .72);
+  color: rgba(248, 250, 252, .88);
+  font-size: .9rem;
+  font-weight: 900;
+}
+
+.cloud-save-inline-status.is-busy {
+  border-color: rgba(250, 204, 21, .48);
+  background: rgba(250, 204, 21, .12);
+  color: #fde68a;
+}
+
+.cloud-save-inline-status.is-success {
+  border-color: rgba(34, 197, 94, .5);
+  background: rgba(34, 197, 94, .12);
+  color: #bbf7d0;
+}
+
+.cloud-save-inline-status.is-warning {
+  border-color: rgba(251, 146, 60, .5);
+  background: rgba(251, 146, 60, .12);
+  color: #fed7aa;
+}
+
+.cloud-save-inline-status.is-error {
+  border-color: rgba(248, 113, 113, .5);
+  background: rgba(248, 113, 113, .12);
+  color: #fecaca;
+}
+
+/* Keep cloud save messages inside the Cloud Project Save panel */
+.cloud-save-panel .cloud-save-status,
+.cloud-save-panel .cloud-save-inline-status {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 42px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 207, 47, .3);
+  border-radius: 999px;
+  background: rgba(2, 6, 10, .78);
+  color: rgba(248, 250, 252, .9);
+  font-size: .92rem;
+  font-weight: 900;
+}
+
+.cloud-save-panel .cloud-save-status.is-success,
+.cloud-save-panel .cloud-save-inline-status.is-success {
+  border-color: rgba(34, 197, 94, .55);
+  background: rgba(34, 197, 94, .14);
+  color: #bbf7d0;
+}
+
+.cloud-save-panel .cloud-save-status.is-busy,
+.cloud-save-panel .cloud-save-inline-status.is-busy {
+  border-color: rgba(250, 204, 21, .55);
+  background: rgba(250, 204, 21, .14);
+  color: #fde68a;
+}
+
+.cloud-save-panel .cloud-save-status.is-warning,
+.cloud-save-panel .cloud-save-inline-status.is-warning {
+  border-color: rgba(251, 146, 60, .55);
+  background: rgba(251, 146, 60, .14);
+  color: #fed7aa;
+}
+
+.cloud-save-panel .cloud-save-status.is-error,
+.cloud-save-panel .cloud-save-inline-status.is-error {
+  border-color: rgba(248, 113, 113, .55);
+  background: rgba(248, 113, 113, .14);
+  color: #fecaca;
+}
+
+/* Disable old body-level cloud save toast */
+.cloud-save-toast {
+  display: none !important;
+}
+
+/* Dashboard-style cloud save confirmation modal */
+.cloud-save-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, .62);
+  backdrop-filter: blur(6px);
+}
+
+.cloud-save-modal-overlay.is-visible {
+  display: flex;
+}
+
+.cloud-save-modal {
+  width: min(520px, 100%);
+  padding: 26px;
+  border: 1px solid rgba(255, 207, 47, .28);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 138, 0, .12), rgba(255, 46, 138, .10)),
+    rgba(7, 12, 22, .96);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .55);
+}
+
+.cloud-save-modal-kicker {
+  color: #ffdf75;
+  font-size: .78rem;
+  font-weight: 950;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.cloud-save-modal h2 {
+  margin: 8px 0 18px;
+  color: #f8fafc;
+}
+
+.cloud-save-modal-details {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 22px;
+}
+
+.cloud-save-modal-details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, .14);
+  border-radius: 12px;
+  background: rgba(2, 6, 10, .42);
+}
+
+.cloud-save-modal-details span {
+  color: rgba(203, 213, 225, .72);
+}
+
+.cloud-save-modal-details strong {
+  color: #f8fafc;
+  text-align: right;
+}
+
+.cloud-save-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
