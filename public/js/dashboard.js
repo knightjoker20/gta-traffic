@@ -15,19 +15,15 @@ function escapeHTML(value) {
     .replaceAll("'", "&#039;");
 }
 
-function renderDashboard(payload) {
-  const user = payload.user || {};
-  const workspaces = payload.workspaces || [];
+function setText(id, value) {
+  const element = document.getElementById(id);
 
-  document.getElementById("welcomeTitle").textContent =
-    "Welcome, " + (user.displayName || user.email || "User");
+  if (element) {
+    element.textContent = value;
+  }
+}
 
-  document.getElementById("accountSummary").textContent =
-    (user.email || "") + " • " + (user.role || "free_user");
-
-  document.getElementById("planBadge").textContent =
-    "Plan: " + (user.plan || "free");
-
+function renderWorkspaces(workspaces = []) {
   const workspaceList = document.getElementById("workspaceList");
 
   if (!workspaceList) {
@@ -37,8 +33,11 @@ function renderDashboard(payload) {
   if (!workspaces.length) {
     workspaceList.innerHTML =
       '<div class="workspace-item">No active workspaces found.</div>';
+    setText("workspaceBadge", "Workspace: None");
     return;
   }
+
+  setText("workspaceBadge", "Workspace: " + workspaces.length);
 
   workspaceList.innerHTML = workspaces.map(workspace => {
     return `
@@ -49,6 +48,57 @@ function renderDashboard(payload) {
       </div>
     `;
   }).join("");
+}
+
+function renderActivity(user, workspaces = []) {
+  const activityList = document.getElementById("activityList");
+
+  if (!activityList) {
+    return;
+  }
+
+  const items = [
+    "Signed in as " + (user.email || "account user") + ".",
+    "Loaded " + workspaces.length + " active workspace(s).",
+    "Project saving foundation is next on the roadmap."
+  ];
+
+  activityList.innerHTML = items.map(item => {
+    return `<div class="activity-item">${escapeHTML(item)}</div>`;
+  }).join("");
+}
+
+function renderDashboard(payload) {
+  const user = payload.user || {};
+  const workspaces = payload.workspaces || [];
+  const displayName = user.displayName || user.email || "User";
+
+  setText("welcomeTitle", "Welcome, " + displayName);
+  setText("accountSummary", "Your GTA Traffic account is ready for saved workspaces and project tools.");
+  setText("planBadge", "Plan: " + (user.plan || "free"));
+  setText("sessionBadge", "Session: Active");
+
+  setText("accountEmail", user.email || "—");
+  setText("accountRole", user.role || "free_user");
+  setText("accountPlan", user.plan || "free");
+
+  const accountStatusBadge = document.getElementById("accountStatusBadge");
+
+  if (accountStatusBadge) {
+    accountStatusBadge.textContent = user.status || "active";
+  }
+
+  const adminLink = document.getElementById("adminLink");
+
+  if (
+    adminLink &&
+    ["admin", "owner", "moderator"].includes(String(user.role || "").toLowerCase())
+  ) {
+    adminLink.classList.remove("hidden");
+  }
+
+  renderWorkspaces(workspaces);
+  renderActivity(user, workspaces);
 }
 
 async function loadDashboard() {
