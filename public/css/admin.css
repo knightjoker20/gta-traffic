@@ -373,3 +373,31 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Standalone existing user editor */
+.existing-user-edit-grid {
+  grid-template-columns: 1.4fr 1.4fr 1.2fr repeat(4, minmax(130px, 1fr));
+}
+
+.danger-btn {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, .55);
+}
+
+input[readonly] {
+  opacity: .76;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1200px) {
+  .existing-user-edit-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .existing-user-edit-grid {
+    grid-template-columns: 1fr;
+  }
+}

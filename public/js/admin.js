@@ -248,6 +248,199 @@ function renderSummary(summary = {}) {
   ].join("");
 }
 
+function getExistingUserEditFields() {
+  return {
+    lookup: document.getElementById("existingUserLookupInput"),
+    id: document.getElementById("existingUserIdInput"),
+    email: document.getElementById("existingUserEmailInput"),
+    displayName: document.getElementById("existingUserDisplayNameInput"),
+    role: document.getElementById("existingUserRoleInput"),
+    plan: document.getElementById("existingUserPlanInput"),
+    status: document.getElementById("existingUserStatusInput"),
+    notes: document.getElementById("existingUserNotesInput"),
+    statusText: document.getElementById("existingUserEditStatus"),
+    findBtn: document.getElementById("findExistingUserBtn"),
+    saveBtn: document.getElementById("saveExistingUserBtn"),
+    disableBtn: document.getElementById("disableExistingUserBtn"),
+    clearBtn: document.getElementById("clearExistingUserEditBtn")
+  };
+}
+
+function setExistingUserEditStatus(message, tone = "") {
+  const fields = getExistingUserEditFields();
+
+  if (!fields.statusText) {
+    return;
+  }
+
+  fields.statusText.textContent = message;
+  fields.statusText.className = "inline-status" + (tone ? " " + tone : "");
+}
+
+function clearExistingUserEditForm() {
+  const fields = getExistingUserEditFields();
+
+  if (fields.lookup) fields.lookup.value = "";
+  if (fields.id) fields.id.value = "";
+  if (fields.email) fields.email.value = "";
+  if (fields.displayName) fields.displayName.value = "";
+  if (fields.role) fields.role.value = "free_user";
+  if (fields.plan) fields.plan.value = "free";
+  if (fields.status) fields.status.value = "active";
+  if (fields.notes) fields.notes.value = "";
+
+  setExistingUserEditStatus("No user loaded.");
+}
+
+function fillExistingUserEditForm(user) {
+  const fields = getExistingUserEditFields();
+
+  if (fields.id) fields.id.value = user.id || "";
+  if (fields.email) fields.email.value = user.email || "";
+  if (fields.displayName) fields.displayName.value = user.displayName || "";
+  if (fields.role) fields.role.value = user.role || "free_user";
+  if (fields.plan) fields.plan.value = user.plan || "free";
+  if (fields.status) fields.status.value = user.status || "active";
+  if (fields.notes) fields.notes.value = user.notes || "";
+
+  setExistingUserEditStatus("Loaded user: " + user.email, "good");
+}
+
+function getExistingUserEditBody() {
+  const fields = getExistingUserEditFields();
+
+  return {
+    displayName: fields.displayName?.value?.trim() || "",
+    role: fields.role?.value || "free_user",
+    plan: fields.plan?.value || "free",
+    status: fields.status?.value || "active",
+    notes: fields.notes?.value?.trim() || ""
+  };
+}
+
+async function findExistingUserForEdit() {
+  if (!getAdminToken()) {
+    setExistingUserEditStatus("Admin token required before finding users.", "warning");
+    return;
+  }
+
+  const fields = getExistingUserEditFields();
+  const query = fields.lookup?.value?.trim() || "";
+
+  if (!query) {
+    setExistingUserEditStatus("Enter an email or name to search.", "warning");
+    return;
+  }
+
+  setExistingUserEditStatus("Finding user...");
+
+  try {
+    const response = await fetch(
+      "/api/admin/users?query=" + encodeURIComponent(query),
+      {
+        headers: getAdminHeaders()
+      }
+    );
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+
+    const users = payload.users || [];
+
+    if (!users.length) {
+      clearExistingUserEditForm();
+      if (fields.lookup) fields.lookup.value = query;
+      setExistingUserEditStatus("No matching user found.", "warning");
+      return;
+    }
+
+    fillExistingUserEditForm(users[0]);
+
+    if (users.length > 1) {
+      setExistingUserEditStatus(
+        "Loaded first match: " + users[0].email + " (" + users.length + " matches found)",
+        "warning"
+      );
+    }
+  } catch (error) {
+    console.warn("Existing user lookup failed.", error);
+    setExistingUserEditStatus(
+      "Find user failed: " + (error.message || "Unknown error"),
+      "danger"
+    );
+  }
+}
+
+async function saveExistingUserEdit() {
+  if (!getAdminToken()) {
+    setExistingUserEditStatus("Admin token required before saving users.", "warning");
+    return;
+  }
+
+  const fields = getExistingUserEditFields();
+  const userId = fields.id?.value?.trim() || "";
+
+  if (!userId) {
+    setExistingUserEditStatus("Load a user before saving.", "warning");
+    return;
+  }
+
+  setExistingUserEditStatus("Saving user...");
+
+  try {
+    const response = await fetch(
+      "/api/admin/users/" + encodeURIComponent(userId),
+      {
+        method: "PATCH",
+        headers: getAdminHeaders(true),
+        body: JSON.stringify(getExistingUserEditBody())
+      }
+    );
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+
+    fillExistingUserEditForm(payload.user);
+    setExistingUserEditStatus("Saved user: " + payload.user.email, "good");
+
+    await loadAdminUsers();
+    await loadAdminSummary();
+  } catch (error) {
+    console.warn("Existing user save failed.", error);
+    setExistingUserEditStatus(
+      "Save failed: " + (error.message || "Unknown error"),
+      "danger"
+    );
+  }
+}
+
+async function disableExistingUserEdit() {
+  const fields = getExistingUserEditFields();
+  const userId = fields.id?.value?.trim() || "";
+  const email = fields.email?.value?.trim() || "selected user";
+
+  if (!userId) {
+    setExistingUserEditStatus("Load a user before disabling.", "warning");
+    return;
+  }
+
+  if (!confirm("Disable " + email + "?")) {
+    return;
+  }
+
+  if (fields.status) {
+    fields.status.value = "disabled";
+  }
+
+  await saveExistingUserEdit();
+}
+
 async function loadAdminSummary() {
   const token = getAdminToken();
 
@@ -293,6 +486,18 @@ function initAdminDashboard() {
 
   els.refreshUsersBtn?.addEventListener("click", loadAdminUsers);
   els.createUserBtn?.addEventListener("click", createAdminUser);
+
+  const existingFields = getExistingUserEditFields();
+
+  existingFields.findBtn?.addEventListener("click", findExistingUserForEdit);
+  existingFields.saveBtn?.addEventListener("click", saveExistingUserEdit);
+  existingFields.disableBtn?.addEventListener("click", disableExistingUserEdit);
+  existingFields.clearBtn?.addEventListener("click", clearExistingUserEditForm);
+  existingFields.lookup?.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      findExistingUserForEdit();
+    }
+  });
   els.userSearchInput?.addEventListener("keydown", event => {
     if (event.key === "Enter") {
       loadAdminUsers();

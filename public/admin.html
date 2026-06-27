@@ -102,6 +102,55 @@
       </div>
     </section>
 
+    <section id="adminExistingUserPanel" class="admin-panel">
+      <div class="section-heading">
+        <div>
+          <h2>Update Existing User</h2>
+          <p>Search for a user, load their record, then update role, plan, status, or notes.</p>
+        </div>
+      </div>
+
+      <div class="admin-actions">
+        <input id="existingUserLookupInput" class="admin-small-input" placeholder="Search email or name...">
+        <button id="findExistingUserBtn" class="secondary">Find User</button>
+        <button id="clearExistingUserEditBtn" class="secondary">Clear</button>
+        <span id="existingUserEditStatus" class="inline-status">No user loaded.</span>
+      </div>
+
+      <div class="admin-form-grid existing-user-edit-grid">
+        <input id="existingUserIdInput" placeholder="User ID" readonly>
+        <input id="existingUserEmailInput" placeholder="Email" readonly>
+        <input id="existingUserDisplayNameInput" placeholder="Display name">
+
+        <select id="existingUserRoleInput">
+          <option value="free_user">free_user</option>
+          <option value="premium_user">premium_user</option>
+          <option value="moderator">moderator</option>
+          <option value="admin">admin</option>
+          <option value="owner">owner</option>
+        </select>
+
+        <select id="existingUserPlanInput">
+          <option value="free">free</option>
+          <option value="premium">premium</option>
+          <option value="admin">admin</option>
+        </select>
+
+        <select id="existingUserStatusInput">
+          <option value="active">active</option>
+          <option value="pending">pending</option>
+          <option value="disabled">disabled</option>
+        </select>
+
+        <input id="existingUserNotesInput" placeholder="Notes">
+      </div>
+
+      <div class="admin-actions">
+        <button id="saveExistingUserBtn">Save Existing User</button>
+        <button id="disableExistingUserBtn" class="secondary danger-btn">Disable User</button>
+      </div>
+    </section>
+
     <section class="admin-grid">
       <article class="admin-card">
         <h3>User Management</h3>
