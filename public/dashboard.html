@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | GTA Traffic</title>
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <script defer src="/js/dashboard.js"></script>
+</head>
+<body>
+  <main class="dashboard-shell">
+    <header class="dashboard-topbar">
+      <strong>GTA Traffic Dashboard</strong>
+
+      <nav class="dashboard-actions">
+        <a class="button" href="/">Main Site</a>
+        <a class="button" href="/admin.html">Admin</a>
+        <button id="logoutBtn">Log Out</button>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <span id="planBadge" class="badge">Loading...</span>
+      <h1 id="welcomeTitle">Loading dashboard...</h1>
+      <p id="accountSummary">Checking your account session.</p>
+      <div id="dashboardStatus" class="status"></div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>My Workspace</h2>
+        <p class="muted">Your saved GTA traffic editing space.</p>
+        <div id="workspaceList" class="workspace-list"></div>
+      </article>
+
+      <article class="card">
+        <h2>Saved Projects</h2>
+        <p class="muted">Coming next: save PopGroups, PopCycle, vehicle libraries, and export presets.</p>
+      </article>
+
+      <article class="card">
+        <h2>Vehicle & Pack Tools</h2>
+        <p class="muted">Use the public tools now. Account-connected saves come next.</p>
+        <a href="/vehicle-library.html">Open Vehicle Library</a>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

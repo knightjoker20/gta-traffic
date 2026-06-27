@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Free Account | GTA Traffic</title>
+  <link rel="stylesheet" href="/css/auth.css">
+  <script defer src="/js/auth.js"></script>
+</head>
+<body data-auth-mode="register">
+  <main class="auth-shell">
+    <section class="auth-card">
+      <div class="brand">
+        <strong>GTA Traffic</strong>
+        <a href="/">Home</a>
+      </div>
+
+      <h1>Create a free account</h1>
+      <p>Save your GTA traffic workspaces, vehicle packs, and future traffic projects.</p>
+
+      <form id="authForm">
+        <label>
+          Email
+          <input id="emailInput" type="email" autocomplete="email" required>
+        </label>
+
+        <label>
+          Display name
+          <input id="displayNameInput" type="text" autocomplete="name" required>
+        </label>
+
+        <label>
+          Password
+          <input id="passwordInput" type="password" autocomplete="new-password" required minlength="8">
+        </label>
+
+        <label>
+          Confirm password
+          <input id="confirmPasswordInput" type="password" autocomplete="new-password" required minlength="8">
+        </label>
+
+        <button type="submit">Create Free Account</button>
+        <div id="authStatus" class="status"></div>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="/login.html">Log in</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
