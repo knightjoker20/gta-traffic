@@ -303,119 +303,6 @@
       minute: "2-digit"
     });
   }
-
-  function showCloudSaveConfirmation(options = {}) {
-    const lines = [
-      options.title || "Cloud project saved",
-      "",
-      "Project: " + (options.name || "PopGroups project"),
-      "Type: PopGroups"
-    ];
-
-    if (options.versionNumber) {
-      lines.push("Version saved: " + options.versionNumber);
-    }
-
-    if (options.vehicleGroups !== undefined) {
-      lines.push("Vehicle groups: " + options.vehicleGroups);
-    }
-
-    if (options.vehicleModels !== undefined) {
-      lines.push("Vehicles in PopGroups: " + options.vehicleModels);
-    }
-
-    if (options.savedAt) {
-      lines.push("Saved: " + options.savedAt);
-    }
-
-    alert(lines.join("\n"));
-  }
-
-  function showCloudSaveModal(options = {}) {
-    let overlay = document.querySelector("[data-cloud-save-modal]");
-
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.className = "cloud-save-modal-overlay";
-      overlay.setAttribute("data-cloud-save-modal", "");
-
-      overlay.innerHTML = `
-        <div class="cloud-save-modal" role="dialog" aria-modal="true">
-          <div class="cloud-save-modal-kicker">Cloud Save Complete</div>
-          <h2 data-cloud-save-modal-title>Project saved</h2>
-
-          <div class="cloud-save-modal-details">
-            <div>
-              <span>Project</span>
-              <strong data-cloud-save-modal-project></strong>
-            </div>
-
-            <div>
-              <span>Type</span>
-              <strong>PopGroups</strong>
-            </div>
-
-            <div>
-              <span>Version</span>
-              <strong data-cloud-save-modal-version></strong>
-            </div>
-
-            <div>
-              <span>Vehicle Groups</span>
-              <strong data-cloud-save-modal-groups></strong>
-            </div>
-
-            <div>
-              <span>Vehicles in PopGroups</span>
-              <strong data-cloud-save-modal-models></strong>
-            </div>
-
-            <div>
-              <span>Saved</span>
-              <strong data-cloud-save-modal-time></strong>
-            </div>
-          </div>
-
-          <div class="cloud-save-modal-actions">
-            <a class="button ghost" href="/dashboard.html">View Dashboard</a>
-            <button type="button" class="button" data-cloud-save-modal-close>OK</button>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(overlay);
-
-      overlay.addEventListener("click", event => {
-        if (
-          event.target.matches("[data-cloud-save-modal]") ||
-          event.target.matches("[data-cloud-save-modal-close]")
-        ) {
-          overlay.classList.remove("is-visible");
-        }
-      });
-    }
-
-    overlay.querySelector("[data-cloud-save-modal-title]").textContent =
-      options.title || "Cloud project saved";
-
-    overlay.querySelector("[data-cloud-save-modal-project]").textContent =
-      options.name || "PopGroups project";
-
-    overlay.querySelector("[data-cloud-save-modal-version]").textContent =
-      options.versionNumber ? String(options.versionNumber) : "1";
-
-    overlay.querySelector("[data-cloud-save-modal-groups]").textContent =
-      options.vehicleGroups !== undefined ? String(options.vehicleGroups) : "�";
-
-    overlay.querySelector("[data-cloud-save-modal-models]").textContent =
-      options.vehicleModels !== undefined ? String(options.vehicleModels) : "�";
-
-    overlay.querySelector("[data-cloud-save-modal-time]").textContent =
-      options.savedAt || new Date().toLocaleString();
-
-    overlay.classList.add("is-visible");
-  }
-
   function getDefaultProjectName() {
     if (
       typeof loadedFileName !== "undefined" &&
@@ -741,15 +628,6 @@
       };
 
       setCloudSaveStatus("Saved cloud project: " + result.project.name, "success", triggerButton);
-
-      showCloudSaveConfirmation({
-        title: "Cloud project saved",
-        name: result.project.name,
-        versionNumber: 1,
-        vehicleGroups: payload.summary.vehicleGroups,
-        vehicleModels: payload.summary.vehicleModels,
-        savedAt: new Date().toLocaleString()
-      });
     } catch (error) {
       setCloudSaveStatus(error.message || "Unable to save cloud project.", "error", triggerButton);
     }

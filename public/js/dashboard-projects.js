@@ -1,5 +1,9 @@
 (function () {
   let dashboardProjectFilter = "active";
+  let dashboardProjectSearch = "";
+  let dashboardProjectTypeFilter = "all";
+  let dashboardProjectSort = "pinned-newest";
+  let dashboardProjectSearchTimer = null;
 
   const PROJECT_TYPE_LABELS = {
     "popgroups": "PopGroups",
@@ -68,6 +72,40 @@
           <button type="button" class="button ghost" data-refresh-projects>
             Refresh
           </button>
+        </div>
+        <div class="saved-projects-view-controls" data-project-view-controls>
+          <label>
+            <span>Search</span>
+            <input
+              type="search"
+              placeholder="Search projects..."
+              data-project-search
+            >
+          </label>
+
+          <label>
+            <span>Type</span>
+            <select data-project-type-filter>
+              <option value="all">All Types</option>
+              <option value="popgroups">PopGroups</option>
+              <option value="popcycle">PopCycle</option>
+              <option value="vehicle-meta">Vehicle Meta</option>
+              <option value="handling-meta">Handling Meta</option>
+              <option value="pack-database">Pack Database</option>
+              <option value="vehicle-library">Vehicle Library</option>
+              <option value="general">General</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Sort</span>
+            <select data-project-sort>
+              <option value="pinned-newest">Pinned + Newest</option>
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name">Name A-Z</option>
+            </select>
+          </label>
         </div>
       </div>
 
@@ -347,6 +385,112 @@
     }
   }
 
+  function normalizeProjectSearchValue(value) {
+    return String(value ?? "").trim().toLowerCase();
+  }
+
+  function getProjectSortTime(project) {
+    return Date.parse(project.updatedAt || project.createdAt || "") || 0;
+  }
+
+  function getProjectSortName(project) {
+    return String(project.name || "").toLowerCase();
+  }
+
+  function projectMatchesSearchAndType(project) {
+    const search = normalizeProjectSearchValue(dashboardProjectSearch);
+    const typeFilter = dashboardProjectTypeFilter || "all";
+
+    if (typeFilter !== "all" && project.projectType !== typeFilter) {
+      return false;
+    }
+
+    if (!search) {
+      return true;
+    }
+
+    const haystack = [
+      project.name,
+      project.description,
+      project.projectType,
+      getProjectTypeLabel(project.projectType),
+      project.status
+    ]
+      .map(value => normalizeProjectSearchValue(value))
+      .join(" ");
+
+    return haystack.includes(search);
+  }
+
+  function sortDashboardProjects(projects) {
+    return projects.slice().sort((a, b) => {
+      if (dashboardProjectSort === "name") {
+        return getProjectSortName(a).localeCompare(getProjectSortName(b));
+      }
+
+      if (dashboardProjectSort === "oldest") {
+        return getProjectSortTime(a) - getProjectSortTime(b);
+      }
+
+      if (dashboardProjectSort === "newest") {
+        return getProjectSortTime(b) - getProjectSortTime(a);
+      }
+
+      const pinnedDifference =
+        Number(Boolean(b.pinned)) - Number(Boolean(a.pinned));
+
+      if (pinnedDifference !== 0) {
+        return pinnedDifference;
+      }
+
+      return getProjectSortTime(b) - getProjectSortTime(a);
+    });
+  }
+
+  function applyProjectSearchAndSort(projects) {
+    return sortDashboardProjects(
+      projects.filter(projectMatchesSearchAndType)
+    );
+  }
+
+  function updateProjectViewControls() {
+    const searchInput = document.querySelector("[data-project-search]");
+    const typeSelect = document.querySelector("[data-project-type-filter]");
+    const sortSelect = document.querySelector("[data-project-sort]");
+
+    if (searchInput && searchInput.value !== dashboardProjectSearch) {
+      searchInput.value = dashboardProjectSearch;
+    }
+
+    if (typeSelect && typeSelect.value !== dashboardProjectTypeFilter) {
+      typeSelect.value = dashboardProjectTypeFilter;
+    }
+
+    if (sortSelect && sortSelect.value !== dashboardProjectSort) {
+      sortSelect.value = dashboardProjectSort;
+    }
+  }
+
+  function renderNoProjectMatches(grid, totalProjects) {
+    grid.innerHTML = `
+      <article class="saved-project-card empty-project-card">
+        <div class="saved-project-card-body">
+          <p class="project-type-badge">No matching projects</p>
+          <h3>No projects match the current search/filter.</h3>
+          <p>
+            ${totalProjects} project${totalProjects === 1 ? "" : "s"} exist in this view,
+            but none match the current search text or project type filter.
+          </p>
+          <div class="saved-project-card-actions">
+            <button type="button" class="button ghost" data-clear-project-search>
+              Clear Search / Filter
+            </button>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
   function updateProjectFilterButtons() {
     document
       .querySelectorAll("[data-project-filter]")
@@ -411,6 +555,7 @@
     const grid = section.querySelector("[data-saved-projects-grid]");
 
     updateProjectFilterButtons();
+    updateProjectViewControls();
 
     status.textContent = "Loading saved projects...";
 
@@ -429,17 +574,31 @@
       }
 
       const projects = Array.isArray(payload.projects) ? payload.projects : [];
+      const visibleProjects = applyProjectSearchAndSort(projects);
 
       const filterLabel =
         dashboardProjectFilter === "archived"
           ? "archived"
           : "active";
 
-      status.textContent = projects.length
-        ? `${projects.length} ${filterLabel} saved project${projects.length === 1 ? "" : "s"} found.`
-        : `No ${filterLabel} saved projects yet.`;
+      const hasSearchOrTypeFilter =
+        Boolean(dashboardProjectSearch.trim()) ||
+        dashboardProjectTypeFilter !== "all";
 
-      renderProjects(grid, projects);
+      status.textContent = visibleProjects.length
+        ? `${visibleProjects.length} ${filterLabel} saved project${visibleProjects.length === 1 ? "" : "s"} shown` +
+          (hasSearchOrTypeFilter ? ` from ${projects.length} total.` : ".")
+        : projects.length
+          ? `No ${filterLabel} saved projects match the current search/filter.`
+          : `No ${filterLabel} saved projects yet.`;
+
+      if (visibleProjects.length) {
+        renderProjects(grid, visibleProjects);
+      } else if (projects.length) {
+        renderNoProjectMatches(grid, projects.length);
+      } else {
+        renderEmptyState(grid);
+      }
     } catch (error) {
       status.textContent = error.message || "Unable to load saved projects.";
 
@@ -643,6 +802,7 @@
     const filterButton = event.target.closest("[data-project-filter]");
     const statusButton = event.target.closest("[data-project-status]");
     const editButton = event.target.closest("[data-project-edit]");
+    const clearSearchButton = event.target.closest("[data-clear-project-search]");
 
     if (refreshButton) {
       loadSavedProjects();
@@ -652,7 +812,38 @@
       dashboardProjectFilter =
         filterButton.getAttribute("data-project-filter") || "active";
 
+      document.addEventListener("input", event => {
+    const searchInput = event.target.closest("[data-project-search]");
+
+    if (!searchInput) {
+      return;
+    }
+
+    dashboardProjectSearch = searchInput.value || "";
+
+    window.clearTimeout(dashboardProjectSearchTimer);
+
+    dashboardProjectSearchTimer = window.setTimeout(() => {
       loadSavedProjects();
+    }, 180);
+  });
+
+  document.addEventListener("change", event => {
+    const typeSelect = event.target.closest("[data-project-type-filter]");
+    const sortSelect = event.target.closest("[data-project-sort]");
+
+    if (typeSelect) {
+      dashboardProjectTypeFilter = typeSelect.value || "all";
+      loadSavedProjects();
+    }
+
+    if (sortSelect) {
+      dashboardProjectSort = sortSelect.value || "pinned-newest";
+      loadSavedProjects();
+    }
+  });
+
+  loadSavedProjects();
     }
 
     if (detailsButton) {

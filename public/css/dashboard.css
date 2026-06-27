@@ -837,3 +837,44 @@ dd {
   flex-wrap: wrap;
   gap: 10px;
 }
+
+/* Saved project search/sort controls */
+.saved-projects-view-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, auto) minmax(180px, auto);
+  gap: 12px;
+  margin: 18px 0 4px;
+}
+
+.saved-projects-view-controls label {
+  display: grid;
+  gap: 7px;
+}
+
+.saved-projects-view-controls span {
+  color: rgba(226, 232, 240, .72);
+  font-size: .78rem;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.saved-projects-view-controls input,
+.saved-projects-view-controls select {
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 207, 47, .2);
+  border-radius: 14px;
+  background: rgba(2, 6, 10, .62);
+  color: #f8fafc;
+}
+
+.saved-projects-view-controls input::placeholder {
+  color: rgba(203, 213, 225, .46);
+}
+
+@media (max-width: 780px) {
+  .saved-projects-view-controls {
+    grid-template-columns: 1fr;
+  }
+}
