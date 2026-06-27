@@ -1434,6 +1434,10 @@ return jsonResponse(
 
 const DEFAULT_WORKSPACE_ID = "default";
 
+const AUTH_SESSION_COOKIE_NAME = "gta_traffic_session";
+const AUTH_SESSION_DAYS = 14;
+const PASSWORD_PBKDF2_ITERATIONS = 100000;
+
 function normalizeWorkspaceId(value) {
   const workspaceId = optionalText(value) || DEFAULT_WORKSPACE_ID;
 
@@ -3298,11 +3302,618 @@ async function handleAdminWorkspaceMemberUpsert(request, env) {
 }
 
 
+function authText(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeAuthEmail(value) {
+  return authText(value).toLowerCase();
+}
+
+function normalizeAuthDisplayName(value, fallbackEmail = "") {
+  const displayName = authText(value);
+
+  if (displayName) {
+    return displayName.slice(0, 120);
+  }
+
+  const emailName = String(fallbackEmail || "").split("@")[0] || "User";
+  return emailName.slice(0, 120);
+}
+
+function isValidAuthEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidAuthPassword(password) {
+  return String(password || "").length >= 8;
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+}
+
+async function sha256Hex(value) {
+  const encoded = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+
+  return Array.from(new Uint8Array(digest))
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function randomTokenBase64Url(byteLength = 32) {
+  const bytes = new Uint8Array(byteLength);
+  crypto.getRandomValues(bytes);
+
+  return bytesToBase64(bytes)
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
+}
+
+async function hashPasswordForAuth(password, saltBase64 = "") {
+  const salt =
+    saltBase64
+      ? base64ToBytes(saltBase64)
+      : crypto.getRandomValues(new Uint8Array(16));
+
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt,
+      iterations: PASSWORD_PBKDF2_ITERATIONS
+    },
+    keyMaterial,
+    256
+  );
+
+  return {
+    hash: bytesToBase64(new Uint8Array(bits)),
+    salt: bytesToBase64(salt)
+  };
+}
+
+function safeEqualString(left, right) {
+  const a = String(left || "");
+  const b = String(right || "");
+
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  let diff = 0;
+
+  for (let index = 0; index < a.length; index += 1) {
+    diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  }
+
+  return diff === 0;
+}
+
+function normalizePublicUser(row = {}) {
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name || row.displayName || "",
+    role: row.role || "free_user",
+    plan: row.plan || "free",
+    status: row.status || "active",
+    createdAt: row.created_at || row.createdAt || null
+  };
+}
+
+function normalizePublicWorkspace(row = {}) {
+  return {
+    id: row.id,
+    name: row.name || "Personal Workspace",
+    role: row.member_role || row.role || "owner",
+    status: row.member_status || row.status || "active"
+  };
+}
+
+function buildSessionCookie(token, expiresAt) {
+  return [
+    AUTH_SESSION_COOKIE_NAME + "=" + token,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+    "Expires=" + expiresAt.toUTCString()
+  ].join("; ");
+}
+
+function buildExpiredSessionCookie() {
+  return [
+    AUTH_SESSION_COOKIE_NAME + "=",
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+  ].join("; ");
+}
+
+function getCookieValue(request, name) {
+  const cookieHeader = request.headers.get("Cookie") || "";
+  const cookies = cookieHeader.split(";");
+
+  for (const cookie of cookies) {
+    const [rawName, ...rawValue] = cookie.trim().split("=");
+
+    if (rawName === name) {
+      return rawValue.join("=");
+    }
+  }
+
+  return "";
+}
+
+async function createAuthSession(env, userId, request) {
+  const token = randomTokenBase64Url(32);
+  const tokenHash = await sha256Hex(token);
+  const sessionId = "session:" + crypto.randomUUID();
+  const expiresAt = new Date(
+    Date.now() + AUTH_SESSION_DAYS * 24 * 60 * 60 * 1000
+  );
+
+  await env.DB.prepare(`
+    INSERT INTO user_sessions (
+      id,
+      user_id,
+      session_token_hash,
+      expires_at,
+      user_agent,
+      ip_hint
+    )
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(
+    sessionId,
+    userId,
+    tokenHash,
+    expiresAt.toISOString(),
+    request.headers.get("User-Agent") || null,
+    request.headers.get("CF-Connecting-IP") || null
+  ).run();
+
+  return {
+    token,
+    expiresAt
+  };
+}
+
+function jsonAuthResponse(payload, init = {}) {
+  const headers = new Headers();
+
+  headers.set("Content-Type", "application/json; charset=utf-8");
+  headers.set("Cache-Control", "no-store");
+
+  const inputHeaders = init.headers || {};
+
+  for (const [key, value] of Object.entries(inputHeaders)) {
+    if (key.toLowerCase() === "set-cookie") {
+      headers.append("Set-Cookie", value);
+    } else {
+      headers.set(key, value);
+    }
+  }
+
+  return new Response(
+    JSON.stringify(payload, null, 2),
+    {
+      status: init.status || 200,
+      headers
+    }
+  );
+}
+
+async function getCurrentAuthSession(request, env) {
+  const token = getCookieValue(request, AUTH_SESSION_COOKIE_NAME);
+
+  if (!token) {
+    return null;
+  }
+
+  const tokenHash = await sha256Hex(token);
+
+  const row = await env.DB.prepare(`
+    SELECT
+      s.id AS session_id,
+      s.user_id,
+      s.expires_at,
+      u.id,
+      u.email,
+      u.display_name,
+      u.role,
+      u.plan,
+      u.status,
+      u.created_at
+    FROM user_sessions s
+    JOIN users u
+      ON u.id = s.user_id
+    WHERE s.session_token_hash = ?
+      AND s.expires_at > CURRENT_TIMESTAMP
+      AND u.status = 'active'
+  `).bind(tokenHash).first();
+
+  if (!row) {
+    return null;
+  }
+
+  await env.DB.prepare(`
+    UPDATE user_sessions
+    SET last_seen_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(row.session_id).run();
+
+  return {
+    sessionId: row.session_id,
+    user: normalizePublicUser(row)
+  };
+}
+
+async function getUserWorkspacesForAuth(env, userId) {
+  const result = await env.DB.prepare(`
+    SELECT
+      w.id,
+      w.name,
+      wm.role AS member_role,
+      wm.status AS member_status
+    FROM workspace_members wm
+    JOIN workspaces w
+      ON w.id = wm.workspace_id
+    WHERE wm.user_id = ?
+      AND wm.status = 'active'
+    ORDER BY
+      CASE wm.role
+        WHEN 'owner' THEN 1
+        WHEN 'editor' THEN 2
+        ELSE 3
+      END,
+      w.created_at ASC
+    LIMIT 20
+  `).bind(userId).all();
+
+  return (result.results || []).map(normalizePublicWorkspace);
+}
+
+async function handleAuthMe(request, env) {
+  const session = await getCurrentAuthSession(request, env);
+
+  if (!session) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        authenticated: false,
+        error: "Not authenticated"
+      },
+      { status: 401 }
+    );
+  }
+
+  const workspaces =
+    await getUserWorkspacesForAuth(env, session.user.id);
+
+  return jsonAuthResponse({
+    ok: true,
+    authenticated: true,
+    user: session.user,
+    workspaces
+  });
+}
+
+async function handleAuthRegister(request, env) {
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Invalid JSON body"
+      },
+      { status: 400 }
+    );
+  }
+
+  const email = normalizeAuthEmail(body.email);
+  const password = String(body.password || "");
+  const displayName = normalizeAuthDisplayName(body.displayName, email);
+
+  if (!isValidAuthEmail(email)) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Valid email is required"
+      },
+      { status: 400 }
+    );
+  }
+
+  if (!isValidAuthPassword(password)) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Password must be at least 8 characters"
+      },
+      { status: 400 }
+    );
+  }
+
+  const existing = await env.DB.prepare(`
+    SELECT id
+    FROM users
+    WHERE email = ?
+  `).bind(email).first();
+
+  if (existing) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "An account with this email already exists"
+      },
+      { status: 409 }
+    );
+  }
+
+  const userId = "user:" + crypto.randomUUID();
+  const workspaceId = "workspace:" + crypto.randomUUID();
+  const workspaceName = displayName + "'s Workspace";
+  const passwordResult = await hashPasswordForAuth(password);
+
+  await env.DB.batch([
+    env.DB.prepare(`
+      INSERT INTO users (
+        id,
+        email,
+        display_name,
+        role,
+        plan,
+        status,
+        notes
+      )
+      VALUES (?, ?, ?, 'free_user', 'free', 'active', 'Self-registered free account.')
+    `).bind(
+      userId,
+      email,
+      displayName
+    ),
+
+    env.DB.prepare(`
+      INSERT INTO user_auth_credentials (
+        user_id,
+        email,
+        password_hash,
+        password_salt,
+        password_algorithm
+      )
+      VALUES (?, ?, ?, ?, 'PBKDF2-SHA256')
+    `).bind(
+      userId,
+      email,
+      passwordResult.hash,
+      passwordResult.salt
+    ),
+
+    env.DB.prepare(`
+      INSERT INTO workspaces (
+        id,
+        owner_user_id,
+        name
+      )
+      VALUES (?, ?, ?)
+    `).bind(
+      workspaceId,
+      userId,
+      workspaceName
+    ),
+
+    env.DB.prepare(`
+      INSERT INTO workspace_members (
+        workspace_id,
+        user_id,
+        role,
+        status
+      )
+      VALUES (?, ?, 'owner', 'active')
+    `).bind(
+      workspaceId,
+      userId
+    )
+  ]);
+
+  const session = await createAuthSession(env, userId, request);
+
+  const user = {
+    id: userId,
+    email,
+    displayName,
+    role: "free_user",
+    plan: "free",
+    status: "active"
+  };
+
+  const workspace = {
+    id: workspaceId,
+    name: workspaceName,
+    role: "owner",
+    status: "active"
+  };
+
+  return jsonAuthResponse(
+    {
+      ok: true,
+      user,
+      workspaces: [workspace]
+    },
+    {
+      headers: {
+        "Set-Cookie": buildSessionCookie(
+          session.token,
+          session.expiresAt
+        )
+      }
+    }
+  );
+}
+
+async function handleAuthLogin(request, env) {
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Invalid JSON body"
+      },
+      { status: 400 }
+    );
+  }
+
+  const email = normalizeAuthEmail(body.email);
+  const password = String(body.password || "");
+
+  const credential = await env.DB.prepare(`
+    SELECT
+      c.user_id,
+      c.password_hash,
+      c.password_salt,
+      u.status
+    FROM user_auth_credentials c
+    JOIN users u
+      ON u.id = c.user_id
+    WHERE c.email = ?
+  `).bind(email).first();
+
+  if (!credential || credential.status !== "active") {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Invalid email or password"
+      },
+      { status: 401 }
+    );
+  }
+
+  const passwordResult =
+    await hashPasswordForAuth(password, credential.password_salt);
+
+  if (!safeEqualString(passwordResult.hash, credential.password_hash)) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Invalid email or password"
+      },
+      { status: 401 }
+    );
+  }
+
+  const session =
+    await createAuthSession(env, credential.user_id, request);
+
+  return jsonAuthResponse(
+    {
+      ok: true
+    },
+    {
+      headers: {
+        "Set-Cookie": buildSessionCookie(
+          session.token,
+          session.expiresAt
+        )
+      }
+    }
+  );
+}
+
+async function handleAuthLogout(request, env) {
+  const token = getCookieValue(request, AUTH_SESSION_COOKIE_NAME);
+
+  if (token) {
+    const tokenHash = await sha256Hex(token);
+
+    await env.DB.prepare(`
+      DELETE FROM user_sessions
+      WHERE session_token_hash = ?
+    `).bind(tokenHash).run();
+  }
+
+  return jsonAuthResponse(
+    {
+      ok: true
+    },
+    {
+      headers: {
+        "Set-Cookie": buildExpiredSessionCookie()
+      }
+    }
+  );
+}
+
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    try {      if (
+    try {
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/auth/register"
+      ) {
+        return await handleAuthRegister(request, env);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/auth/login"
+      ) {
+        return await handleAuthLogin(request, env);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/auth/logout"
+      ) {
+        return await handleAuthLogout(request, env);
+      }
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/auth/me"
+      ) {
+        return await handleAuthMe(request, env);
+      }
+
+      if (
         request.method === "GET" &&
         url.pathname === "/api/admin/summary"
       ) {
