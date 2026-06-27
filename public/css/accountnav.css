@@ -57,3 +57,24 @@
     display: none;
   }
 }
+
+/* Keep account nav buttons consistent across all site themes */
+.gta-account-nav a.primary,
+body.gta-theme .gta-account-nav a.primary {
+  background: linear-gradient(135deg, #facc15, #f97316 48%, #ef4444) !important;
+  border-color: transparent !important;
+  color: #f5f7fb !important;
+  box-shadow: 0 0 24px rgba(249, 115, 22, .24) !important;
+}
+
+.gta-account-nav a.primary:hover,
+body.gta-theme .gta-account-nav a.primary:hover {
+  filter: brightness(1.08);
+}
+
+.gta-account-nav button,
+body.gta-theme .gta-account-nav button {
+  background: #151d2a !important;
+  color: #f5f7fb !important;
+  border-color: rgba(148, 163, 184, .26) !important;
+}
