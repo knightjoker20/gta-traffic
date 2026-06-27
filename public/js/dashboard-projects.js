@@ -1,4 +1,6 @@
 (function () {
+  let dashboardProjectFilter = "active";
+
   const PROJECT_TYPE_LABELS = {
     "popgroups": "PopGroups",
     "popcycle": "PopCycle",
@@ -55,6 +57,14 @@
         </div>
 
         <div class="saved-projects-actions">
+          <button type="button" class="button ghost is-active" data-project-filter="active">
+            Active
+          </button>
+
+          <button type="button" class="button ghost" data-project-filter="archived">
+            Archived
+          </button>
+
           <button type="button" class="button ghost" data-refresh-projects>
             Refresh
           </button>
@@ -79,14 +89,18 @@
   }
 
   function renderEmptyState(grid) {
+    const archived = dashboardProjectFilter === "archived";
+
     grid.innerHTML = `
       <article class="saved-project-card empty-project-card">
         <div class="saved-project-card-body">
-          <p class="project-type-badge">No saved projects yet</p>
-          <h3>Your cloud project shelf is ready.</h3>
+          <p class="project-type-badge">${archived ? "No archived projects" : "No saved projects yet"}</p>
+          <h3>${archived ? "No archived cloud projects." : "Your cloud project shelf is ready."}</h3>
           <p>
-            Once the editors are connected, saved PopGroups, PopCycle,
-            vehicle meta, and handling projects will appear here.
+            ${archived
+              ? "Archived projects will appear here when you move active projects out of the main list."
+              : "Once the editors are connected, saved PopGroups, PopCycle, vehicle meta, and handling projects will appear here."
+            }
           </p>
           <div class="saved-project-card-actions">
             <a class="button" href="/">Open PopGroups Tool</a>
@@ -108,6 +122,10 @@
       const updated = formatDate(project.updatedAt || project.createdAt);
       const description = project.description || "No description saved yet.";
       const pinned = project.pinned ? `<span class="project-pin">Pinned</span>` : "";
+      const cleanupButton =
+        project.status === "archived"
+          ? `<button type="button" class="button ghost" data-project-status="active" data-project-status-id="${project.id}">Restore</button>`
+          : `<button type="button" class="button ghost danger-soft" data-project-status="archived" data-project-status-id="${project.id}">Archive</button>`;
 
       return `
         <article class="saved-project-card" data-project-id="${project.id}">
@@ -134,10 +152,70 @@
             <button type="button" class="button ghost" data-project-details="${project.id}">
               Details
             </button>
+
+            ${cleanupButton}
           </div>
         </article>
       `;
     }).join("");
+  }
+
+  function updateProjectFilterButtons() {
+    document
+      .querySelectorAll("[data-project-filter]")
+      .forEach(button => {
+        button.classList.toggle(
+          "is-active",
+          button.getAttribute("data-project-filter") === dashboardProjectFilter
+        );
+      });
+  }
+
+  async function updateProjectStatus(projectId, nextStatus) {
+    if (!projectId || !nextStatus) {
+      return;
+    }
+
+    const actionLabel = nextStatus === "archived" ? "archive" : "restore";
+
+    const confirmed = window.confirm(
+      "Are you sure you want to " + actionLabel + " this cloud project?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const section = createProjectsSection();
+    const status = section.querySelector("[data-saved-projects-status]");
+
+    status.textContent =
+      nextStatus === "archived"
+        ? "Archiving project..."
+        : "Restoring project...";
+
+    try {
+      const response = await fetch("/api/projects/" + encodeURIComponent(projectId), {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          status: nextStatus
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || payload.message || "Unable to update project");
+      }
+
+      await loadSavedProjects();
+    } catch (error) {
+      status.textContent = error.message || "Unable to update project.";
+    }
   }
 
   async function loadSavedProjects() {
@@ -145,10 +223,15 @@
     const status = section.querySelector("[data-saved-projects-status]");
     const grid = section.querySelector("[data-saved-projects-grid]");
 
+    updateProjectFilterButtons();
+
     status.textContent = "Loading saved projects...";
 
     try {
-      const response = await fetch("/api/projects", {
+      const params = new URLSearchParams();
+      params.set("status", dashboardProjectFilter);
+
+      const response = await fetch("/api/projects?" + params.toString(), {
         credentials: "same-origin"
       });
 
@@ -160,9 +243,14 @@
 
       const projects = Array.isArray(payload.projects) ? payload.projects : [];
 
+      const filterLabel =
+        dashboardProjectFilter === "archived"
+          ? "archived"
+          : "active";
+
       status.textContent = projects.length
-        ? `${projects.length} saved project${projects.length === 1 ? "" : "s"} found.`
-        : "No active saved projects yet.";
+        ? `${projects.length} ${filterLabel} saved project${projects.length === 1 ? "" : "s"} found.`
+        : `No ${filterLabel} saved projects yet.`;
 
       renderProjects(grid, projects);
     } catch (error) {
@@ -365,13 +453,29 @@
   document.addEventListener("click", event => {
     const refreshButton = event.target.closest("[data-refresh-projects]");
     const detailsButton = event.target.closest("[data-project-details]");
+    const filterButton = event.target.closest("[data-project-filter]");
+    const statusButton = event.target.closest("[data-project-status]");
 
     if (refreshButton) {
       loadSavedProjects();
     }
 
+    if (filterButton) {
+      dashboardProjectFilter =
+        filterButton.getAttribute("data-project-filter") || "active";
+
+      loadSavedProjects();
+    }
+
     if (detailsButton) {
       showProjectDetails(detailsButton.getAttribute("data-project-details"));
+    }
+
+    if (statusButton) {
+      updateProjectStatus(
+        statusButton.getAttribute("data-project-status-id"),
+        statusButton.getAttribute("data-project-status")
+      );
     }
   });
 

@@ -690,3 +690,21 @@ dd {
     width: fit-content;
   }
 }
+
+/* Saved project cleanup controls */
+.saved-projects-actions .button.is-active {
+  border-color: rgba(255, 207, 47, .52);
+  background: linear-gradient(135deg, rgba(250, 204, 21, .24), rgba(249, 115, 22, .18));
+  color: #fde68a;
+}
+
+.button.danger-soft {
+  border-color: rgba(248, 113, 113, .34);
+  background: rgba(127, 29, 29, .18);
+  color: #fecaca;
+}
+
+.button.danger-soft:hover {
+  border-color: rgba(248, 113, 113, .58);
+  background: rgba(127, 29, 29, .28);
+}
