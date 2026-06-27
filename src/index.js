@@ -2970,6 +2970,334 @@ async function handleAdminUserUpdate(request, env, userId) {
 }
 
 
+function normalizeAdminWorkspaceText(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeAdminWorkspaceRow(row = {}) {
+  return {
+    id: row.id,
+    ownerUserId: row.owner_user_id || row.ownerUserId || null,
+    name: row.name || "Untitled Workspace",
+    memberCount: Number(row.member_count || row.memberCount || 0),
+    createdAt: row.created_at || row.createdAt || null,
+    updatedAt: row.updated_at || row.updatedAt || null
+  };
+}
+
+function normalizeAdminWorkspaceMemberRow(row = {}) {
+  return {
+    workspaceId: row.workspace_id || row.workspaceId || null,
+    workspaceName: row.workspace_name || row.workspaceName || null,
+    userId: row.user_id || row.userId || null,
+    email: row.email || null,
+    displayName: row.display_name || row.displayName || null,
+    role: row.role || "viewer",
+    status: row.status || "active",
+    createdAt: row.created_at || row.createdAt || null,
+    updatedAt: row.updated_at || row.updatedAt || null
+  };
+}
+
+function normalizeWorkspaceMemberRole(value) {
+  const role = normalizeAdminWorkspaceText(value).toLowerCase();
+
+  if (["owner", "editor", "viewer"].includes(role)) {
+    return role;
+  }
+
+  return "viewer";
+}
+
+function normalizeWorkspaceMemberStatus(value) {
+  const status = normalizeAdminWorkspaceText(value).toLowerCase();
+
+  if (["active", "pending", "disabled"].includes(status)) {
+    return status;
+  }
+
+  return "active";
+}
+
+async function runAdminSelectAll(env, sql, bindings = []) {
+  const statement = env.DB.prepare(sql);
+  const result = bindings.length
+    ? await statement.bind(...bindings).all()
+    : await statement.all();
+
+  return result.results || [];
+}
+
+async function handleAdminWorkspaceList(request, env) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const rows = await runAdminSelectAll(env, `
+    SELECT
+      w.id,
+      w.owner_user_id,
+      w.name,
+      w.created_at,
+      w.updated_at,
+      COUNT(wm.user_id) AS member_count
+    FROM workspaces w
+    LEFT JOIN workspace_members wm
+      ON wm.workspace_id = w.id
+    GROUP BY
+      w.id,
+      w.owner_user_id,
+      w.name,
+      w.created_at,
+      w.updated_at
+    ORDER BY w.created_at DESC, w.name ASC
+    LIMIT 100
+  `);
+
+  return jsonResponse({
+    ok: true,
+    workspaces: rows.map(normalizeAdminWorkspaceRow)
+  });
+}
+
+async function handleAdminWorkspaceMemberList(request, env) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const url = new URL(request.url);
+  const workspaceId =
+    normalizeAdminWorkspaceText(url.searchParams.get("workspaceId"));
+  const userId =
+    normalizeAdminWorkspaceText(url.searchParams.get("userId"));
+  const query =
+    normalizeAdminWorkspaceText(url.searchParams.get("query")).toLowerCase();
+
+  const where = [];
+  const bindings = [];
+
+  if (workspaceId) {
+    where.push("wm.workspace_id = ?");
+    bindings.push(workspaceId);
+  }
+
+  if (userId) {
+    where.push("wm.user_id = ?");
+    bindings.push(userId);
+  }
+
+  if (query) {
+    where.push(`(
+      LOWER(COALESCE(u.email, '')) LIKE ?
+      OR LOWER(COALESCE(u.display_name, '')) LIKE ?
+      OR LOWER(COALESCE(w.name, '')) LIKE ?
+      OR LOWER(COALESCE(wm.role, '')) LIKE ?
+      OR LOWER(COALESCE(wm.status, '')) LIKE ?
+    )`);
+
+    const likeQuery = "%" + query + "%";
+    bindings.push(
+      likeQuery,
+      likeQuery,
+      likeQuery,
+      likeQuery,
+      likeQuery
+    );
+  }
+
+  const rows = await runAdminSelectAll(
+    env,
+    `
+      SELECT
+        wm.workspace_id,
+        w.name AS workspace_name,
+        wm.user_id,
+        u.email,
+        u.display_name,
+        wm.role,
+        wm.status,
+        wm.created_at,
+        wm.updated_at
+      FROM workspace_members wm
+      LEFT JOIN users u
+        ON u.id = wm.user_id
+      LEFT JOIN workspaces w
+        ON w.id = wm.workspace_id
+      ${where.length ? "WHERE " + where.join(" AND ") : ""}
+      ORDER BY wm.updated_at DESC, u.email ASC
+      LIMIT 100
+    `,
+    bindings
+  );
+
+  return jsonResponse({
+    ok: true,
+    memberships: rows.map(normalizeAdminWorkspaceMemberRow)
+  });
+}
+
+async function getAdminWorkspaceMember(env, workspaceId, userId) {
+  const row = await env.DB.prepare(`
+    SELECT
+      wm.workspace_id,
+      w.name AS workspace_name,
+      wm.user_id,
+      u.email,
+      u.display_name,
+      wm.role,
+      wm.status,
+      wm.created_at,
+      wm.updated_at
+    FROM workspace_members wm
+    LEFT JOIN users u
+      ON u.id = wm.user_id
+    LEFT JOIN workspaces w
+      ON w.id = wm.workspace_id
+    WHERE wm.workspace_id = ?
+      AND wm.user_id = ?
+  `).bind(workspaceId, userId).first();
+
+  return normalizeAdminWorkspaceMemberRow(row || {});
+}
+
+async function handleAdminWorkspaceMemberUpsert(request, env) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Invalid JSON body"
+      },
+      400
+    );
+  }
+
+  const workspaceId =
+    normalizeAdminWorkspaceText(body.workspaceId || body.workspace_id);
+  const userId =
+    normalizeAdminWorkspaceText(body.userId || body.user_id);
+  const role =
+    normalizeWorkspaceMemberRole(body.role);
+  const status =
+    normalizeWorkspaceMemberStatus(body.status);
+
+  if (!workspaceId) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "workspaceId is required"
+      },
+      400
+    );
+  }
+
+  if (!userId) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "userId is required"
+      },
+      400
+    );
+  }
+
+  const workspace = await env.DB.prepare(`
+    SELECT id, name
+    FROM workspaces
+    WHERE id = ?
+  `).bind(workspaceId).first();
+
+  if (!workspace) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Workspace not found"
+      },
+      404
+    );
+  }
+
+  const user = await env.DB.prepare(`
+    SELECT id, email
+    FROM users
+    WHERE id = ?
+  `).bind(userId).first();
+
+  if (!user) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "User not found"
+      },
+      404
+    );
+  }
+
+  const before = await getAdminWorkspaceMember(
+    env,
+    workspaceId,
+    userId
+  );
+
+  await env.DB.prepare(`
+    INSERT INTO workspace_members (
+      workspace_id,
+      user_id,
+      role,
+      status
+    )
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(workspace_id, user_id)
+    DO UPDATE SET
+      role = excluded.role,
+      status = excluded.status,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    workspaceId,
+    userId,
+    role,
+    status
+  ).run();
+
+  const membership = await getAdminWorkspaceMember(
+    env,
+    workspaceId,
+    userId
+  );
+
+  await writeAdminAuditLog(env, {
+    action: "admin.workspace_member.upsert",
+    entityType: "workspace_member",
+    entityId: workspaceId + ":" + userId,
+    details: {
+      before,
+      after: membership
+    }
+  });
+
+  return jsonResponse({
+    ok: true,
+    membership
+  });
+}
+
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -3145,6 +3473,26 @@ if (
   );
 }
       if (url.pathname.startsWith("/api/")) {
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/admin/workspaces"
+      ) {
+        return await handleAdminWorkspaceList(request, env);
+      }
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/admin/workspace-members"
+      ) {
+        return await handleAdminWorkspaceMemberList(request, env);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/workspace-members"
+      ) {
+        return await handleAdminWorkspaceMemberUpsert(request, env);
+      }
         return jsonResponse(
           {
             ok: false,
