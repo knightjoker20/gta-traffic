@@ -151,6 +151,52 @@
       </div>
     </section>
 
+    <section id="adminWorkspaceMembershipPanel" class="admin-panel">
+      <div class="section-heading">
+        <div>
+          <h2>Workspace Memberships</h2>
+          <p>Connect users to workspaces so accounts can later save their own traffic projects.</p>
+        </div>
+
+        <div class="admin-actions">
+          <button id="loadAdminWorkspacesBtn" class="secondary">Load Workspaces</button>
+          <button id="loadAdminMembershipsBtn" class="secondary">Load Memberships</button>
+        </div>
+      </div>
+
+      <div class="admin-form-grid workspace-membership-grid">
+        <select id="workspaceMembershipWorkspaceInput">
+          <option value="">Load workspaces first...</option>
+        </select>
+
+        <input id="workspaceMembershipUserIdInput" placeholder="User ID">
+
+        <select id="workspaceMembershipRoleInput">
+          <option value="owner">owner</option>
+          <option value="editor">editor</option>
+          <option value="viewer">viewer</option>
+        </select>
+
+        <select id="workspaceMembershipStatusInput">
+          <option value="active">active</option>
+          <option value="pending">pending</option>
+          <option value="disabled">disabled</option>
+        </select>
+
+        <button id="saveWorkspaceMembershipBtn">Save Membership</button>
+      </div>
+
+      <div class="admin-actions">
+        <input id="workspaceMembershipSearchInput" class="admin-small-input" placeholder="Search memberships...">
+        <button id="searchWorkspaceMembershipsBtn" class="secondary">Search</button>
+        <span id="workspaceMembershipStatus" class="inline-status">Workspace memberships not loaded yet.</span>
+      </div>
+
+      <div id="workspaceMembershipList" class="admin-table-wrap">
+        <div class="empty-state">No memberships loaded yet.</div>
+      </div>
+    </section>
+
     <section class="admin-grid">
       <article class="admin-card">
         <h3>User Management</h3>

@@ -401,3 +401,25 @@ input[readonly] {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Workspace membership admin panel */
+.workspace-membership-grid {
+  grid-template-columns: 1.6fr 2fr 1fr 1fr auto;
+}
+
+.workspace-membership-table {
+  min-width: 1100px;
+}
+
+@media (max-width: 1200px) {
+  .workspace-membership-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .workspace-membership-grid {
+    grid-template-columns: 1fr;
+  }
+}

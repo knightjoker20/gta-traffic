@@ -510,3 +510,273 @@ function initAdminDashboard() {
 }
 
 initAdminDashboard();
+
+
+/* Workspace membership admin panel */
+function getWorkspaceMembershipFields() {
+  return {
+    workspaceSelect: document.getElementById("workspaceMembershipWorkspaceInput"),
+    userIdInput: document.getElementById("workspaceMembershipUserIdInput"),
+    roleInput: document.getElementById("workspaceMembershipRoleInput"),
+    statusInput: document.getElementById("workspaceMembershipStatusInput"),
+    saveBtn: document.getElementById("saveWorkspaceMembershipBtn"),
+    loadWorkspacesBtn: document.getElementById("loadAdminWorkspacesBtn"),
+    loadMembershipsBtn: document.getElementById("loadAdminMembershipsBtn"),
+    searchInput: document.getElementById("workspaceMembershipSearchInput"),
+    searchBtn: document.getElementById("searchWorkspaceMembershipsBtn"),
+    statusText: document.getElementById("workspaceMembershipStatus"),
+    list: document.getElementById("workspaceMembershipList")
+  };
+}
+
+function escapeWorkspaceMembershipHTML(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function setWorkspaceMembershipStatus(message, tone = "") {
+  const fields = getWorkspaceMembershipFields();
+
+  if (!fields.statusText) {
+    return;
+  }
+
+  fields.statusText.textContent = message;
+  fields.statusText.className = "inline-status" + (tone ? " " + tone : "");
+}
+
+function renderWorkspaceOptions(workspaces = []) {
+  const fields = getWorkspaceMembershipFields();
+
+  if (!fields.workspaceSelect) {
+    return;
+  }
+
+  if (!workspaces.length) {
+    fields.workspaceSelect.innerHTML =
+      '<option value="">No workspaces found</option>';
+    return;
+  }
+
+  fields.workspaceSelect.innerHTML =
+    workspaces.map(workspace => {
+      const label =
+        escapeWorkspaceMembershipHTML(workspace.name || workspace.id) +
+        " (" +
+        escapeWorkspaceMembershipHTML(workspace.id) +
+        ")";
+
+      return (
+        '<option value="' +
+        escapeWorkspaceMembershipHTML(workspace.id) +
+        '">' +
+        label +
+        '</option>'
+      );
+    }).join("");
+}
+
+function renderWorkspaceMemberships(memberships = []) {
+  const fields = getWorkspaceMembershipFields();
+
+  if (!fields.list) {
+    return;
+  }
+
+  if (!memberships.length) {
+    fields.list.innerHTML =
+      '<div class="empty-state">No workspace memberships found.</div>';
+    return;
+  }
+
+  const rows = memberships.map(member => {
+    return [
+      "<tr>",
+      "<td>" + escapeWorkspaceMembershipHTML(member.workspaceName || "�") + "</td>",
+      "<td>" + escapeWorkspaceMembershipHTML(member.workspaceId || "�") + "</td>",
+      "<td>" + escapeWorkspaceMembershipHTML(member.email || "�") + "</td>",
+      "<td>" + escapeWorkspaceMembershipHTML(member.displayName || "�") + "</td>",
+      "<td>" + escapeWorkspaceMembershipHTML(member.userId || "�") + "</td>",
+      '<td><span class="pill">' + escapeWorkspaceMembershipHTML(member.role || "viewer") + "</span></td>",
+      '<td><span class="pill status-' + escapeWorkspaceMembershipHTML(member.status || "active") + '">' + escapeWorkspaceMembershipHTML(member.status || "active") + "</span></td>",
+      "<td>" + escapeWorkspaceMembershipHTML(member.updatedAt || "�") + "</td>",
+      "</tr>"
+    ].join("");
+  }).join("");
+
+  fields.list.innerHTML =
+    '<table class="admin-table workspace-membership-table">' +
+      "<thead>" +
+        "<tr>" +
+          "<th>Workspace</th>" +
+          "<th>Workspace ID</th>" +
+          "<th>User Email</th>" +
+          "<th>Name</th>" +
+          "<th>User ID</th>" +
+          "<th>Role</th>" +
+          "<th>Status</th>" +
+          "<th>Updated</th>" +
+        "</tr>" +
+      "</thead>" +
+      "<tbody>" + rows + "</tbody>" +
+    "</table>";
+}
+
+async function loadAdminWorkspacesForMemberships() {
+  if (!getAdminToken()) {
+    setWorkspaceMembershipStatus("Admin token required before loading workspaces.", "warning");
+    return;
+  }
+
+  setWorkspaceMembershipStatus("Loading workspaces...");
+
+  try {
+    const response = await fetch("/api/admin/workspaces", {
+      headers: getAdminHeaders()
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || "HTTP " + response.status);
+    }
+
+    renderWorkspaceOptions(payload.workspaces || []);
+
+    setWorkspaceMembershipStatus(
+      "Loaded " + (payload.workspaces || []).length + " workspace(s).",
+      "good"
+    );
+  } catch (error) {
+    console.warn("Workspace load failed.", error);
+    setWorkspaceMembershipStatus(
+      "Workspace load failed: " + (error.message || "Unknown error"),
+      "danger"
+    );
+  }
+}
+
+async function loadAdminWorkspaceMemberships() {
+  if (!getAdminToken()) {
+    setWorkspaceMembershipStatus("Admin token required before loading memberships.", "warning");
+    return;
+  }
+
+  const fields = getWorkspaceMembershipFields();
+  const query = fields.searchInput?.value?.trim() || "";
+
+  const url =
+    "/api/admin/workspace-members" +
+    (query ? "?query=" + encodeURIComponent(query) : "");
+
+  setWorkspaceMembershipStatus("Loading memberships...");
+
+  try {
+    const response = await fetch(url, {
+      headers: getAdminHeaders()
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || "HTTP " + response.status);
+    }
+
+    renderWorkspaceMemberships(payload.memberships || []);
+
+    setWorkspaceMembershipStatus(
+      "Loaded " + (payload.memberships || []).length + " membership(s).",
+      "good"
+    );
+  } catch (error) {
+    console.warn("Workspace memberships load failed.", error);
+    setWorkspaceMembershipStatus(
+      "Membership load failed: " + (error.message || "Unknown error"),
+      "danger"
+    );
+  }
+}
+
+async function saveAdminWorkspaceMembership() {
+  if (!getAdminToken()) {
+    setWorkspaceMembershipStatus("Admin token required before saving memberships.", "warning");
+    return;
+  }
+
+  const fields = getWorkspaceMembershipFields();
+
+  const body = {
+    workspaceId: fields.workspaceSelect?.value?.trim() || "",
+    userId: fields.userIdInput?.value?.trim() || "",
+    role: fields.roleInput?.value || "viewer",
+    status: fields.statusInput?.value || "active"
+  };
+
+  if (!body.workspaceId) {
+    setWorkspaceMembershipStatus("Workspace is required.", "warning");
+    return;
+  }
+
+  if (!body.userId) {
+    setWorkspaceMembershipStatus("User ID is required.", "warning");
+    return;
+  }
+
+  setWorkspaceMembershipStatus("Saving membership...");
+
+  try {
+    const response = await fetch("/api/admin/workspace-members", {
+      method: "POST",
+      headers: getAdminHeaders(true),
+      body: JSON.stringify(body)
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || "HTTP " + response.status);
+    }
+
+    setWorkspaceMembershipStatus(
+      "Saved membership for " + (payload.membership.email || payload.membership.userId),
+      "good"
+    );
+
+    await loadAdminWorkspaceMemberships();
+
+    if (typeof loadAdminSummary === "function") {
+      await loadAdminSummary();
+    }
+  } catch (error) {
+    console.warn("Workspace membership save failed.", error);
+    setWorkspaceMembershipStatus(
+      "Save membership failed: " + (error.message || "Unknown error"),
+      "danger"
+    );
+  }
+}
+
+function initWorkspaceMembershipPanel() {
+  const fields = getWorkspaceMembershipFields();
+
+  if (!fields.saveBtn) {
+    return;
+  }
+
+  fields.loadWorkspacesBtn?.addEventListener("click", loadAdminWorkspacesForMemberships);
+  fields.loadMembershipsBtn?.addEventListener("click", loadAdminWorkspaceMemberships);
+  fields.searchBtn?.addEventListener("click", loadAdminWorkspaceMemberships);
+  fields.saveBtn?.addEventListener("click", saveAdminWorkspaceMembership);
+
+  fields.searchInput?.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      loadAdminWorkspaceMemberships();
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", initWorkspaceMembershipPanel);
