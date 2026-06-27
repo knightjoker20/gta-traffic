@@ -4104,7 +4104,712 @@ if (
       ) {
         return await handleAdminWorkspaceMemberUpsert(request, env);
       }
-        return jsonResponse(
+        
+
+function savedProjectText(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function savedProjectJsonParse(value, fallback = null) {
+  if (!value || typeof value !== "string") {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+const SAVED_PROJECT_TYPES = new Set([
+  "popgroups",
+  "popcycle",
+  "vehicle-meta",
+  "handling-meta",
+  "pack-database",
+  "vehicle-library",
+  "general"
+]);
+
+function normalizeSavedProjectType(value) {
+  const type = savedProjectText(value) || "general";
+  return SAVED_PROJECT_TYPES.has(type) ? type : "general";
+}
+
+function normalizeSavedProjectRow(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    ownerUserId: row.owner_user_id,
+    projectType: row.project_type,
+    name: row.name,
+    description: row.description,
+    status: row.status,
+    pinned: Boolean(row.pinned),
+    sourceFileId: row.source_file_id,
+    currentVersionId: row.current_version_id,
+    lastOpenedAt: row.last_opened_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    deletedAt: row.deleted_at
+  };
+}
+
+function normalizeSavedProjectVersionRow(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    workspaceId: row.workspace_id,
+    createdByUserId: row.created_by_user_id,
+    versionNumber: Number(row.version_number || 0),
+    label: row.label,
+    payload: savedProjectJsonParse(row.payload_json, {}),
+    summary: savedProjectJsonParse(row.summary_json, null),
+    fileCount: Number(row.file_count || 0),
+    createdAt: row.created_at
+  };
+}
+
+function getSavedProjectSessionUserId(session) {
+  return (
+    session?.user?.id ||
+    session?.userId ||
+    session?.id ||
+    null
+  );
+}
+
+async function requireSavedProjectSession(request, env) {
+  const session = await getCurrentAuthSession(request, env);
+
+  if (!session) {
+    return {
+      error: jsonAuthResponse(
+        {
+          ok: false,
+          error: "Authentication required"
+        },
+        {
+          status: 401
+        }
+      )
+    };
+  }
+
+  const userId = getSavedProjectSessionUserId(session);
+
+  if (!userId) {
+    return {
+      error: jsonAuthResponse(
+        {
+          ok: false,
+          error: "Authenticated user could not be resolved"
+        },
+        {
+          status: 401
+        }
+      )
+    };
+  }
+
+  let workspaceId =
+    session?.workspace?.id ||
+    session?.workspaceId ||
+    null;
+
+  let workspaceRole =
+    session?.workspace?.role ||
+    session?.workspaceRole ||
+    null;
+
+  if (!workspaceId) {
+    const membership = await env.DB.prepare(`
+      SELECT
+        workspace_id,
+        role,
+        status
+      FROM workspace_members
+      WHERE user_id = ?
+        AND status = 'active'
+      ORDER BY created_at ASC
+      LIMIT 1
+    `).bind(userId).first();
+
+    if (!membership) {
+      return {
+        error: jsonAuthResponse(
+          {
+            ok: false,
+            error: "No active workspace membership found"
+          },
+          {
+            status: 403
+          }
+        )
+      };
+    }
+
+    workspaceId = membership.workspace_id;
+    workspaceRole = membership.role || "viewer";
+  }
+
+  return {
+    session,
+    userId,
+    workspaceId,
+    workspaceRole: workspaceRole || "viewer"
+  };
+}
+
+async function getSavedProjectForWorkspace(env, projectId, workspaceId) {
+  return await env.DB.prepare(`
+    SELECT *
+    FROM saved_projects
+    WHERE id = ?
+      AND workspace_id = ?
+      AND deleted_at IS NULL
+    LIMIT 1
+  `).bind(projectId, workspaceId).first();
+}
+
+async function getNextSavedProjectVersionNumber(env, projectId) {
+  const row = await env.DB.prepare(`
+    SELECT COALESCE(MAX(version_number), 0) + 1 AS next_version_number
+    FROM saved_project_versions
+    WHERE project_id = ?
+  `).bind(projectId).first();
+
+  return Number(row?.next_version_number || 1);
+}
+
+async function handleProjectList(request, env) {
+  const auth = await requireSavedProjectSession(request, env);
+
+  if (auth.error) {
+    return auth.error;
+  }
+
+  const url = new URL(request.url);
+  const projectType = savedProjectText(url.searchParams.get("type"));
+  const search = savedProjectText(url.searchParams.get("search"));
+  const status = savedProjectText(url.searchParams.get("status")) || "active";
+
+  const limit = Math.min(
+    Math.max(Number(url.searchParams.get("limit") || 50), 1),
+    100
+  );
+
+  const offset = Math.max(
+    Number(url.searchParams.get("offset") || 0),
+    0
+  );
+
+  const conditions = [
+    "workspace_id = ?",
+    "deleted_at IS NULL"
+  ];
+
+  const bindings = [auth.workspaceId];
+
+  if (status !== "all") {
+    conditions.push("status = ?");
+    bindings.push(status);
+  }
+
+  if (projectType) {
+    conditions.push("project_type = ?");
+    bindings.push(projectType);
+  }
+
+  if (search) {
+    conditions.push("(name LIKE ? OR description LIKE ?)");
+    bindings.push("%" + search + "%", "%" + search + "%");
+  }
+
+  const whereClause = conditions.join(" AND ");
+
+  const countRow = await env.DB.prepare(
+    "SELECT COUNT(*) AS count FROM saved_projects WHERE " + whereClause
+  ).bind(...bindings).first();
+
+  const result = await env.DB.prepare(
+    "SELECT * FROM saved_projects WHERE " +
+      whereClause +
+      " ORDER BY pinned DESC, updated_at DESC LIMIT ? OFFSET ?"
+  ).bind(...bindings, limit, offset).all();
+
+  return jsonAuthResponse({
+    ok: true,
+    total: Number(countRow?.count || 0),
+    limit,
+    offset,
+    projects: (result.results || []).map(normalizeSavedProjectRow)
+  });
+}
+
+async function handleProjectCreate(request, env) {
+  const auth = await requireSavedProjectSession(request, env);
+
+  if (auth.error) {
+    return auth.error;
+  }
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "The request body is not valid JSON"
+      },
+      {
+        status: 400
+      }
+    );
+  }
+
+  const name = savedProjectText(body.name);
+
+  if (!name) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Project name is required"
+      },
+      {
+        status: 400
+      }
+    );
+  }
+
+  const projectId = "project:" + crypto.randomUUID();
+  const versionId = "project-version:" + crypto.randomUUID();
+  const projectType = normalizeSavedProjectType(body.projectType);
+  const description = savedProjectText(body.description);
+  const payloadJson = JSON.stringify(body.payload || {});
+  const summaryJson = body.summary ? JSON.stringify(body.summary) : null;
+
+  await env.DB.prepare(`
+    INSERT INTO saved_projects (
+      id,
+      workspace_id,
+      owner_user_id,
+      project_type,
+      name,
+      description,
+      status,
+      pinned,
+      current_version_id,
+      created_at,
+      updated_at,
+      last_opened_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `).bind(
+    projectId,
+    auth.workspaceId,
+    auth.userId,
+    projectType,
+    name,
+    description,
+    body.pinned === true ? 1 : 0,
+    versionId
+  ).run();
+
+  await env.DB.prepare(`
+    INSERT INTO saved_project_versions (
+      id,
+      project_id,
+      workspace_id,
+      created_by_user_id,
+      version_number,
+      label,
+      payload_json,
+      summary_json,
+      file_count,
+      created_at
+    )
+    VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `).bind(
+    versionId,
+    projectId,
+    auth.workspaceId,
+    auth.userId,
+    savedProjectText(body.versionLabel) || "Initial save",
+    payloadJson,
+    summaryJson,
+    Array.isArray(body.files) ? body.files.length : 0
+  ).run();
+
+  const project = await getSavedProjectForWorkspace(
+    env,
+    projectId,
+    auth.workspaceId
+  );
+
+  return jsonAuthResponse(
+    {
+      ok: true,
+      message: "Project saved",
+      project: normalizeSavedProjectRow(project),
+      versionId
+    },
+    {
+      status: 201
+    }
+  );
+}
+
+async function handleProjectDetail(request, env, projectId) {
+  const auth = await requireSavedProjectSession(request, env);
+
+  if (auth.error) {
+    return auth.error;
+  }
+
+  const project = await getSavedProjectForWorkspace(
+    env,
+    projectId,
+    auth.workspaceId
+  );
+
+  if (!project) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Project not found"
+      },
+      {
+        status: 404
+      }
+    );
+  }
+
+  await env.DB.prepare(`
+    UPDATE saved_projects
+    SET last_opened_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+      AND workspace_id = ?
+  `).bind(projectId, auth.workspaceId).run();
+
+  const versions = await env.DB.prepare(`
+    SELECT *
+    FROM saved_project_versions
+    WHERE project_id = ?
+      AND workspace_id = ?
+    ORDER BY version_number DESC
+    LIMIT 25
+  `).bind(projectId, auth.workspaceId).all();
+
+  return jsonAuthResponse({
+    ok: true,
+    project: normalizeSavedProjectRow(project),
+    versions: (versions.results || []).map(normalizeSavedProjectVersionRow)
+  });
+}
+
+async function handleProjectUpdate(request, env, projectId) {
+  const auth = await requireSavedProjectSession(request, env);
+
+  if (auth.error) {
+    return auth.error;
+  }
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "The request body is not valid JSON"
+      },
+      {
+        status: 400
+      }
+    );
+  }
+
+  const existing = await getSavedProjectForWorkspace(
+    env,
+    projectId,
+    auth.workspaceId
+  );
+
+  if (!existing) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Project not found"
+      },
+      {
+        status: 404
+      }
+    );
+  }
+
+  const updates = [];
+  const bindings = [];
+
+  if (Object.prototype.hasOwnProperty.call(body, "name")) {
+    const name = savedProjectText(body.name);
+
+    if (!name) {
+      return jsonAuthResponse(
+        {
+          ok: false,
+          error: "Project name cannot be blank"
+        },
+        {
+          status: 400
+        }
+      );
+    }
+
+    updates.push("name = ?");
+    bindings.push(name);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "description")) {
+    updates.push("description = ?");
+    bindings.push(savedProjectText(body.description));
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "projectType")) {
+    updates.push("project_type = ?");
+    bindings.push(normalizeSavedProjectType(body.projectType));
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "status")) {
+    const nextStatus = savedProjectText(body.status) || "active";
+
+    if (!["active", "archived", "disabled"].includes(nextStatus)) {
+      return jsonAuthResponse(
+        {
+          ok: false,
+          error: "Invalid project status"
+        },
+        {
+          status: 400
+        }
+      );
+    }
+
+    updates.push("status = ?");
+    bindings.push(nextStatus);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "pinned")) {
+    updates.push("pinned = ?");
+    bindings.push(body.pinned === true ? 1 : 0);
+  }
+
+  if (!updates.length) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "No project fields were provided"
+      },
+      {
+        status: 400
+      }
+    );
+  }
+
+  updates.push("updated_at = CURRENT_TIMESTAMP");
+
+  await env.DB.prepare(
+    "UPDATE saved_projects SET " +
+      updates.join(", ") +
+      " WHERE id = ? AND workspace_id = ?"
+  ).bind(...bindings, projectId, auth.workspaceId).run();
+
+  const project = await getSavedProjectForWorkspace(
+    env,
+    projectId,
+    auth.workspaceId
+  );
+
+  return jsonAuthResponse({
+    ok: true,
+    message: "Project updated",
+    project: normalizeSavedProjectRow(project)
+  });
+}
+
+async function handleProjectVersionCreate(request, env, projectId) {
+  const auth = await requireSavedProjectSession(request, env);
+
+  if (auth.error) {
+    return auth.error;
+  }
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "The request body is not valid JSON"
+      },
+      {
+        status: 400
+      }
+    );
+  }
+
+  const project = await getSavedProjectForWorkspace(
+    env,
+    projectId,
+    auth.workspaceId
+  );
+
+  if (!project) {
+    return jsonAuthResponse(
+      {
+        ok: false,
+        error: "Project not found"
+      },
+      {
+        status: 404
+      }
+    );
+  }
+
+  const versionId = "project-version:" + crypto.randomUUID();
+  const versionNumber = await getNextSavedProjectVersionNumber(env, projectId);
+  const payloadJson = JSON.stringify(body.payload || {});
+  const summaryJson = body.summary ? JSON.stringify(body.summary) : null;
+
+  await env.DB.prepare(`
+    INSERT INTO saved_project_versions (
+      id,
+      project_id,
+      workspace_id,
+      created_by_user_id,
+      version_number,
+      label,
+      payload_json,
+      summary_json,
+      file_count,
+      created_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `).bind(
+    versionId,
+    projectId,
+    auth.workspaceId,
+    auth.userId,
+    versionNumber,
+    savedProjectText(body.label) || "Version " + versionNumber,
+    payloadJson,
+    summaryJson,
+    Array.isArray(body.files) ? body.files.length : 0
+  ).run();
+
+  await env.DB.prepare(`
+    UPDATE saved_projects
+    SET current_version_id = ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+      AND workspace_id = ?
+  `).bind(versionId, projectId, auth.workspaceId).run();
+
+  const version = await env.DB.prepare(`
+    SELECT *
+    FROM saved_project_versions
+    WHERE id = ?
+      AND workspace_id = ?
+    LIMIT 1
+  `).bind(versionId, auth.workspaceId).first();
+
+  return jsonAuthResponse(
+    {
+      ok: true,
+      message: "Project version saved",
+      version: normalizeSavedProjectVersionRow(version)
+    },
+    {
+      status: 201
+    }
+  );
+}
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/projects"
+      ) {
+        return await handleProjectList(request, env);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/projects"
+      ) {
+        return await handleProjectCreate(request, env);
+      }
+
+      const projectVersionCreateRoute = url.pathname.match(
+        /^\/api\/projects\/([^/]+)\/versions$/
+      );
+
+      if (
+        projectVersionCreateRoute &&
+        request.method === "POST"
+      ) {
+        return await handleProjectVersionCreate(
+          request,
+          env,
+          decodeURIComponent(projectVersionCreateRoute[1])
+        );
+      }
+
+      const projectDetailRoute = url.pathname.match(
+        /^\/api\/projects\/([^/]+)$/
+      );
+
+      if (
+        projectDetailRoute &&
+        request.method === "GET"
+      ) {
+        return await handleProjectDetail(
+          request,
+          env,
+          decodeURIComponent(projectDetailRoute[1])
+        );
+      }
+
+      if (
+        projectDetailRoute &&
+        request.method === "PATCH"
+      ) {
+        return await handleProjectUpdate(
+          request,
+          env,
+          decodeURIComponent(projectDetailRoute[1])
+        );
+      }
+
+return jsonResponse(
           {
             ok: false,
             error: "API route not found"
