@@ -1,14 +1,6 @@
 -- =====================================================
 -- 006_saved_projects_foundation.sql
 -- Cloud saved project foundation for GTA Traffic.
---
--- Supports:
--- - PopGroups projects
--- - PopCycle projects
--- - vehicles.meta projects
--- - handling.meta projects
--- - pack database projects
--- - future homepage/dashboard modules
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS saved_projects (
