@@ -1,0 +1,59 @@
+.gta-account-nav {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, .28);
+  border-radius: 999px;
+  background: rgba(7, 10, 15, .82);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
+}
+
+.gta-account-nav a,
+.gta-account-nav button {
+  border: 1px solid rgba(148, 163, 184, .26);
+  border-radius: 999px;
+  background: rgba(21, 29, 42, .92);
+  color: #f5f7fb;
+  cursor: pointer;
+  font: 800 13px/1 Inter, Segoe UI, Arial, sans-serif;
+  padding: 9px 12px;
+  text-decoration: none;
+}
+
+.gta-account-nav a.primary {
+  background: linear-gradient(135deg, #38bdf8, #22c55e);
+  border-color: transparent;
+  color: #031018;
+}
+
+.gta-account-nav .account-email {
+  color: #94a3b8;
+  font: 700 12px/1 Inter, Segoe UI, Arial, sans-serif;
+  max-width: 180px;
+  overflow: hidden;
+  padding: 0 5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .gta-account-nav {
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: 10px;
+    justify-content: center;
+    border-radius: 18px;
+    flex-wrap: wrap;
+  }
+
+  .gta-account-nav .account-email {
+    display: none;
+  }
+}
