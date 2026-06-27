@@ -27,13 +27,23 @@
     }
   }
 
+  function getCloudVersionIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("versionId") || params.get("version") || "";
+  }
+
   function getCloudProjectIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get("projectId") || params.get("project");
   }
 
   function applyCloudPopgroupsProject(detail) {
-    const version = detail?.versions?.[0];
+    const requestedVersionId = getCloudVersionIdFromUrl();
+
+    const version = requestedVersionId
+      ? detail?.versions?.find(candidate => candidate.id === requestedVersionId) ||
+        detail?.versions?.[0]
+      : detail?.versions?.[0];
     const payload = version?.payload || {};
     const project = payload.popgroupsProject || null;
 
@@ -133,8 +143,23 @@
       saveMainPageUiState({ silent: true });
     }
 
+    window.GTATrafficActiveCloudProject = {
+      id: detail.project?.id || getCloudProjectIdFromUrl(),
+      name: detail.project?.name || loadedFileName,
+      projectType: detail.project?.projectType || "popgroups",
+      openedAt: new Date().toISOString()
+    };
+
+    const openedVersionLabel =
+      version?.versionNumber
+        ? " version " + version.versionNumber
+        : "";
+
     setCloudOpenStatus(
-      "Opened cloud project: " + (detail.project?.name || loadedFileName)
+      "Opened cloud project" +
+      openedVersionLabel +
+      ": " +
+      (detail.project?.name || loadedFileName)
     );
   }
 
