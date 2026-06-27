@@ -61,7 +61,17 @@
         </div>
       </div>
 
-      <input type="file" id="metaFilePicker" multiple accept=".meta,.xml,.txt">
+      <div class="import-picker-row">
+        <label class="file-picker-label popgroups-file-picker">
+          <span>Choose PopGroups XML</span>
+          <input type="file" id="popgroupsFilePicker" accept=".xml,.ymt,.txt">
+        </label>
+
+        <label class="file-picker-label meta-file-picker">
+          <span>Choose vehicles.meta Files</span>
+          <input type="file" id="metaFilePicker" multiple accept=".meta,.xml,.txt">
+        </label>
+      </div>
 
       <div class="toolbar action-row">
         <button class="btn-orange" onclick="showSection('vehicles')">Vehicles</button>

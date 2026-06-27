@@ -7,6 +7,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
   els = {
     popgroupsDropZone: document.getElementById("popgroupsDropZone"),
+    popgroupsFilePicker: document.getElementById("popgroupsFilePicker"),
     metaDropZone: document.getElementById("metaDropZone"),
     metaFilePicker: document.getElementById("metaFilePicker"),
     packDbImport: document.getElementById("packDbImport"),
@@ -44,6 +45,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   setupDropZone(els.popgroupsDropZone, handlePopgroupsFile);
+
+  if (els.popgroupsFilePicker) {
+    els.popgroupsFilePicker.addEventListener("change", event => {
+      const file = event.target.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      handlePopgroupsFile(file);
+      els.popgroupsFilePicker.value = "";
+    });
+  }
   setupDropZone(els.metaDropZone, handleVehicleMetaFile);
   setupAssetDropZone(els.assetDropZone);
 

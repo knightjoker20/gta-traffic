@@ -1574,3 +1574,25 @@ input[type="file"]::-webkit-file-upload-button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Import picker clarity */
+.import-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 18px 0 20px;
+}
+
+.import-picker-row .file-picker-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.popgroups-file-picker span {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+}
+
+.meta-file-picker span {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
