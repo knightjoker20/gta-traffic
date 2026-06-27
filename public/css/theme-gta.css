@@ -1,0 +1,202 @@
+/* GTA Traffic neon sunset visual theme */
+:root {
+  --gta-sunset-yellow: #ffcf2f;
+  --gta-sunset-orange: #ff8a00;
+  --gta-hot-pink: #ff2e8a;
+  --gta-magenta: #d946ef;
+  --gta-deep-purple: #37124f;
+  --gta-midnight: #061018;
+  --gta-ink: #02060a;
+  --gta-cyan: #38bdf8;
+  --gta-green: #22c55e;
+  --gta-panel-glass: rgba(6, 10, 18, .78);
+  --gta-panel-glass-strong: rgba(6, 10, 18, .90);
+  --gta-border-hot: rgba(255, 138, 0, .28);
+  --gta-border-pink: rgba(255, 46, 138, .36);
+}
+
+body.gta-theme {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255, 207, 47, .28), transparent 23%),
+    radial-gradient(circle at 80% 12%, rgba(255, 46, 138, .22), transparent 28%),
+    linear-gradient(180deg, rgba(2, 6, 10, .10), rgba(2, 6, 10, .84) 58%, rgba(2, 6, 10, .96)),
+    var(--gta-page-art, none) center / cover fixed no-repeat,
+    var(--gta-ink);
+}
+
+body.gta-dashboard {
+  --gta-page-art: url("/assets/hero/gta-traffic-header-wide.png");
+}
+
+body.gta-auth-register {
+  --gta-page-art: url("/assets/hero/gta-traffic-cars-sunset-wide.png");
+}
+
+body.gta-auth-login {
+  --gta-page-art: url("/assets/hero/gta-traffic-muscle-cars-city.png");
+}
+
+body.gta-theme .dashboard-panel,
+body.gta-theme .auth-card,
+body.gta-theme .auth-hero,
+body.gta-theme .tool-section {
+  background:
+    linear-gradient(135deg, rgba(255, 138, 0, .08), rgba(255, 46, 138, .08)),
+    var(--gta-panel-glass);
+  border-color: var(--gta-border-pink);
+  box-shadow:
+    0 24px 90px rgba(0, 0, 0, .42),
+    inset 0 1px 0 rgba(255, 255, 255, .05);
+  backdrop-filter: blur(16px);
+}
+
+body.gta-theme .hero {
+  background:
+    linear-gradient(90deg, rgba(2, 6, 10, .88), rgba(2, 6, 10, .48)),
+    url("/assets/hero/gta-traffic-palm-traffic.png") center / cover no-repeat;
+}
+
+body.gta-theme .auth-hero {
+  background:
+    linear-gradient(90deg, rgba(2, 6, 10, .76), rgba(2, 6, 10, .24)),
+    transparent;
+}
+
+body.gta-theme .brand-icon,
+body.gta-theme .badge,
+body.gta-theme .button,
+body.gta-theme button {
+  box-shadow: 0 0 28px rgba(255, 46, 138, .16);
+}
+
+body.gta-theme .button:not(.ghost),
+body.gta-theme .dashboard-actions button,
+body.gta-theme .auth-card button[type="submit"] {
+  background: linear-gradient(135deg, var(--gta-sunset-yellow), var(--gta-sunset-orange) 46%, var(--gta-hot-pink));
+  color: #160711;
+}
+
+body.gta-theme .button.ghost,
+body.gta-theme .dashboard-actions .button.ghost {
+  background: rgba(6, 10, 18, .72);
+  border-color: rgba(255, 207, 47, .24);
+}
+
+body.gta-theme .eyebrow,
+body.gta-theme .section-kicker,
+body.gta-theme .brand a,
+body.gta-theme .auth-footer a,
+body.gta-theme .inline-link {
+  color: var(--gta-sunset-yellow);
+}
+
+body.gta-theme .badge {
+  background: rgba(255, 138, 0, .14);
+  border-color: rgba(255, 207, 47, .38);
+  color: var(--gta-sunset-yellow);
+}
+
+body.gta-theme .badge.soft {
+  background: rgba(255, 46, 138, .10);
+  border-color: rgba(255, 46, 138, .32);
+  color: #ffd7eb;
+}
+
+body.gta-theme .tool-card,
+body.gta-theme .workspace-item,
+body.gta-theme .empty-project,
+body.gta-theme .activity-item,
+body.gta-theme .feature-card,
+body.gta-theme .account-list div,
+body.gta-theme .form-note {
+  background:
+    linear-gradient(135deg, rgba(255, 138, 0, .08), rgba(255, 46, 138, .08)),
+    rgba(6, 10, 18, .72);
+  border-color: rgba(255, 207, 47, .20);
+}
+
+body.gta-theme .tool-card:hover {
+  border-color: rgba(255, 207, 47, .72);
+  box-shadow: 0 0 36px rgba(255, 46, 138, .18);
+}
+
+body.gta-theme input {
+  background: rgba(2, 6, 10, .76);
+  border-color: rgba(255, 207, 47, .22);
+}
+
+body.gta-theme input:focus {
+  border-color: rgba(255, 207, 47, .82);
+  box-shadow: 0 0 0 4px rgba(255, 138, 0, .12);
+}
+
+body.gta-theme .gta-account-nav {
+  border-color: rgba(255, 207, 47, .26);
+  background: rgba(2, 6, 10, .82);
+}
+
+body.gta-theme .gta-account-nav a.primary {
+  background: linear-gradient(135deg, var(--gta-sunset-yellow), var(--gta-sunset-orange), var(--gta-hot-pink));
+  color: #160711;
+}
+/* Auth page hero sizing cleanup */
+body.gta-theme .auth-hero h1,
+body.gta-theme .auth-card h1,
+body.gta-theme .hero h1 {
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  max-width: 10ch;
+  margin-bottom: 1.25rem;
+}
+
+body.gta-theme .auth-hero p,
+body.gta-theme .auth-card p,
+body.gta-theme .hero p {
+  font-size: clamp(1.05rem, 1.5vw, 1.45rem);
+  line-height: 1.6;
+  max-width: 42rem;
+  color: rgba(220, 228, 238, 0.82);
+}
+
+@media (max-width: 900px) {
+  body.gta-theme .auth-hero h1,
+  body.gta-theme .auth-card h1,
+  body.gta-theme .hero h1 {
+    font-size: clamp(2.4rem, 9vw, 4.2rem);
+    max-width: 12ch;
+  }
+
+  body.gta-theme .auth-hero p,
+  body.gta-theme .auth-card p,
+  body.gta-theme .hero p {
+    font-size: 1rem;
+  }
+  
+  
+  
+}
+
+/* Final auth headline sizing override */
+body.gta-theme.gta-auth-register .auth-hero h1,
+body.gta-theme.gta-auth-login .auth-hero h1 {
+  font-size: clamp(1.8rem, 3.0vw, 3.2rem) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.045em !important;
+  max-width: 13ch !important;
+}
+
+body.gta-theme.gta-auth-register .auth-hero p,
+body.gta-theme.gta-auth-login .auth-hero p {
+  font-size: clamp(1rem, 1.25vw, 1.18rem) !important;
+  max-width: 620px !important;
+}
+
+@media (max-width: 720px) {
+  body.gta-theme.gta-auth-register .auth-hero h1,
+  body.gta-theme.gta-auth-login .auth-hero h1 {
+    font-size: clamp(2.05rem, 10vw, 3rem) !important;
+    max-width: 12ch !important;
+  }
+}
