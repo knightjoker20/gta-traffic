@@ -127,6 +127,10 @@
           </div>
 
           <div class="saved-project-card-actions">
+            <a class="button" href="/?projectId=${encodeURIComponent(project.id)}">
+              Open
+            </a>
+
             <button type="button" class="button ghost" data-project-details="${project.id}">
               Details
             </button>
