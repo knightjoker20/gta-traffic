@@ -153,11 +153,198 @@
               Details
             </button>
 
+            <button type="button" class="button ghost" data-project-edit="${project.id}">
+              Edit
+            </button>
+
             ${cleanupButton}
           </div>
         </article>
       `;
     }).join("");
+  }
+
+  function closeProjectEditModal() {
+    const modal = document.querySelector("[data-project-edit-modal]");
+
+    if (modal) {
+      modal.classList.remove("is-visible");
+    }
+  }
+
+  function renderProjectEditModal(project) {
+    let modal = document.querySelector("[data-project-edit-modal]");
+
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.className = "project-edit-modal-overlay";
+      modal.setAttribute("data-project-edit-modal", "");
+
+      modal.innerHTML = `
+        <div class="project-edit-modal" role="dialog" aria-modal="true">
+          <div class="project-edit-modal-head">
+            <div>
+              <p class="section-kicker">Project Settings</p>
+              <h2>Edit cloud project</h2>
+              <p>Rename, describe, categorize, or pin this saved project.</p>
+            </div>
+
+            <button type="button" class="project-edit-close" data-project-edit-close>
+              �
+            </button>
+          </div>
+
+          <form data-project-edit-form>
+            <input type="hidden" data-project-edit-id>
+
+            <label class="project-edit-field">
+              <span>Project name</span>
+              <input type="text" data-project-edit-name required>
+            </label>
+
+            <label class="project-edit-field">
+              <span>Description</span>
+              <textarea data-project-edit-description rows="4"></textarea>
+            </label>
+
+            <label class="project-edit-field">
+              <span>Project type</span>
+              <select data-project-edit-type>
+                <option value="popgroups">PopGroups</option>
+                <option value="popcycle">PopCycle</option>
+                <option value="vehicle-meta">Vehicle Meta</option>
+                <option value="handling-meta">Handling Meta</option>
+                <option value="pack-database">Pack Database</option>
+                <option value="vehicle-library">Vehicle Library</option>
+                <option value="general">General</option>
+              </select>
+            </label>
+
+            <label class="project-edit-check">
+              <input type="checkbox" data-project-edit-pinned>
+              <span>Pin this project to the top of the list</span>
+            </label>
+
+            <div class="project-edit-status" data-project-edit-status></div>
+
+            <div class="project-edit-actions">
+              <button type="button" class="button ghost" data-project-edit-cancel>
+                Cancel
+              </button>
+
+              <button type="submit" class="button">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      modal.addEventListener("click", event => {
+        if (
+          event.target.matches("[data-project-edit-modal]") ||
+          event.target.matches("[data-project-edit-close]") ||
+          event.target.matches("[data-project-edit-cancel]")
+        ) {
+          closeProjectEditModal();
+        }
+      });
+
+      modal
+        .querySelector("[data-project-edit-form]")
+        .addEventListener("submit", event => {
+          event.preventDefault();
+          saveProjectEditModal();
+        });
+    }
+
+    modal.querySelector("[data-project-edit-id]").value = project.id || "";
+    modal.querySelector("[data-project-edit-name]").value = project.name || "";
+    modal.querySelector("[data-project-edit-description]").value = project.description || "";
+    modal.querySelector("[data-project-edit-type]").value = project.projectType || "general";
+    modal.querySelector("[data-project-edit-pinned]").checked = Boolean(project.pinned);
+    modal.querySelector("[data-project-edit-status]").textContent = "";
+
+    modal.classList.add("is-visible");
+  }
+
+  async function openProjectEditModal(projectId) {
+    if (!projectId) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/projects/" + encodeURIComponent(projectId), {
+        credentials: "same-origin"
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || payload.message || "Unable to load project settings");
+      }
+
+      renderProjectEditModal(payload.project);
+    } catch (error) {
+      alert(error.message || "Unable to load project settings.");
+    }
+  }
+
+  async function saveProjectEditModal() {
+    const modal = document.querySelector("[data-project-edit-modal]");
+
+    if (!modal) {
+      return;
+    }
+
+    const projectId = modal.querySelector("[data-project-edit-id]").value;
+    const status = modal.querySelector("[data-project-edit-status]");
+    const name = modal.querySelector("[data-project-edit-name]").value.trim();
+    const description = modal.querySelector("[data-project-edit-description]").value.trim();
+    const projectType = modal.querySelector("[data-project-edit-type]").value;
+    const pinned = modal.querySelector("[data-project-edit-pinned]").checked;
+
+    if (!name) {
+      status.textContent = "Project name is required.";
+      status.className = "project-edit-status is-warning";
+      return;
+    }
+
+    status.textContent = "Saving project settings...";
+    status.className = "project-edit-status is-busy";
+
+    try {
+      const response = await fetch("/api/projects/" + encodeURIComponent(projectId), {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name,
+          description,
+          projectType,
+          pinned
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || payload.message || "Unable to save project settings");
+      }
+
+      status.textContent = "Project settings saved.";
+      status.className = "project-edit-status is-success";
+
+      closeProjectEditModal();
+      await loadSavedProjects();
+    } catch (error) {
+      status.textContent = error.message || "Unable to save project settings.";
+      status.className = "project-edit-status is-error";
+    }
   }
 
   function updateProjectFilterButtons() {
@@ -455,6 +642,7 @@
     const detailsButton = event.target.closest("[data-project-details]");
     const filterButton = event.target.closest("[data-project-filter]");
     const statusButton = event.target.closest("[data-project-status]");
+    const editButton = event.target.closest("[data-project-edit]");
 
     if (refreshButton) {
       loadSavedProjects();
@@ -469,6 +657,10 @@
 
     if (detailsButton) {
       showProjectDetails(detailsButton.getAttribute("data-project-details"));
+    }
+
+    if (editButton) {
+      openProjectEditModal(editButton.getAttribute("data-project-edit"));
     }
 
     if (statusButton) {
