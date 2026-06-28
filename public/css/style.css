@@ -1847,3 +1847,46 @@ button[data-save-popgroups-cloud].is-saving {
   gap: 10px;
   flex-wrap: wrap;
 }
+
+/* PopGroups group quick clear button */
+.group-header .group-quick-clear-button {
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid rgba(248, 113, 113, .42);
+  border-radius: 999px;
+  background: rgba(127, 29, 29, .22);
+  color: #fecaca;
+  font-size: .72rem;
+  font-weight: 950;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.group-header .group-quick-clear-button:hover {
+  border-color: rgba(248, 113, 113, .72);
+  background: rgba(127, 29, 29, .34);
+  color: #fff1f2;
+}
+
+.group-header {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* PopGroups group quick clear button */
+.group .group-quick-clear-button {
+  margin-left: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(248, 113, 113, .46);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  color: #fff;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.group .group-quick-clear-button:hover {
+  border-color: rgba(254, 202, 202, .84);
+  filter: brightness(1.08);
+}
