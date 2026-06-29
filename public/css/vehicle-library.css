@@ -826,3 +826,61 @@
 .vd-pack-entry-mod {
   border-color: rgba(168, 85, 247, .24);
 }
+
+/* VEHICLE_APPEARANCE_PREVIEW_STYLE_V1 */
+.vl-appearance-preview {
+  display: grid;
+  gap: 10px;
+}
+
+.vl-appearance-preview-card {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, .35);
+}
+
+.vl-appearance-preview-card h3 {
+  margin: 0;
+  color: #fbbf24;
+  font-size: .95rem;
+}
+
+.vl-appearance-preview-card p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: .82rem;
+  overflow-wrap: anywhere;
+}
+
+.vl-appearance-preview-row {
+  display: grid;
+  gap: 2px;
+  font-size: .8rem;
+}
+
+.vl-appearance-preview-row strong {
+  color: #e5e7eb;
+}
+
+.vl-appearance-preview-row span {
+  color: #cbd5e1;
+  overflow-wrap: anywhere;
+}
+
+.vl-appearance-preview small {
+  color: #94a3b8;
+}
+
+/* VEHICLE_APPEARANCE_PREVIEW_VISIBILITY_FIX_V1 */
+#vlAppearanceMetaPreview {
+  display: block;
+  margin: 12px 0;
+  border-left: 4px solid #f59e0b;
+}
+
+#vlAppearanceMetaPreview[hidden] {
+  display: none;
+}

@@ -1773,10 +1773,24 @@ if (pageSizeSelect) {
   document.addEventListener("DOMContentLoaded", initialize);
 })();
 
-/* VEHICLE_APPEARANCE_IMPORT_UI_V1 */
+/* VEHICLE_APPEARANCE_IMPORT_UI_V2 */
 (function () {
+  const state = {
+    carvariations: null,
+    carcols: null
+  };
+
   function byId(id) {
     return document.getElementById(id);
+  }
+
+  function escapePreviewHTML(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   function setVehicleAppearanceImportStatus(message, type) {
@@ -1795,6 +1809,320 @@ if (pageSizeSelect) {
     }
   }
 
+  function parseMetaXml(text, label) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(String(text || ""), "application/xml");
+    const parserError = doc.querySelector("parsererror");
+
+    if (parserError) {
+      throw new Error(label + " could not be parsed as XML/meta.");
+    }
+
+    return doc;
+  }
+
+  function childText(node, tagName) {
+    if (!node) {
+      return "";
+    }
+
+    const child = Array.from(node.children || []).find(item =>
+      item.tagName === tagName
+    );
+
+    return child ? String(child.textContent || "").trim() : "";
+  }
+
+  function attrValue(node, attrName = "value") {
+    if (!node) {
+      return "";
+    }
+
+    return String(node.getAttribute(attrName) || "").trim();
+  }
+
+  function uniqueValues(values) {
+    return Array.from(
+      new Set(
+        values
+          .map(value => String(value || "").trim())
+          .filter(Boolean)
+      )
+    );
+  }
+
+  function parseCarvariationsMeta(text, fileName) {
+    const doc = parseMetaXml(text, "carvariations.meta");
+
+    const variationNodes = Array.from(
+      doc.querySelectorAll("variationData > Item")
+    ).filter(node => childText(node, "modelName"));
+
+    const vehicles = variationNodes.map(node => {
+      const modelName = childText(node, "modelName");
+
+      const colorValues = uniqueValues(
+        Array.from(node.querySelectorAll("colors > Item > indices"))
+          .flatMap(indices =>
+            String(indices.textContent || "")
+              .split(/\s+/)
+              .map(value => value.trim())
+          )
+      );
+
+      const kitValues = uniqueValues(
+        Array.from(node.querySelectorAll("kits > Item"))
+          .map(item => String(item.textContent || "").trim())
+      );
+
+      const liveryNodes = Array.from(
+        node.querySelectorAll("colors > Item > liveries > Item")
+      );
+
+      const enabledLiveries = liveryNodes
+        .map((item, index) => ({
+          index,
+          value:
+            item.getAttribute("value") ||
+            String(item.textContent || "").trim()
+        }))
+        .filter(item =>
+          String(item.value || "").toLowerCase() === "true" ||
+          String(item.value || "") === "1"
+        );
+
+      const plateProbabilities = Array.from(
+        node.querySelectorAll("plateProbabilities Probabilities > Item")
+      ).map(item => {
+        const name =
+          childText(item, "Name") ||
+          childText(item, "name") ||
+          childText(item, "plateType");
+
+        const valueNode =
+          Array.from(item.children || []).find(child =>
+            child.tagName === "Value" ||
+            child.tagName === "value"
+          );
+
+        const value =
+          attrValue(valueNode, "value") ||
+          childText(item, "Value") ||
+          childText(item, "value") ||
+          String(valueNode?.textContent || "").trim();
+
+        return {
+          name,
+          value
+        };
+      }).filter(item => item.name || item.value);
+
+      return {
+        modelName,
+        colors: colorValues,
+        kits: kitValues,
+        liveryCount: liveryNodes.length,
+        enabledLiveries,
+        plateProbabilities,
+        lightSettings: childText(node, "lightSettings"),
+        sirenSettings: childText(node, "sirenSettings")
+      };
+    }).filter(vehicle => vehicle.modelName);
+
+    return {
+      type: "carvariations.meta",
+      fileName,
+      vehicleCount: vehicles.length,
+      vehicles
+    };
+  }
+
+  function parseCarcolsMeta(text, fileName) {
+    const doc = parseMetaXml(text, "carcols.meta");
+
+    const kitNodes = Array.from(
+      doc.querySelectorAll("Kits > Item")
+    ).filter(node => childText(node, "kitName") || node.querySelector("id"));
+
+    const lightNodes = Array.from(
+      doc.querySelectorAll("Lights > Item")
+    ).filter(node => node.querySelector("id") || childText(node, "name"));
+
+    const kits = kitNodes.map(node => {
+      const idNode = Array.from(node.children || []).find(item =>
+        item.tagName === "id"
+      );
+
+      const statModItems = Array.from(node.querySelectorAll("statMods > Item"));
+      const statModTypes = uniqueValues(
+        statModItems.map(item => childText(item, "type"))
+      );
+
+      const visibleModCount = node.querySelectorAll("visibleMods > Item").length;
+      const linkedModCount =
+        node.querySelectorAll("linkMods > Item").length +
+        node.querySelectorAll("linkedModels > Item").length;
+
+      return {
+        kitName: childText(node, "kitName"),
+        id: attrValue(idNode) || childText(node, "id"),
+        kitType: childText(node, "kitType"),
+        statModCount: statModItems.length,
+        statModTypes,
+        visibleModCount,
+        linkedModCount
+      };
+    }).filter(kit => kit.kitName || kit.id);
+
+    function lightColor(node, sectionName) {
+      const section = Array.from(node.children || []).find(item =>
+        item.tagName === sectionName
+      );
+
+      if (!section) {
+        return "";
+      }
+
+      const colorNode = Array.from(section.children || []).find(item =>
+        item.tagName === "color"
+      );
+
+      return attrValue(colorNode, "value") || childText(section, "color");
+    }
+
+    function headlightTexture(node) {
+      const headLight = Array.from(node.children || []).find(item =>
+        item.tagName === "headLight"
+      );
+
+      return headLight ? childText(headLight, "textureName") : "";
+    }
+
+    const lights = lightNodes.map(node => {
+      const idNode = Array.from(node.children || []).find(item =>
+        item.tagName === "id"
+      );
+
+      return {
+        id: attrValue(idNode) || childText(node, "id"),
+        name: childText(node, "name"),
+        headLightTexture: headlightTexture(node),
+        headLightColor: lightColor(node, "headLight"),
+        tailLightColor: lightColor(node, "tailLight"),
+        indicatorColor: lightColor(node, "indicator")
+      };
+    }).filter(light => light.id || light.name);
+
+    return {
+      type: "carcols.meta",
+      fileName,
+      kitCount: kits.length,
+      lightCount: lights.length,
+      kits,
+      lights
+    };
+  }
+
+  function renderPreviewList(title, values) {
+    const clean = values.filter(Boolean).slice(0, 12);
+
+    if (!clean.length) {
+      return "";
+    }
+
+    return (
+      '<div class="vl-appearance-preview-row">' +
+      '<strong>' + escapePreviewHTML(title) + '</strong>' +
+      '<span>' + escapePreviewHTML(clean.join(", ")) + '</span>' +
+      '</div>'
+    );
+  }
+
+  function renderCarvariationsPreview(data) {
+    const sampleVehicles = data.vehicles.slice(0, 12).map(vehicle => vehicle.modelName);
+    const sampleKits = uniqueValues(
+      data.vehicles.flatMap(vehicle => vehicle.kits || [])
+    ).slice(0, 12);
+    const sampleLights = uniqueValues(
+      data.vehicles.map(vehicle => vehicle.lightSettings)
+    ).slice(0, 12);
+    const sampleSirens = uniqueValues(
+      data.vehicles.map(vehicle => vehicle.sirenSettings)
+    ).slice(0, 12);
+
+    return [
+      '<article class="vl-appearance-preview-card">',
+      '<h3>carvariations.meta</h3>',
+      '<p>' + escapePreviewHTML(data.fileName) + '</p>',
+      renderPreviewList("Vehicles", sampleVehicles),
+      renderPreviewList("Kits", sampleKits),
+      renderPreviewList("Light Settings", sampleLights),
+      renderPreviewList("Siren Settings", sampleSirens),
+      '<div class="vl-appearance-preview-row"><strong>Total Vehicles</strong><span>' +
+        escapePreviewHTML(data.vehicleCount) +
+      '</span></div>',
+      '</article>'
+    ].join("");
+  }
+
+  function renderCarcolsPreview(data) {
+    const sampleKits = data.kits.slice(0, 12).map(kit =>
+      kit.kitName || kit.id
+    );
+
+    const sampleLights = data.lights.slice(0, 12).map(light =>
+      [light.id, light.name].filter(Boolean).join(": ")
+    );
+
+    return [
+      '<article class="vl-appearance-preview-card">',
+      '<h3>carcols.meta</h3>',
+      '<p>' + escapePreviewHTML(data.fileName) + '</p>',
+      renderPreviewList("Mod Kits", sampleKits),
+      renderPreviewList("Light Profiles", sampleLights),
+      '<div class="vl-appearance-preview-row"><strong>Total Kits</strong><span>' +
+        escapePreviewHTML(data.kitCount) +
+      '</span></div>',
+      '<div class="vl-appearance-preview-row"><strong>Total Light Settings</strong><span>' +
+        escapePreviewHTML(data.lightCount) +
+      '</span></div>',
+      '</article>'
+    ].join("");
+  }
+
+  function renderAppearancePreview() {
+    const host = byId("vlAppearanceMetaPreview");
+
+    if (!host) {
+      return;
+    }
+
+    const parts = [];
+
+    if (state.carvariations) {
+      parts.push(renderCarvariationsPreview(state.carvariations));
+    }
+
+    if (state.carcols) {
+      parts.push(renderCarcolsPreview(state.carcols));
+    }
+
+    if (!parts.length) {
+      host.hidden = true;
+      host.innerHTML = "";
+      return;
+    }
+
+    host.hidden = false;
+    host.innerHTML = [
+      '<div class="vl-appearance-preview">',
+      '<strong>Appearance Metadata Preview</strong>',
+      parts.join(""),
+      '<small>Preview only. Cloud save and Vehicle Details rendering come next.</small>',
+      '</div>'
+    ].join("");
+  }
+
   function readSelectedMetaFile(file, label) {
     if (!file) {
       return;
@@ -1803,34 +2131,55 @@ if (pageSizeSelect) {
     const reader = new FileReader();
 
     reader.onload = function () {
-      const text = String(reader.result || "");
-      const itemCount = (text.match(/<Item>/g) || []).length;
-      const modelCount = (text.match(/<modelName>/g) || []).length;
-      const kitCount = (text.match(/<kitName>/g) || []).length;
-      const lightCount = (text.match(/<id value=/g) || []).length;
+      try {
+        const text = String(reader.result || "");
 
-      const summary = [
-        label + " selected:",
-        file.name,
-        itemCount ? itemCount + " item block(s)" : "",
-        modelCount ? modelCount + " model reference(s)" : "",
-        kitCount ? kitCount + " mod kit reference(s)" : "",
-        lightCount ? lightCount + " light/id reference(s)" : ""
-      ].filter(Boolean).join(" ");
+        if (label === "carvariations.meta") {
+          state.carvariations = parseCarvariationsMeta(text, file.name);
+          window.vehicleAppearanceMetaPreview = {
+            ...(window.vehicleAppearanceMetaPreview || {}),
+            carvariations: state.carvariations
+          };
 
-      console.log(label + " preview", {
-        fileName: file.name,
-        size: file.size,
-        itemCount,
-        modelCount,
-        kitCount,
-        lightCount
-      });
+          setVehicleAppearanceImportStatus(
+            "Parsed carvariations.meta: " +
+              state.carvariations.vehicleCount +
+              " vehicle variation record(s).",
+            "good"
+          );
+        }
 
-      setVehicleAppearanceImportStatus(
-        summary + ". Full importer will be added in the next step.",
-        "good"
-      );
+        if (label === "carcols.meta") {
+          state.carcols = parseCarcolsMeta(text, file.name);
+          window.vehicleAppearanceMetaPreview = {
+            ...(window.vehicleAppearanceMetaPreview || {}),
+            carcols: state.carcols
+          };
+
+          setVehicleAppearanceImportStatus(
+            "Parsed carcols.meta: " +
+              state.carcols.kitCount +
+              " mod kit(s), " +
+              state.carcols.lightCount +
+              " light setting(s).",
+            "good"
+          );
+        }
+
+        renderAppearancePreview();
+
+        console.log("Vehicle appearance metadata preview", {
+          carvariations: state.carvariations,
+          carcols: state.carcols
+        });
+      } catch (error) {
+        console.warn(label + " parse failed.", error);
+
+        setVehicleAppearanceImportStatus(
+          error.message || label + " could not be parsed.",
+          "warn"
+        );
+      }
     };
 
     reader.onerror = function () {
@@ -1843,17 +2192,12 @@ if (pageSizeSelect) {
     reader.readAsText(file);
   }
 
-  function bindAppearanceImportButton(buttonId, inputId, label) {
-    const button = byId(buttonId);
+  function bindAppearanceImportButton(inputId, label) {
     const input = byId(inputId);
 
-    if (!button || !input) {
+    if (!input) {
       return;
     }
-
-    button.addEventListener("click", function () {
-      input.click();
-    });
 
     input.addEventListener("change", function () {
       const file = input.files && input.files[0];
@@ -1864,13 +2208,11 @@ if (pageSizeSelect) {
 
   function bindVehicleAppearanceImportUi() {
     bindAppearanceImportButton(
-      "vlImportCarvariationsMeta",
       "vlCarvariationsMetaInput",
       "carvariations.meta"
     );
 
     bindAppearanceImportButton(
-      "vlImportCarcolsMeta",
       "vlCarcolsMetaInput",
       "carcols.meta"
     );
@@ -1882,3 +2224,45 @@ if (pageSizeSelect) {
     bindVehicleAppearanceImportUi();
   }
 })();
+
+/* VEHICLE_APPEARANCE_DIRECT_BUTTON_BIND_V1 */
+(function () {
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function bindDirectAppearancePicker(buttonSelector, inputId) {
+    const button = document.querySelector(buttonSelector);
+    const input = byId(inputId);
+
+    if (!button || !input) {
+      return;
+    }
+
+    button.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      input.click();
+    }, true);
+  }
+
+  function bindDirectAppearancePickers() {
+    bindDirectAppearancePicker(
+      '[data-pick="vlCarvariationsMetaInput"]',
+      "vlCarvariationsMetaInput"
+    );
+
+    bindDirectAppearancePicker(
+      '[data-pick="vlCarcolsMetaInput"]',
+      "vlCarcolsMetaInput"
+    );
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindDirectAppearancePickers);
+  } else {
+    bindDirectAppearancePickers();
+  }
+})();
+
+
