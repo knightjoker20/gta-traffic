@@ -771,3 +771,58 @@
 .vl-scan-summary span { display: block; margin-top: 2px; color: rgba(255,255,255,.48); font-size: .65rem; }
 .vl-scan-warning { padding: 9px 10px; border: 1px solid rgba(245,158,11,.3); border-radius: 8px; background: rgba(245,158,11,.08); color: #fcd38d; font-size: .72rem; line-height: 1.45; overflow-wrap: anywhere; }
 .vl-scan-warning code { color: #fff; }
+
+/* VEHICLE_DETAILS_PACK_SOURCE_GROUPS */
+.vd-pack-group {
+  margin: 14px 0;
+}
+
+.vd-pack-group-title {
+  margin: 0 0 10px;
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.vd-pack-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vd-pack-entry-header h3 {
+  margin: 0;
+}
+
+.vd-pack-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: .76rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.vd-pack-badge.gta {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, .14);
+  border: 1px solid rgba(245, 158, 11, .35);
+}
+
+.vd-pack-badge.mod {
+  color: #c084fc;
+  background: rgba(168, 85, 247, .14);
+  border: 1px solid rgba(168, 85, 247, .35);
+}
+
+.vd-pack-entry-gta {
+  border-color: rgba(245, 158, 11, .28);
+}
+
+.vd-pack-entry-mod {
+  border-color: rgba(168, 85, 247, .24);
+}

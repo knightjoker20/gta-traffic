@@ -326,66 +326,201 @@ const el = id => document.getElementById(id);
       return;
     }
 
-    host.innerHTML = memberships
-      .map(membership => {
-        const pack = membership.pack || membership || {};
+    const DLC_REFERENCE_MARKER = "[GTA_DLC_REFERENCE]";
 
-        const title =
-          pack.name ||
-          membership.packName ||
-          pack.packKey ||
-          membership.packId ||
-          "Unknown pack";
+    function packFromMembership(membership) {
+      return membership.pack || membership || {};
+    }
 
-        const website = safeExternalUrl(
-          pack.website ||
-          membership.website
-        );
+    function getPackTitle(membership) {
+      const pack = packFromMembership(membership);
 
-        const notes =
-          pack.notes ||
-          membership.notes ||
-          "";
+      return (
+        pack.name ||
+        membership.packName ||
+        pack.packName ||
+        pack.packKey ||
+        membership.packId ||
+        "Unknown pack"
+      );
+    }
 
-        const meta = [
-          ["Creator", pack.creator || membership.creator],
-          ["DLC Folder", pack.dlcFolder || membership.dlcFolder],
-          ["Version", pack.version || membership.version],
-          ["Type", membership.relationshipType],
-          [
-            "Source",
-            pack.sourceLabel ||
-            membership.sourceLabel ||
-            pack.sourceType ||
-            membership.sourceType
-          ]
-        ]
-          .filter(([, value]) => String(value || "").trim())
-          .map(([label, value]) =>
-            '<span><strong>' +
-            escapeHTML(label) +
-            ':</strong> ' +
-            escapeHTML(value) +
-            '</span>'
-          )
-          .join("");
+    function getPackNotes(membership) {
+      const pack = packFromMembership(membership);
 
-        return [
-          '<article class="vd-pack-entry">',
-          '<h3>' + escapeHTML(title) + '</h3>',
-          meta ? '<div class="vd-pack-meta">' + meta + '</div>' : '',
-          notes
-            ? '<p class="vd-pack-notes">' + escapeHTML(notes) + '</p>'
-            : '',
-          website
-            ? '<a class="vd-pack-link" href="' +
-              escapeHTML(website) +
-              '" target="_blank" rel="noopener noreferrer">Open source website</a>'
-            : '',
-          '</article>'
-        ].join("");
-      })
-      .join("");
+      return (
+        pack.notes ||
+        membership.notes ||
+        ""
+      );
+    }
+
+    function isGtaDlcReference(membership) {
+      const pack = packFromMembership(membership);
+      const notes = getPackNotes(membership);
+      const sourceType = String(pack.sourceType || membership.sourceType || "").toLowerCase();
+      const sourceLabel = String(pack.sourceLabel || membership.sourceLabel || "").toLowerCase();
+
+      return (
+        String(notes).includes(DLC_REFERENCE_MARKER) ||
+        sourceType.includes("gta-dlc-reference") ||
+        sourceLabel.includes("gta dlc reference") ||
+        sourceLabel.includes("rockstar")
+      );
+    }
+
+    function parseDlcReferenceNotes(notes) {
+      const text = String(notes || "");
+      const sourceTypeMatch = text.match(/sourceType=([^\s]+)/i);
+      const sourceFileMatch = text.match(/sourceFile=([^\s]+)/i);
+
+      return {
+        sourceType: sourceTypeMatch ? sourceTypeMatch[1] : "",
+        sourceFile: sourceFileMatch ? sourceFileMatch[1] : ""
+      };
+    }
+
+    function formatSourceType(value) {
+      const clean = String(value || "").trim();
+
+      const labels = {
+        "rockstar-dlc": "Rockstar DLC",
+        "base-game": "Base Game",
+        "patchday": "Patchday",
+        "update-rpf": "update.rpf",
+        "custom-reference": "Custom Reference"
+      };
+
+      return labels[clean] || clean || "GTA Reference";
+    }
+
+    function cleanReferenceNotes(notes) {
+      return String(notes || "")
+        .split("\n")
+        .filter(line => !line.includes(DLC_REFERENCE_MARKER))
+        .join("\n")
+        .trim();
+    }
+
+    function metaSpan(label, value) {
+      if (!String(value || "").trim()) {
+        return "";
+      }
+
+      return (
+        '<span><strong>' +
+        escapeHTML(label) +
+        ':</strong> ' +
+        escapeHTML(value) +
+        '</span>'
+      );
+    }
+
+    function renderGtaSource(membership) {
+      const pack = packFromMembership(membership);
+      const title = getPackTitle(membership);
+      const notes = getPackNotes(membership);
+      const ref = parseDlcReferenceNotes(notes);
+
+      const dlcFolder =
+        pack.dlcFolder ||
+        membership.dlcFolder ||
+        pack.dlc ||
+        membership.dlc ||
+        "";
+
+      const sourceType = formatSourceType(
+        ref.sourceType ||
+        pack.sourceType ||
+        membership.sourceType
+      );
+
+      const sourceFile = ref.sourceFile || "vehicles.meta";
+
+      const meta = [
+        metaSpan("DLC Folder", dlcFolder),
+        metaSpan("Source Type", sourceType),
+        metaSpan("Source File", sourceFile),
+        metaSpan("Type", membership.relationshipType)
+      ].filter(Boolean).join("");
+
+      const cleanNotes = cleanReferenceNotes(notes);
+
+      return [
+        '<article class="vd-pack-entry vd-pack-entry-gta">',
+        '<div class="vd-pack-entry-header">',
+        '<h3>' + escapeHTML(title) + '</h3>',
+        '<span class="vd-pack-badge gta">Rockstar / GTA Source</span>',
+        '</div>',
+        meta ? '<div class="vd-pack-meta">' + meta + '</div>' : '',
+        cleanNotes ? '<p class="vd-pack-notes">' + escapeHTML(cleanNotes) + '</p>' : '',
+        '</article>'
+      ].join("");
+    }
+
+    function renderModPack(membership) {
+      const pack = packFromMembership(membership);
+      const title = getPackTitle(membership);
+
+      const website = safeExternalUrl(
+        pack.website ||
+        membership.website
+      );
+
+      const notes = getPackNotes(membership);
+
+      const meta = [
+        metaSpan("Creator", pack.creator || membership.creator),
+        metaSpan("DLC Folder", pack.dlcFolder || membership.dlcFolder),
+        metaSpan("Version", pack.version || membership.version),
+        metaSpan("Type", membership.relationshipType),
+        metaSpan(
+          "Source",
+          pack.sourceLabel ||
+          membership.sourceLabel ||
+          pack.sourceType ||
+          membership.sourceType
+        )
+      ].filter(Boolean).join("");
+
+      return [
+        '<article class="vd-pack-entry vd-pack-entry-mod">',
+        '<div class="vd-pack-entry-header">',
+        '<h3>' + escapeHTML(title) + '</h3>',
+        '<span class="vd-pack-badge mod">Mod Pack</span>',
+        '</div>',
+        meta ? '<div class="vd-pack-meta">' + meta + '</div>' : '',
+        notes ? '<p class="vd-pack-notes">' + escapeHTML(notes) + '</p>' : '',
+        website
+          ? '<a class="vd-pack-link" href="' +
+            escapeHTML(website) +
+            '" target="_blank" rel="noopener noreferrer">Open source website</a>'
+          : '',
+        '</article>'
+      ].join("");
+    }
+
+    const gtaSources = memberships.filter(isGtaDlcReference);
+    const modPacks = memberships.filter(membership => !isGtaDlcReference(membership));
+
+    host.innerHTML = [
+      gtaSources.length
+        ? [
+            '<section class="vd-pack-group vd-pack-group-gta">',
+            '<h3 class="vd-pack-group-title">Rockstar / GTA Source History</h3>',
+            gtaSources.map(renderGtaSource).join(""),
+            '</section>'
+          ].join("")
+        : "",
+      modPacks.length
+        ? [
+            '<section class="vd-pack-group vd-pack-group-mod">',
+            '<h3 class="vd-pack-group-title">Mod Pack Membership</h3>',
+            modPacks.map(renderModPack).join(""),
+            '</section>'
+          ].join("")
+        : ""
+    ].join("");
   }
 
   function renderSources() {
@@ -1006,3 +1141,4 @@ async function initialize() {
 
   document.addEventListener("DOMContentLoaded", initialize);
 })();
+
