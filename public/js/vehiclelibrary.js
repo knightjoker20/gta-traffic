@@ -1772,3 +1772,113 @@ if (pageSizeSelect) {
 
   document.addEventListener("DOMContentLoaded", initialize);
 })();
+
+/* VEHICLE_APPEARANCE_IMPORT_UI_V1 */
+(function () {
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function setVehicleAppearanceImportStatus(message, type) {
+    if (typeof setStatus === "function") {
+      setStatus(message, type || "good");
+      return;
+    }
+
+    const statusHost =
+      byId("vlStatus") ||
+      byId("vehicleLibraryStatus") ||
+      document.querySelector(".vl-status");
+
+    if (statusHost) {
+      statusHost.textContent = message;
+    }
+  }
+
+  function readSelectedMetaFile(file, label) {
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function () {
+      const text = String(reader.result || "");
+      const itemCount = (text.match(/<Item>/g) || []).length;
+      const modelCount = (text.match(/<modelName>/g) || []).length;
+      const kitCount = (text.match(/<kitName>/g) || []).length;
+      const lightCount = (text.match(/<id value=/g) || []).length;
+
+      const summary = [
+        label + " selected:",
+        file.name,
+        itemCount ? itemCount + " item block(s)" : "",
+        modelCount ? modelCount + " model reference(s)" : "",
+        kitCount ? kitCount + " mod kit reference(s)" : "",
+        lightCount ? lightCount + " light/id reference(s)" : ""
+      ].filter(Boolean).join(" ");
+
+      console.log(label + " preview", {
+        fileName: file.name,
+        size: file.size,
+        itemCount,
+        modelCount,
+        kitCount,
+        lightCount
+      });
+
+      setVehicleAppearanceImportStatus(
+        summary + ". Full importer will be added in the next step.",
+        "good"
+      );
+    };
+
+    reader.onerror = function () {
+      setVehicleAppearanceImportStatus(
+        label + " could not be read.",
+        "warn"
+      );
+    };
+
+    reader.readAsText(file);
+  }
+
+  function bindAppearanceImportButton(buttonId, inputId, label) {
+    const button = byId(buttonId);
+    const input = byId(inputId);
+
+    if (!button || !input) {
+      return;
+    }
+
+    button.addEventListener("click", function () {
+      input.click();
+    });
+
+    input.addEventListener("change", function () {
+      const file = input.files && input.files[0];
+      readSelectedMetaFile(file, label);
+      input.value = "";
+    });
+  }
+
+  function bindVehicleAppearanceImportUi() {
+    bindAppearanceImportButton(
+      "vlImportCarvariationsMeta",
+      "vlCarvariationsMetaInput",
+      "carvariations.meta"
+    );
+
+    bindAppearanceImportButton(
+      "vlImportCarcolsMeta",
+      "vlCarcolsMetaInput",
+      "carcols.meta"
+    );
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindVehicleAppearanceImportUi);
+  } else {
+    bindVehicleAppearanceImportUi();
+  }
+})();

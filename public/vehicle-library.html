@@ -89,6 +89,15 @@
             <span>handling.meta</span><small>Physics and AI profiles</small>
           </button>
           <input id="vlHandlingPicker" class="vl-hidden" type="file" multiple accept=".meta,.xml,.txt">
+          <button class="vl-import-button" type="button" data-pick="vlCarvariationsMetaInput">
+            <span>carvariations.meta</span><small>Appearance, colors, liveries, plates</small>
+          </button>
+          <input id="vlCarvariationsMetaInput" class="vl-hidden" type="file" multiple accept=".meta,.xml,.txt">
+
+          <button class="vl-import-button" type="button" data-pick="vlCarcolsMetaInput">
+            <span>carcols.meta</span><small>Mod kits, upgrades, lights</small>
+          </button>
+          <input id="vlCarcolsMetaInput" class="vl-hidden" type="file" multiple accept=".meta,.xml,.txt">
 
           <div id="vlStatus" class="vl-status warn">Opening the local vehicle database...</div>
         </section>
@@ -248,3 +257,4 @@
   <script defer src="/js/accountnav.js"></script>
 </body>
 </html>
+
