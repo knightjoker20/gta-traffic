@@ -540,3 +540,332 @@ function importPackDatabase(file) {
 
   reader.readAsText(file);
 }
+
+
+function packBuilderEscapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getPackBuilderValueFromJson(packJson, keys, fallback = "") {
+  for (const key of keys) {
+    const value = packJson?.[key];
+
+    if (value !== undefined && value !== null && String(value).trim()) {
+      return String(value).trim();
+    }
+  }
+
+  return fallback;
+}
+
+function getPackBuilderVehiclesFromJson(packJson) {
+  const possibleLists = [
+    packJson?.vehicles,
+    packJson?.vehicleModels,
+    packJson?.models,
+    packJson?.entries,
+    packJson?.items,
+    packJson?.pack?.vehicles,
+    packJson?.pack?.vehicleModels
+  ];
+
+  const list = possibleLists.find(value => Array.isArray(value)) || [];
+
+  return Array.from(
+    new Set(
+      list
+        .map(vehicle => {
+          if (typeof vehicle === "string") {
+            return vehicle.trim();
+          }
+
+          return (
+            vehicle?.modelName ||
+            vehicle?.model_name ||
+            vehicle?.model ||
+            vehicle?.name ||
+            vehicle?.vehicle ||
+            ""
+          )
+            .toString()
+            .trim();
+        })
+        .filter(Boolean)
+    )
+  );
+}
+
+function packBuilderVehicleModelsToFileList(models) {
+  return models
+    .map(model => {
+      const cleanModel = String(model || "").trim();
+
+      if (!cleanModel) {
+        return "";
+      }
+
+      return [
+        cleanModel + ".yft",
+        cleanModel + "_hi.yft",
+        cleanModel + ".ytd"
+      ].join("\n");
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function uploadBuiltPackJsonFromFile(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  const status = document.getElementById("packBuilderStatus");
+
+  if (!file) {
+    return;
+  }
+
+  try {
+    const rawText = await file.text();
+    const packJson = JSON.parse(rawText);
+
+    const packName = getPackBuilderValueFromJson(packJson, [
+      "packName",
+      "name",
+      "title",
+      "pack_name"
+    ], file.name.replace(/\.json$/i, ""));
+
+    const creator = getPackBuilderValueFromJson(packJson, [
+      "creator",
+      "author",
+      "createdBy"
+    ]);
+
+    const dlcName = getPackBuilderValueFromJson(packJson, [
+      "dlcName",
+      "dlc",
+      "dlcFolder",
+      "dlcpack",
+      "dlcPack",
+      "folder"
+    ]);
+
+    const version = getPackBuilderValueFromJson(packJson, [
+      "version",
+      "packVersion"
+    ]);
+
+    const website = getPackBuilderValueFromJson(packJson, [
+      "website",
+      "url",
+      "downloadUrl",
+      "downloadURL",
+      "sourceUrl",
+      "sourceURL"
+    ]);
+
+    const notes = getPackBuilderValueFromJson(packJson, [
+      "notes",
+      "description",
+      "summary"
+    ]);
+
+    const vehicles = getPackBuilderVehiclesFromJson(packJson);
+
+    document.getElementById("builderPackNameInput").value = packName;
+    document.getElementById("builderCreatorInput").value = creator;
+    document.getElementById("builderDlcInput").value = dlcName;
+    document.getElementById("builderVersionInput").value = version;
+    document.getElementById("builderWebsiteInput").value = website;
+    document.getElementById("builderNotesInput").value = notes;
+    document.getElementById("builderFileListInput").value =
+      packBuilderVehicleModelsToFileList(vehicles);
+
+    if (typeof buildPackJsonFromFileList === "function") {
+      buildPackJsonFromFileList();
+    }
+
+    if (status) {
+      status.innerHTML =
+        '<div class="success">Uploaded JSON pack: <strong>' +
+        packBuilderEscapeHtml(packName) +
+        '</strong> � ' +
+        vehicles.length +
+        ' vehicle' +
+        (vehicles.length === 1 ? "" : "s") +
+        ' loaded into the builder.</div>';
+    }
+  } catch (error) {
+    console.error(error);
+
+    if (status) {
+      status.innerHTML =
+        '<div class="error">Could not upload JSON pack: ' +
+        packBuilderEscapeHtml(error.message || String(error)) +
+        '</div>';
+    }
+  } finally {
+    if (input) {
+      input.value = "";
+    }
+  }
+}
+
+
+
+
+function getPackBuilderMetaStatus() {
+  return document.getElementById("packBuilderStatus");
+}
+
+function setPackBuilderMetaStatus(message, type = "success") {
+  const status = getPackBuilderMetaStatus();
+
+  if (!status) {
+    return;
+  }
+
+  status.innerHTML =
+    '<div class="' + type + '">' + message + '</div>';
+}
+
+function parseVehicleModelsFromVehiclesMeta(metaText) {
+  const rawText = String(metaText || "");
+  const models = [];
+  const seen = new Set();
+
+  const modelRegex = /<modelName>\s*([^<]+?)\s*<\/modelName>/gi;
+  let match;
+
+  while ((match = modelRegex.exec(rawText))) {
+    const modelName = String(match[1] || "")
+      .trim()
+      .replace(/\s+/g, "");
+
+    if (
+      !modelName ||
+      modelName.toLowerCase() === "null" ||
+      modelName.toLowerCase() === "none" ||
+      !/^[a-zA-Z0-9_-]{1,100}$/.test(modelName)
+    ) {
+      continue;
+    }
+
+    const key = modelName.toLowerCase();
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      models.push(modelName);
+    }
+  }
+
+  return models;
+}
+
+function vehicleMetaModelsToBuilderFileList(models) {
+  return models
+    .map(modelName => {
+      const cleanModel = String(modelName || "").trim();
+
+      if (!cleanModel) {
+        return "";
+      }
+
+      return [
+        cleanModel + ".yft",
+        cleanModel + "_hi.yft",
+        cleanModel + ".ytd"
+      ].join("\n");
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildPackJsonFromVehicleMeta() {
+  const metaInput = document.getElementById("builderVehicleMetaInput");
+  const fileListInput = document.getElementById("builderFileListInput");
+
+  if (!metaInput || !fileListInput) {
+    setPackBuilderMetaStatus("vehicles.meta builder inputs were not found.", "error");
+    return;
+  }
+
+  const metaText = metaInput.value || "";
+  const models = parseVehicleModelsFromVehiclesMeta(metaText);
+
+  if (!models.length) {
+    setPackBuilderMetaStatus(
+      "No vehicle modelName entries were found in the pasted vehicles.meta.",
+      "error"
+    );
+    return;
+  }
+
+  fileListInput.value = vehicleMetaModelsToBuilderFileList(models);
+
+  if (typeof buildPackJsonFromFileList === "function") {
+    buildPackJsonFromFileList();
+  }
+
+  setPackBuilderMetaStatus(
+    "Built pack preview from vehicles.meta � " +
+      models.length +
+      " vehicle" +
+      (models.length === 1 ? "" : "s") +
+      " detected.",
+    "success"
+  );
+}
+
+async function saveBuiltPackToTrackerAndCloud() {
+  const status = getPackBuilderMetaStatus();
+
+  try {
+    if (typeof importBuiltPackJson !== "function") {
+      throw new Error("Import Into Tracker function is not available.");
+    }
+
+    const importResult = importBuiltPackJson();
+
+    if (importResult && typeof importResult.then === "function") {
+      await importResult;
+    }
+
+    const cloudSyncFunction =
+      window.syncPackDatabaseToCloud ||
+      window.importPackDatabaseToCloud ||
+      window.syncPackDbToCloud;
+
+    if (typeof cloudSyncFunction !== "function") {
+      setPackBuilderMetaStatus(
+        "Pack imported into tracker. Cloud sync function was not found on this page.",
+        "warning"
+      );
+      return;
+    }
+
+    const syncResult = cloudSyncFunction();
+
+    if (syncResult && typeof syncResult.then === "function") {
+      await syncResult;
+    }
+
+    setPackBuilderMetaStatus(
+      "Pack imported into tracker and cloud sync was triggered.",
+      "success"
+    );
+  } catch (error) {
+    console.error(error);
+
+    if (status) {
+      status.innerHTML =
+        '<div class="error">Could not save pack to cloud: ' +
+        String(error.message || error) +
+        '</div>';
+    }
+  }
+}

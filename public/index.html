@@ -202,11 +202,19 @@
 750li_hi.yft
 750li.ytd"></textarea>
 
+      <textarea id="builderVehicleMetaInput" placeholder="Or paste vehicles.meta here, example:
+<Item>
+  <modelName>buffalo</modelName>
+  <txdName>buffalo</txdName>
+  ...
+</Item>" spellcheck="false"></textarea>
+
       <div class="builder-buttons">
-        <button class="btn-orange wide-btn" onclick="buildPackJsonFromFileList()">🛠 Build Preview</button>
-        <button class="secondary wide-btn" onclick="downloadBuiltPackJson()">⇩ Download JSON</button>
-        <button class="btn-purple wide-btn" onclick="importBuiltPackJson()">⇧ Import Into Tracker</button>
-        <button class="secondary wide-btn" onclick="clearPackBuilder()">🗑 Clear Builder</button>
+        <button class="btn-orange wide-btn" onclick="buildPackJsonFromFileList()">?? Build From File List</button>
+        <button class="btn-orange wide-btn" onclick="buildPackJsonFromVehicleMeta()">?? Build From vehicles.meta</button>
+        <button class="btn-purple wide-btn" onclick="importBuiltPackJson()">? Import Into Tracker</button>
+        <button class="btn-purple wide-btn" onclick="saveBuiltPackToTrackerAndCloud()">? Save Tracker to Cloud</button>
+        <button class="secondary wide-btn" onclick="clearPackBuilder()">?? Clear Builder</button>
       </div>
 
       <div id="packBuilderStatus"></div>
