@@ -198,6 +198,65 @@ function schedulePackCloudSync() {
   }, 800);
 }
 
+function isGtaDlcReferencePack(pack) {
+  const notes = String(pack?.notes || "");
+  const sourceType = String(pack?.sourceType || "").toLowerCase();
+  const sourceLabel = String(pack?.sourceLabel || "").toLowerCase();
+
+  return (
+    notes.includes("[GTA_DLC_REFERENCE]") ||
+    sourceType.includes("gta-dlc-reference") ||
+    sourceLabel.includes("rockstar") ||
+    sourceLabel.includes("gta dlc reference")
+  );
+}
+
+function buildPackCloudSubset(predicate) {
+  const sourcePacks = packDatabase.packs || {};
+  const sourceMap = packDatabase.vehiclePackMap || {};
+  const packs = {};
+  const vehiclePackMap = {};
+
+  Object.entries(sourcePacks).forEach(([packId, pack]) => {
+    if (!predicate(pack, packId)) {
+      return;
+    }
+
+    packs[packId] = {
+      ...pack
+    };
+  });
+
+  Object.entries(sourceMap).forEach(([modelName, packId]) => {
+    if (packs[packId]) {
+      vehiclePackMap[modelName] = packId;
+    }
+  });
+
+  return {
+    packs,
+    vehiclePackMap
+  };
+}
+
+async function importPackCloudSubset(packSubset, options) {
+  const packCount = Object.keys(packSubset.packs || {}).length;
+
+  if (!packCount) {
+    return {
+      ok: true,
+      packsImported: 0,
+      membershipsImported: 0,
+      skipped: true
+    };
+  }
+
+  return await window.vehicleCloud.importPackDatabaseToCloud(
+    packSubset,
+    options
+  );
+}
+
 async function syncPackDatabaseToCloud(options = {}) {
   const quiet = options.quiet === true;
   const force = options.force === true;
@@ -251,15 +310,43 @@ async function syncPackDatabaseToCloud(options = {}) {
   }
 
   try {
-    const result =
-      await window.vehicleCloud.importPackDatabaseToCloud(
-        packDatabase,
+    const normalPackSubset =
+      buildPackCloudSubset(pack => !isGtaDlcReferencePack(pack));
+
+    const gtaDlcReferenceSubset =
+      buildPackCloudSubset(pack => isGtaDlcReferencePack(pack));
+
+    const normalResult =
+      await importPackCloudSubset(
+        normalPackSubset,
         {
           workspaceId: "default",
           sourceType: "pack-tracker",
           sourceLabel: "Pack Tracker"
         }
       );
+
+    const gtaResult =
+      await importPackCloudSubset(
+        gtaDlcReferenceSubset,
+        {
+          workspaceId: "default",
+          sourceType: "gta-dlc-reference",
+          sourceLabel: "Rockstar DLC Reference"
+        }
+      );
+
+    const result = {
+      ok: true,
+      packsImported:
+        Number(normalResult?.packsImported || 0) +
+        Number(gtaResult?.packsImported || 0),
+      membershipsImported:
+        Number(normalResult?.membershipsImported || 0) +
+        Number(gtaResult?.membershipsImported || 0),
+      normalResult,
+      gtaResult
+    };
 
     if (!quiet && els?.packStatus) {
       els.packStatus.innerHTML =
@@ -294,7 +381,6 @@ async function syncPackDatabaseToCloud(options = {}) {
     }
   }
 }
-
 window.syncPackDatabaseToCloud = syncPackDatabaseToCloud;
 window.manualSyncPackDatabaseToCloud = manualSyncPackDatabaseToCloud;
 window.resetPackCloudToken = resetPackCloudToken;
@@ -1339,3 +1425,4 @@ async function saveBuiltPackToTrackerAndCloud() {
     startPackBuilderDlcReferenceMode();
   }
 })();
+
