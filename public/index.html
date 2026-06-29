@@ -178,11 +178,12 @@
     </section>
 
     <!-- ================= PACK DB BUILDER ================= -->
+        <!-- ================= PACK DB BUILDER ================= -->
     <section id="packBuilderPanel" class="panel tool-card builder-card">
-      <h2><span class="icon-orange">🛠</span> Pack DB Builder</h2>
+      <h2><span class="icon-orange">PACK</span> DB Builder</h2>
 
       <p class="small">
-        Paste a DLC file list to build a clean vehicle list for your pack.
+        Paste a DLC file list or drop a vehicles.meta file to build a clean vehicle list for your pack.
       </p>
 
       <div class="pack-form-grid">
@@ -200,21 +201,23 @@
 350z.ytd
 750li.yft
 750li_hi.yft
-750li.ytd"></textarea>
+750li.ytd" spellcheck="false"></textarea>
 
-      <textarea id="builderVehicleMetaInput" placeholder="Or paste vehicles.meta here, example:
-<Item>
-  <modelName>buffalo</modelName>
-  <txdName>buffalo</txdName>
-  ...
-</Item>" spellcheck="false"></textarea>
+      <div id="packBuilderMetaDropZone" class="pack-meta-drop-zone" role="button" tabindex="0">
+        <input id="packBuilderMetaFileInput" type="file" accept=".meta,.xml,.txt,text/xml,text/plain" style="display:none">
+        <div class="pack-meta-drop-icon">META</div>
+        <div class="pack-meta-drop-title">Drop vehicles.meta here</div>
+        <div class="pack-meta-drop-subtitle">or click to browse. The builder will auto-detect modelName entries.</div>
+      </div>
+
+      <textarea id="builderVehicleMetaInput" class="pack-meta-paste-box" placeholder="Or paste vehicles.meta here." spellcheck="false"></textarea>
 
       <div class="builder-buttons">
-        <button class="btn-orange wide-btn" onclick="buildPackJsonFromFileList()">?? Build From File List</button>
-        <button class="btn-orange wide-btn" onclick="buildPackJsonFromVehicleMeta()">?? Build From vehicles.meta</button>
-        <button class="btn-purple wide-btn" onclick="importBuiltPackJson()">? Import Into Tracker</button>
-        <button class="btn-purple wide-btn" onclick="saveBuiltPackToTrackerAndCloud()">? Save Tracker to Cloud</button>
-        <button class="secondary wide-btn" onclick="clearPackBuilder()">?? Clear Builder</button>
+        <button class="btn-orange wide-btn" onclick="buildPackJsonFromFileList()">Build From File List</button>
+        <button class="btn-orange wide-btn" onclick="buildPackJsonFromVehicleMeta()">Build From vehicles.meta</button>
+        <button class="btn-purple wide-btn" onclick="importBuiltPackJson()">Import Into Tracker</button>
+        <button class="btn-purple wide-btn" onclick="saveBuiltPackToTrackerAndCloud()">Save Tracker to Cloud</button>
+        <button class="secondary wide-btn" onclick="clearPackBuilder()">Clear Builder</button>
       </div>
 
       <div id="packBuilderStatus"></div>
@@ -401,6 +404,7 @@
 <script src="js/imagemanager.js"></script>
 <script src="js/exporttools.js"></script>
 <script src="js/packbuilder.js"></script>
+<script src="js/packbuilder-meta-dropzone.js"></script>
 <script src="js/lodtracker.js"></script>
 <script src="js/render.js"></script>
 <script src="js/app.js"></script>
