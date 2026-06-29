@@ -186,6 +186,28 @@
         Paste a DLC file list or drop a vehicles.meta file to build a clean vehicle list for your pack.
       </p>
 
+      <div id="packBuilderModePanel" class="pack-builder-mode-panel">
+        <div class="pack-builder-mode-label">Build Mode</div>
+        <div class="pack-builder-mode-buttons">
+          <button id="packBuilderModeModButton" class="secondary is-active" type="button" onclick="setPackBuilderMode('mod-pack')">Mod Pack</button>
+          <button id="packBuilderModeDlcButton" class="secondary" type="button" onclick="setPackBuilderMode('gta-dlc-reference')">GTA DLC Reference</button>
+        </div>
+        <div id="packBuilderModeHelp" class="small pack-builder-mode-help">
+          Build a normal creator/mod pack for Pack Tracker.
+        </div>
+      </div>
+
+      <div id="packBuilderDlcReferenceFields" class="pack-builder-reference-fields" hidden>
+        <select id="builderSourceTypeInput">
+          <option value="rockstar-dlc">Rockstar DLC</option>
+          <option value="base-game">Base Game</option>
+          <option value="patchday">Patchday</option>
+          <option value="update-rpf">update.rpf</option>
+          <option value="custom-reference">Custom Reference</option>
+        </select>
+        <input id="builderSourceFileInput" placeholder="Source file, example: vehicles.meta">
+      </div>
+
       <div class="pack-form-grid">
         <input id="builderPackNameInput" placeholder="Pack name">
         <input id="builderCreatorInput" placeholder="Creator">

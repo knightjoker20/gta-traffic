@@ -869,3 +869,473 @@ async function saveBuiltPackToTrackerAndCloud() {
     }
   }
 }
+
+
+/* PACK_BUILDER_META_DROPZONE_PATCH */
+(function () {
+  function setMetaDropZoneStatus(message, type = "success") {
+    const status = document.getElementById("packBuilderStatus");
+
+    if (!status) {
+      return;
+    }
+
+    status.innerHTML =
+      '<div class="' + type + '">' + String(message || "") + '</div>';
+  }
+
+  function normalizeDroppedPackName(fileName) {
+    return String(fileName || "")
+      .replace(/\.(meta|xml|txt)$/i, "")
+      .replace(/^vehicles$/i, "")
+      .replace(/[_-]+$/g, "")
+      .trim();
+  }
+
+  async function handlePackBuilderMetaFile(file) {
+    if (!file) {
+      return;
+    }
+
+    const fileName = file.name || "vehicles.meta";
+    const lowerName = fileName.toLowerCase();
+
+    if (
+      !lowerName.endsWith(".meta") &&
+      !lowerName.endsWith(".xml") &&
+      !lowerName.endsWith(".txt")
+    ) {
+      setMetaDropZoneStatus(
+        "Please drop a vehicles.meta, .xml, or .txt file.",
+        "error"
+      );
+      return;
+    }
+
+    const text = await file.text();
+    const metaInput = document.getElementById("builderVehicleMetaInput");
+
+    if (!metaInput) {
+      setMetaDropZoneStatus("vehicles.meta input box was not found.", "error");
+      return;
+    }
+
+    metaInput.value = text;
+
+    const packNameInput = document.getElementById("builderPackNameInput");
+
+    if (packNameInput && !packNameInput.value.trim()) {
+      const inferredName = normalizeDroppedPackName(fileName);
+
+      if (inferredName) {
+        packNameInput.value = inferredName;
+      }
+    }
+
+    if (typeof buildPackJsonFromVehicleMeta === "function") {
+      buildPackJsonFromVehicleMeta();
+    } else {
+      setMetaDropZoneStatus(
+        "vehicles.meta loaded, but Build From vehicles.meta is not available.",
+        "warning"
+      );
+    }
+  }
+
+  function initializePackBuilderMetaDropZone() {
+    const dropZone = document.getElementById("packBuilderMetaDropZone");
+    const fileInput = document.getElementById("packBuilderMetaFileInput");
+
+    if (!dropZone || !fileInput || dropZone.dataset.initialized === "true") {
+      return;
+    }
+
+    dropZone.dataset.initialized = "true";
+
+    dropZone.addEventListener("click", function () {
+      fileInput.click();
+    });
+
+    dropZone.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    fileInput.addEventListener("change", function (event) {
+      const file = event.target.files?.[0];
+
+      handlePackBuilderMetaFile(file).finally(function () {
+        event.target.value = "";
+      });
+    });
+
+    ["dragenter", "dragover"].forEach(eventName => {
+      dropZone.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        dropZone.classList.add("is-dragging");
+      });
+    });
+
+    ["dragleave", "dragend"].forEach(eventName => {
+      dropZone.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        dropZone.classList.remove("is-dragging");
+      });
+    });
+
+    dropZone.addEventListener("drop", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      dropZone.classList.remove("is-dragging");
+
+      const file = event.dataTransfer?.files?.[0];
+      handlePackBuilderMetaFile(file);
+    });
+  }
+
+  window.handlePackBuilderMetaFile = handlePackBuilderMetaFile;
+  window.initializePackBuilderMetaDropZone = initializePackBuilderMetaDropZone;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializePackBuilderMetaDropZone);
+  } else {
+    initializePackBuilderMetaDropZone();
+  }
+})();
+
+
+/* PACK_BUILDER_META_DROPZONE_FINAL_REPAIR */
+(function () {
+  async function readPackBuilderMetaFile(file) {
+    if (!file) {
+      return;
+    }
+
+    const metaInput = document.getElementById("builderVehicleMetaInput");
+    const status = document.getElementById("packBuilderStatus");
+
+    if (!metaInput) {
+      if (status) {
+        status.innerHTML = '<div class="error">vehicles.meta paste box was not found.</div>';
+      }
+      return;
+    }
+
+    const fileName = String(file.name || "").toLowerCase();
+
+    if (
+      !fileName.endsWith(".meta") &&
+      !fileName.endsWith(".xml") &&
+      !fileName.endsWith(".txt")
+    ) {
+      if (status) {
+        status.innerHTML = '<div class="error">Please use a .meta, .xml, or .txt file.</div>';
+      }
+      return;
+    }
+
+    metaInput.value = await file.text();
+
+    if (typeof buildPackJsonFromVehicleMeta === "function") {
+      buildPackJsonFromVehicleMeta();
+    } else if (status) {
+      status.innerHTML = '<div class="warning">vehicles.meta loaded. Click Build From vehicles.meta.</div>';
+    }
+  }
+
+  function wireFinalPackBuilderMetaDropZone() {
+    const dropZone = document.getElementById("packBuilderMetaDropZone");
+    const fileInput = document.getElementById("packBuilderMetaFileInput");
+
+    if (!dropZone || !fileInput || dropZone.dataset.finalDropReady === "true") {
+      return false;
+    }
+
+    dropZone.dataset.finalDropReady = "true";
+
+    dropZone.addEventListener("click", function () {
+      fileInput.click();
+    });
+
+    dropZone.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    fileInput.addEventListener("change", function (event) {
+      const file = event.target.files?.[0];
+
+      readPackBuilderMetaFile(file).finally(function () {
+        event.target.value = "";
+      });
+    });
+
+    ["dragenter", "dragover"].forEach(function (eventName) {
+      dropZone.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        dropZone.classList.add("is-dragging");
+      });
+    });
+
+    ["dragleave", "dragend"].forEach(function (eventName) {
+      dropZone.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        dropZone.classList.remove("is-dragging");
+      });
+    });
+
+    dropZone.addEventListener("drop", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      dropZone.classList.remove("is-dragging");
+
+      const file = event.dataTransfer?.files?.[0];
+      readPackBuilderMetaFile(file);
+    });
+
+    return true;
+  }
+
+  window.wireFinalPackBuilderMetaDropZone = wireFinalPackBuilderMetaDropZone;
+
+  function startFinalPackBuilderDropZoneRepair() {
+    wireFinalPackBuilderMetaDropZone();
+
+    let attempts = 0;
+    const timer = window.setInterval(function () {
+      attempts += 1;
+
+      if (wireFinalPackBuilderMetaDropZone() || attempts > 40) {
+        window.clearInterval(timer);
+      }
+    }, 500);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startFinalPackBuilderDropZoneRepair);
+  } else {
+    startFinalPackBuilderDropZoneRepair();
+  }
+})();
+
+
+/* PACK_BUILDER_DLC_REFERENCE_MODE_V1 */
+(function () {
+  const DLC_REFERENCE_PREFIX = "[GTA_DLC_REFERENCE]";
+
+  function getBuilderElement(id) {
+    return document.getElementById(id);
+  }
+
+  function setBuilderStatus(message, type = "success") {
+    const status = getBuilderElement("packBuilderStatus");
+
+    if (!status) {
+      return;
+    }
+
+    status.innerHTML =
+      '<div class="' + type + '">' + String(message || "") + '</div>';
+  }
+
+  function getPackBuilderMode() {
+    return localStorage.getItem("gtaTrafficPackBuilderMode") || "mod-pack";
+  }
+
+  function setPackBuilderMode(mode) {
+    const nextMode =
+      mode === "gta-dlc-reference" ? "gta-dlc-reference" : "mod-pack";
+
+    localStorage.setItem("gtaTrafficPackBuilderMode", nextMode);
+    applyPackBuilderMode(nextMode);
+  }
+
+  function cleanDlcReferenceNotes(notes, sourceType, sourceFile) {
+    const cleanNotes = String(notes || "")
+      .split("\n")
+      .filter(line => !line.startsWith(DLC_REFERENCE_PREFIX))
+      .join("\n")
+      .trim();
+
+    const marker = [
+      DLC_REFERENCE_PREFIX,
+      "sourceType=" + sourceType,
+      "sourceFile=" + (sourceFile || "vehicles.meta")
+    ].join(" ");
+
+    return cleanNotes ? marker + "\n" + cleanNotes : marker;
+  }
+
+  function inferDlcDisplayNameFromFolder(folderName) {
+    const value = String(folderName || "").trim();
+
+    if (!value) {
+      return "";
+    }
+
+    return value
+      .replace(/^dlc[_-]?/i, "")
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, letter => letter.toUpperCase());
+  }
+
+  function applyDlcReferenceDefaults() {
+    const creatorInput = getBuilderElement("builderCreatorInput");
+    const packNameInput = getBuilderElement("builderPackNameInput");
+    const dlcInput = getBuilderElement("builderDlcInput");
+    const sourceFileInput = getBuilderElement("builderSourceFileInput");
+
+    if (creatorInput && !creatorInput.value.trim()) {
+      creatorInput.value = "Rockstar Games";
+    }
+
+    if (sourceFileInput && !sourceFileInput.value.trim()) {
+      sourceFileInput.value = "vehicles.meta";
+    }
+
+    if (
+      packNameInput &&
+      !packNameInput.value.trim() &&
+      dlcInput &&
+      dlcInput.value.trim()
+    ) {
+      packNameInput.value = inferDlcDisplayNameFromFolder(dlcInput.value);
+    }
+  }
+
+  function applyPackBuilderMode(mode = getPackBuilderMode()) {
+    const isDlcReference = mode === "gta-dlc-reference";
+
+    const modButton = getBuilderElement("packBuilderModeModButton");
+    const dlcButton = getBuilderElement("packBuilderModeDlcButton");
+    const help = getBuilderElement("packBuilderModeHelp");
+    const referenceFields = getBuilderElement("packBuilderDlcReferenceFields");
+
+    modButton?.classList.toggle("is-active", !isDlcReference);
+    dlcButton?.classList.toggle("is-active", isDlcReference);
+
+    if (referenceFields) {
+      referenceFields.hidden = !isDlcReference;
+    }
+
+    if (help) {
+      help.textContent = isDlcReference
+        ? "Build a Rockstar/Base Game DLC reference pack so vehicle details can show where vanilla vehicles came from."
+        : "Build a normal creator/mod pack for Pack Tracker.";
+    }
+
+    if (isDlcReference) {
+      applyDlcReferenceDefaults();
+    }
+  }
+
+  function prepareDlcReferenceBeforeBuild() {
+    if (getPackBuilderMode() !== "gta-dlc-reference") {
+      return;
+    }
+
+    const packNameInput = getBuilderElement("builderPackNameInput");
+    const creatorInput = getBuilderElement("builderCreatorInput");
+    const dlcInput = getBuilderElement("builderDlcInput");
+    const notesInput = getBuilderElement("builderNotesInput");
+    const sourceTypeInput = getBuilderElement("builderSourceTypeInput");
+    const sourceFileInput = getBuilderElement("builderSourceFileInput");
+
+    applyDlcReferenceDefaults();
+
+    const sourceType = sourceTypeInput?.value || "rockstar-dlc";
+    const sourceFile = sourceFileInput?.value || "vehicles.meta";
+
+    if (creatorInput && !creatorInput.value.trim()) {
+      creatorInput.value = "Rockstar Games";
+    }
+
+    if (
+      packNameInput &&
+      !packNameInput.value.trim() &&
+      dlcInput &&
+      dlcInput.value.trim()
+    ) {
+      packNameInput.value = inferDlcDisplayNameFromFolder(dlcInput.value);
+    }
+
+    if (notesInput) {
+      notesInput.value = cleanDlcReferenceNotes(
+        notesInput.value,
+        sourceType,
+        sourceFile
+      );
+    }
+  }
+
+  function decorateDlcReferencePackAfterImport() {
+    if (getPackBuilderMode() !== "gta-dlc-reference") {
+      return;
+    }
+
+    setBuilderStatus(
+      "GTA DLC reference imported into Pack Tracker. Use Save Tracker to Cloud to store it.",
+      "success"
+    );
+  }
+
+  const originalBuildFromFileList = window.buildPackJsonFromFileList;
+  const originalBuildFromVehicleMeta = window.buildPackJsonFromVehicleMeta;
+  const originalImportBuiltPackJson = window.importBuiltPackJson;
+
+  if (typeof originalBuildFromFileList === "function") {
+    window.buildPackJsonFromFileList = function patchedBuildPackJsonFromFileList() {
+      prepareDlcReferenceBeforeBuild();
+      return originalBuildFromFileList.apply(this, arguments);
+    };
+  }
+
+  if (typeof originalBuildFromVehicleMeta === "function") {
+    window.buildPackJsonFromVehicleMeta = function patchedBuildPackJsonFromVehicleMeta() {
+      prepareDlcReferenceBeforeBuild();
+      return originalBuildFromVehicleMeta.apply(this, arguments);
+    };
+  }
+
+  if (typeof originalImportBuiltPackJson === "function") {
+    window.importBuiltPackJson = function patchedImportBuiltPackJson() {
+      prepareDlcReferenceBeforeBuild();
+      const result = originalImportBuiltPackJson.apply(this, arguments);
+      decorateDlcReferencePackAfterImport();
+      return result;
+    };
+  }
+
+  function startPackBuilderDlcReferenceMode() {
+    applyPackBuilderMode();
+
+    const dlcInput = getBuilderElement("builderDlcInput");
+
+    if (dlcInput) {
+      dlcInput.addEventListener("blur", function () {
+        if (getPackBuilderMode() === "gta-dlc-reference") {
+          applyDlcReferenceDefaults();
+        }
+      });
+    }
+  }
+
+  window.getPackBuilderMode = getPackBuilderMode;
+  window.setPackBuilderMode = setPackBuilderMode;
+  window.applyPackBuilderMode = applyPackBuilderMode;
+  window.prepareDlcReferenceBeforeBuild = prepareDlcReferenceBeforeBuild;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startPackBuilderDlcReferenceMode);
+  } else {
+    startPackBuilderDlcReferenceMode();
+  }
+})();

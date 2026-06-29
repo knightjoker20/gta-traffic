@@ -1890,3 +1890,280 @@ button[data-save-popgroups-cloud].is-saving {
   border-color: rgba(254, 202, 202, .84);
   filter: brightness(1.08);
 }
+
+/* Pack DB Builder vehicles.meta drop zone */
+.pack-meta-drop-zone {
+  margin: 18px 0 12px;
+  padding: 34px 20px;
+  border: 2px dashed rgba(148, 163, 184, .22);
+  border-radius: 16px;
+  background: rgba(2, 6, 23, .38);
+  color: #cbd5e1;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+
+.pack-meta-drop-zone:hover,
+.pack-meta-drop-zone.is-dragging {
+  border-color: rgba(168, 85, 247, .75);
+  background: rgba(88, 28, 135, .16);
+  transform: translateY(-1px);
+}
+
+.pack-meta-drop-icon {
+  margin-bottom: 12px;
+  color: #a855f7;
+  font-size: 2.4rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.pack-meta-drop-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.pack-meta-drop-subtitle {
+  margin-top: 6px;
+  color: #94a3b8;
+  font-size: .92rem;
+}
+
+/* Pack DB Builder vehicles.meta drop zone repair */
+#packBuilderPanel .pack-meta-drop-zone {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 18px 0 14px;
+  padding: 34px 22px;
+  border: 2px dashed rgba(148, 163, 184, .32);
+  border-radius: 16px;
+  background: rgba(2, 6, 23, .42);
+  color: #cbd5e1;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+
+#packBuilderPanel .pack-meta-drop-zone:hover,
+#packBuilderPanel .pack-meta-drop-zone.is-dragging {
+  border-color: rgba(168, 85, 247, .82);
+  background: rgba(88, 28, 135, .18);
+  transform: translateY(-1px);
+}
+
+#packBuilderPanel .pack-meta-drop-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  height: 34px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(168, 85, 247, .68);
+  border-radius: 10px;
+  color: #c084fc;
+  font-size: .88rem;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+
+#packBuilderPanel .pack-meta-drop-title {
+  font-size: 1.15rem;
+  font-weight: 950;
+  color: #e5e7eb;
+}
+
+#packBuilderPanel .pack-meta-drop-subtitle {
+  margin-top: 7px;
+  color: #94a3b8;
+  font-size: .94rem;
+}
+
+#packBuilderPanel #builderVehicleMetaInput {
+  min-height: 160px;
+  margin-top: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* PACK_BUILDER_META_DROPZONE_STYLE_V3 */
+#packBuilderPanel .pack-meta-drop-zone {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 18px 0 14px;
+  padding: 34px 22px;
+  border: 2px dashed rgba(148, 163, 184, .35);
+  border-radius: 16px;
+  background: rgba(2, 6, 23, .48);
+  color: #cbd5e1;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+#packBuilderPanel .pack-meta-drop-zone:hover,
+#packBuilderPanel .pack-meta-drop-zone.is-dragging {
+  border-color: rgba(168, 85, 247, .9);
+  background: rgba(88, 28, 135, .2);
+}
+
+#packBuilderPanel .pack-meta-drop-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  height: 34px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(168, 85, 247, .75);
+  border-radius: 10px;
+  color: #c084fc;
+  font-size: .88rem;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+
+#packBuilderPanel .pack-meta-drop-title {
+  font-size: 1.15rem;
+  font-weight: 950;
+  color: #e5e7eb;
+}
+
+#packBuilderPanel .pack-meta-drop-subtitle {
+  margin-top: 7px;
+  color: #94a3b8;
+  font-size: .94rem;
+}
+
+#packBuilderPanel #builderVehicleMetaInput {
+  display: block;
+  width: 100%;
+  min-height: 160px;
+  margin: 10px 0 18px;
+  box-sizing: border-box;
+}
+
+/* PACK_BUILDER_FINAL_LAYOUT_FIX */
+#packBuilderPanel {
+  overflow: hidden;
+}
+
+#packBuilderPanel #builderFileListInput,
+#packBuilderPanel #builderVehicleMetaInput {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#packBuilderPanel #builderFileListInput {
+  min-height: 150px;
+}
+
+#packBuilderPanel #builderVehicleMetaInput {
+  min-height: 160px;
+  margin: 10px 0 18px;
+}
+
+#packBuilderPanel .pack-meta-drop-zone {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 18px 0 14px;
+  padding: 34px 22px;
+  border: 2px dashed rgba(148, 163, 184, .35);
+  border-radius: 16px;
+  background: rgba(2, 6, 23, .48);
+  color: #cbd5e1;
+  text-align: center;
+  cursor: pointer;
+}
+
+#packBuilderPanel .pack-meta-drop-zone:hover,
+#packBuilderPanel .pack-meta-drop-zone.is-dragging {
+  border-color: rgba(168, 85, 247, .9);
+  background: rgba(88, 28, 135, .2);
+}
+
+#packBuilderPanel .pack-meta-drop-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  height: 34px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(168, 85, 247, .75);
+  border-radius: 10px;
+  color: #c084fc;
+  font-size: .88rem;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+
+#packBuilderPanel .pack-meta-drop-title {
+  font-size: 1.15rem;
+  font-weight: 950;
+  color: #e5e7eb;
+}
+
+#packBuilderPanel .pack-meta-drop-subtitle {
+  margin-top: 7px;
+  color: #94a3b8;
+  font-size: .94rem;
+}
+
+/* PACK_BUILDER_DLC_REFERENCE_MODE_STYLE */
+#packBuilderPanel .pack-builder-mode-panel {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, .42);
+}
+
+#packBuilderPanel .pack-builder-mode-label {
+  margin-bottom: 10px;
+  color: #f59e0b;
+  font-weight: 950;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+#packBuilderPanel .pack-builder-mode-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#packBuilderPanel .pack-builder-mode-buttons button {
+  min-width: 160px;
+}
+
+#packBuilderPanel .pack-builder-mode-buttons button.is-active {
+  border-color: rgba(168, 85, 247, .75);
+  background: linear-gradient(135deg, #7c3aed, #4c1d95);
+  color: #fff;
+}
+
+#packBuilderPanel .pack-builder-mode-help {
+  margin-top: 10px;
+  color: #94a3b8;
+}
+
+#packBuilderPanel .pack-builder-reference-fields {
+  display: grid;
+  grid-template-columns: minmax(180px, .5fr) minmax(220px, 1fr);
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+#packBuilderPanel .pack-builder-reference-fields[hidden] {
+  display: none !important;
+}
+
+#packBuilderPanel .pack-builder-reference-fields select,
+#packBuilderPanel .pack-builder-reference-fields input {
+  width: 100%;
+  box-sizing: border-box;
+}
