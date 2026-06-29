@@ -2029,16 +2029,7 @@ async function handleVehicleImageUpload(
     .bind(normalizedModelName)
     .first();
 
-  if (!vehicle) {
-    return jsonResponse(
-      {
-        ok: false,
-        error:
-          "The requested vehicle does not exist in the database"
-      },
-      404
-    );
-  }
+  const imageOnlyUpload = !vehicle;
 
   const contentType = (
     request.headers.get("content-type") || ""
@@ -2085,7 +2076,7 @@ async function handleVehicleImageUpload(
   }
 
   const canonicalModelName =
-    vehicle.model_name;
+    vehicle?.model_name || normalizedModelName;
 
   const key = vehicleImageKey(
     canonicalModelName
@@ -4836,3 +4827,4 @@ return jsonResponse(
     }
   }
 };
+
