@@ -516,163 +516,161 @@ function toggleMainLibraryFilter(filterName) {
 
 window.toggleMainLibraryFilter = toggleMainLibraryFilter;
 
+// POPGROUPS_VEHICLE_LIBRARY_CATEGORY_GROUPS_V1
 function renderVehicleLibrary() {
-  els.vehicleLibrary.innerHTML = "";
+  const container = document.getElementById("vehicleLibrary");
+  if (!container) return;
 
-  const query = els.librarySearchBox.value
-    .toLowerCase()
-    .trim();
+  const source =
+    typeof vehicleMeta !== "undefined"
+      ? vehicleMeta
+      : window.vehicleMeta || {};
 
-  syncMainLibraryFilterButtons();
+  const searchInput =
+    document.getElementById("librarySearchBox") ||
+    document.getElementById("searchBox");
 
-  const sourceVehicles =
-    Object.values(vehicleMeta);
+  const query = (searchInput?.value || "").trim().toLowerCase();
 
-  const vehicles =
-    sourceVehicles.filter(meta => {
-      const flags = getMainLibraryVehicleFlags(meta);
+  const vehicles = Object.entries(source || {})
+    .map(([key, value]) => {
+      const meta = value || {};
+      return {
+        ...meta,
+        modelName: meta.modelName || meta.model || key
+      };
+    })
+    .filter((meta) => meta.modelName)
+    .filter((meta) => {
+      if (!query) return true;
 
-      if (
-        window.mainLibraryInstalledOnly === true &&
-        flags.installed !== true
-      ) {
-        return false;
-      }
+      const haystack = [
+        meta.modelName,
+        meta.displayName,
+        meta.name,
+        meta.vehicleName,
+        meta.gameName,
+        meta.make,
+        meta.manufacturer,
+        meta.model,
+        meta.class,
+        meta.vehicleClass,
+        meta.className,
+        meta.category,
+        meta.packName,
+        meta.dlcName,
+        meta.handlingId,
+        meta.handlingName
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-      if (
-        window.mainLibraryFavoritesOnly === true &&
-        flags.favorite !== true
-      ) {
-        return false;
-      }
-
-      return true;
+      return haystack.includes(query);
     });
 
   if (!vehicles.length) {
-    els.vehicleLibrary.innerHTML = `
-      <p class="small">
-        Drop vehicles.meta files to build the library.
-      </p>
-    `;
-
+    container.innerHTML = '<div class="library-empty">No vehicles match the current library filter.</div>';
     return;
   }
 
-  const filtered = vehicles.filter(meta => {
-    if (!query) return true;
+  const categoryOrder = [
+    "Super",
+    "Sports",
+    "Sports Classics",
+    "Muscle",
+    "Sedans",
+    "Coupes",
+    "Compacts",
+    "SUVs",
+    "Off-Road",
+    "Vans",
+    "Motorcycles",
+    "Commercial",
+    "Industrial",
+    "Utility",
+    "Service",
+    "Emergency",
+    "Military",
+    "Open Wheel",
+    "Boats",
+    "Planes",
+    "Helicopters",
+    "Cycles",
+    "Trains",
+    "Uncategorized"
+  ];
 
-    const pack =
-      getPackForModel(meta.modelName);
+  function cleanCategory(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "Uncategorized";
 
-    const asset =
-      getVehicleAsset(meta.modelName);
+    const normalized = raw
+      .replace(/^vehicle[_\s-]*/i, "")
+      .replace(/^class[_\s-]*/i, "")
+      .replace(/_/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-    const tier =
-      getLoadTier(asset?.totalBytes || 0);
+    const lower = normalized.toLowerCase();
 
-    const blob = [
-      ...Object.values(meta),
-      ...(pack ? Object.values(pack) : []),
-      tier.label,
-      asset?.baseYft?.name || "",
-      asset?.hiYft?.name || "",
-      asset?.baseYtd?.name || ""
-    ]
-      .join(" ")
-      .toLowerCase();
+    const known = categoryOrder.find((item) => item.toLowerCase() === lower);
+    if (known) return known;
 
-    return blob.includes(query);
+    return normalized.replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  function getCategory(meta) {
+    return cleanCategory(
+      meta.vehicleClass ||
+      meta.className ||
+      meta.class ||
+      meta.category ||
+      meta.vehicleCategory ||
+      meta.vehicleType ||
+      meta.type
+    );
+  }
+
+  const groups = new Map();
+
+  vehicles.forEach((meta) => {
+    const category = getCategory(meta);
+    if (!groups.has(category)) groups.set(category, []);
+    groups.get(category).push(meta);
   });
 
-  const grouped = {};
+  const sortedGroups = Array.from(groups.entries()).sort(([a], [b]) => {
+    const ai = categoryOrder.indexOf(a);
+    const bi = categoryOrder.indexOf(b);
 
-  filtered.forEach(meta => {
-    const pack =
-      getPackForModel(meta.modelName);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
 
-    const className = pack
-      ? `PACK: ${pack.name}`
-      : (
-          meta.vehicleClass ||
-          "UNKNOWN_CLASS"
-        );
-
-    if (!grouped[className]) {
-      grouped[className] = [];
-    }
-
-    grouped[className].push(meta);
+    return a.localeCompare(b);
   });
 
-  Object.keys(grouped)
-    .sort()
-    .forEach(className => {
-      grouped[className].sort(
-        (a, b) =>
-          a.modelName.localeCompare(
-            b.modelName
-          )
-      );
+  container.innerHTML = sortedGroups
+    .map(([category, items]) => {
+      const cards = items
+        .sort((a, b) => String(a.modelName || "").localeCompare(String(b.modelName || "")))
+        .map((meta) => renderLibraryCard(meta))
+        .join("");
 
-      const classDiv =
-        document.createElement("div");
-
-      classDiv.className = "library-class";
-
-      classDiv.innerHTML = `
-        <div class="library-class-header">
-          ${escapeHTML(className)}
-
-          <span class="count">
-            — ${grouped[className].length}
-          </span>
-        </div>
-
-        <div class="library-class-body">
-          <div class="library-grid">
-            ${grouped[className]
-              .map(meta =>
-                renderLibraryCard(meta)
-              )
-              .join("")}
+      return `
+        <section class="library-category-group">
+          <button class="library-category-header" type="button">
+            <span>${escapeHtml(category)}</span>
+            <strong>${items.length}</strong>
+          </button>
+          <div class="library-category-cards">
+            ${cards}
           </div>
-        </div>
+        </section>
       `;
-
-      const body =
-        classDiv.querySelector(
-          ".library-class-body"
-        );
-
-      if (
-        openLibraryClasses.has(className) ||
-        query
-      ) {
-        body.style.display = "block";
-      }
-
-      classDiv
-        .querySelector(
-          ".library-class-header"
-        )
-        .addEventListener("click", () => {
-          const isOpen =
-            body.style.display === "block";
-
-          if (isOpen) {
-            body.style.display = "none";
-            openLibraryClasses.delete(className);
-          } else {
-            body.style.display = "block";
-            openLibraryClasses.add(className);
-          }
-        });
-
-      els.vehicleLibrary.appendChild(
-        classDiv
-      );
-    });
+    })
+    .join("");
 }
 
 function renderLibraryCard(meta) {
