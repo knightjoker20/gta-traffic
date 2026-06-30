@@ -226,6 +226,76 @@
     return cleaned.replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
+
+  // POPGROUPS_CATEGORY_INFERENCE_V3
+  function findDeepValueByKeys(source, keys, depth = 0) {
+    if (!source || typeof source !== "object" || depth > 4) return "";
+
+    const wanted = new Set(keys.map((key) => key.toLowerCase()));
+
+    for (const [key, value] of Object.entries(source)) {
+      if (wanted.has(String(key).toLowerCase()) && value !== null && value !== undefined && typeof value !== "object") {
+        return String(value);
+      }
+    }
+
+    for (const value of Object.values(source)) {
+      if (value && typeof value === "object") {
+        const found = findDeepValueByKeys(value, keys, depth + 1);
+        if (found) return found;
+      }
+    }
+
+    return "";
+  }
+
+  function inferVehicleCategory(record) {
+    const direct = findDeepValueByKeys(record, [
+      "vehicleClass",
+      "vehicleClassName",
+      "className",
+      "class",
+      "category",
+      "vehicleCategory",
+      "vehicleType",
+      "type",
+      "displayClass",
+      "classDisplayName",
+      "vehicle_class",
+      "vehicle_class_name",
+      "vehicle_type"
+    ]);
+
+    const normalized = normalizeCategory(direct);
+
+    if (normalized && normalized !== "Uncategorized") {
+      return normalized;
+    }
+
+    const model = String(record?.modelName || record?.model || record?.spawnName || "").toLowerCase();
+    const handling = String(record?.handlingId || record?.handlingName || "").toLowerCase();
+    const pack = String(record?.packName || record?.dlcName || record?.sourcePack || "").toLowerCase();
+    const text = [model, handling, pack].join(" ");
+
+    if (/police|sheriff|fbi|riot|ambulance|fire|ems|lguard|pranger/.test(text)) return "Emergency";
+    if (/bus|coach|taxi|trash|mule|pounder|benson|packer|phantom|hauler|stockade/.test(text)) return "Commercial";
+    if (/barracks|crusader|rhino|khanjali|apc|chernobog|halftrack/.test(text)) return "Military";
+    if (/dinghy|jetmax|speeder|squalo|suntrap|toro|tropic|marquis|seashark|boat/.test(text)) return "Boats";
+    if (/maverick|frogger|buzzard|annihilator|havok|swift|volatus|heli/.test(text)) return "Helicopters";
+    if (/luxor|shamal|cuban|dodo|mammatus|velum|vestra|plane|jet/.test(text)) return "Planes";
+    if (/bati|akuma|daemon|double|hexer|nemesis|pcj|ruffian|sanchez|vader|wolfsbane|zombie|bike/.test(text)) return "Motorcycles";
+    if (/rebel|sandking|mesa|dubsta|everon|freecrawler|hellion|kamacho|riata|yosemite|outlaw|offroad/.test(text)) return "Off-Road";
+    if (/issi|panto|brioso|blista|rhapsody/.test(text)) return "Compacts";
+    if (/baller|cavalcade|gresley|huntley|landstalker|mesa|patriot|radi|rocoto|seminole|xls/.test(text)) return "SUVs";
+    if (/dominator|dukes|gauntlet|ruiner|sabregt|stalion|tampa|vigero|vamos|yosemite|ellie/.test(text)) return "Muscle";
+    if (/adder|zentorno|t20|osiris|entity|cheetah|turismo|vacca|infernus|reaper|nero|tyrus|xa21|super/.test(text)) return "Super";
+    if (/ninef|alpha|banshee|buffalo|carbonizzare|comet|coquette|elegy|feltzer|furore|jester|khamelion|kuruma|lynx|massacro|omnis|pariah|rapidgt|schafter|sultan|surano|verlierer|sports/.test(text)) return "Sports";
+    if (/asea|asterope|emperor|fugitive|glendale|ingot|intruder|premier|primo|regina|schafter|stanier|stratum|stretch|superd|surge|tailgater|warrener|washington/.test(text)) return "Sedans";
+    if (/cogcabrio|exemplar|f620|felon|jackal|oracle|sentinel|windsor|zion/.test(text)) return "Coupes";
+
+    return "Uncategorized";
+  }
+
   function normalizeModelName(value) {
     return String(value || "")
       .trim()
@@ -383,17 +453,7 @@
         record.gameName ||
         record.modelName ||
         record.model,
-      category: normalizeCategory(
-        record.vehicleClass ||
-        record.className ||
-        record.class ||
-        record.category ||
-        record.vehicle_class ||
-        meta.vehicleClass ||
-        meta.className ||
-        meta.class ||
-        meta.category
-      ),
+      category: inferVehicleCategory(record),
       handlingId:
         record.handlingId ||
         record.handlingName ||
@@ -840,6 +900,80 @@ ${(group.entries || []).map((entry) => `        <Item>${escapeXml(entry)}</Item>
     renderAll();
   }
 
+
+  // POPGROUPS_CLOUD_SAVE_HANDLER_V3
+  function buildCloudProjectPayload() {
+    return {
+      version: 3,
+      tool: "popgroups",
+      savedAt: new Date().toISOString(),
+      vehicleGroups: state.vehicleGroups,
+      pedGroups: state.pedGroups,
+      metaVehicles: Array.from(state.metaVehicles.values()),
+      cloudVehicleCount: state.cloudVehicles.size,
+      installedModels: Array.from(state.installedModels),
+      summary: {
+        vehicleGroups: state.vehicleGroups.length,
+        pedGroups: state.pedGroups.length,
+        metaVehicles: state.metaVehicles.size,
+        installedModels: state.installedModels.size
+      }
+    };
+  }
+
+  async function saveCloudProject() {
+    const name = $("pgCloudProjectName")?.value?.trim() || "PopGroups traffic setup";
+    const description = $("pgCloudProjectDescription")?.value?.trim() || "";
+    const payload = buildCloudProjectPayload();
+
+    setStatus("pgCloudProjectStatus", "Saving PopGroups workspace to cloud...");
+
+    try {
+      const response = await fetch("/api/saved-projects", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name,
+          title: name,
+          description,
+          projectType: "popgroups",
+          type: "popgroups",
+          payload,
+          summary: payload.summary,
+          files: []
+        })
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.ok === false) {
+        throw new Error(result.error || "Cloud project save failed");
+      }
+
+      setStatus("pgCloudProjectStatus", "Saved to cloud project dashboard.", "success");
+    } catch (error) {
+      console.error(error);
+
+      localStorage.setItem(
+        "gtaTraffic.popgroups.lastCloudProjectDraft",
+        JSON.stringify({
+          name,
+          description,
+          payload
+        })
+      );
+
+      setStatus(
+        "pgCloudProjectStatus",
+        "Cloud save did not complete. A local draft backup was saved in this browser.",
+        "error"
+      );
+    }
+  }
+
   function bindEvents() {
     bindDropZone("pgPopgroupsDropZone", "pgPopgroupsFile", handlePopgroupsFiles);
     bindDropZone("pgMetaDropZone", "pgMetaFile", handleMetaFiles);
@@ -880,6 +1014,7 @@ ${(group.entries || []).map((entry) => `        <Item>${escapeXml(entry)}</Item>
 
     $("pgExportXml")?.addEventListener("click", exportRebuiltXml);
     $("pgClearWorkspace")?.addEventListener("click", clearWorkspace);
+    $("pgSaveCloudProject")?.addEventListener("click", saveCloudProject);
   }
 
   document.addEventListener("DOMContentLoaded", () => {

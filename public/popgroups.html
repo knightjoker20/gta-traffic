@@ -26,6 +26,37 @@
       </div>
     </section>
 
+    <!-- POPGROUPS_CLOUD_PROJECT_SAVE_V3 -->
+    <section class="pg-cloud-save module-card">
+      <div class="pg-cloud-save-copy">
+        <p class="eyebrow">Cloud Workspace</p>
+        <h2>Cloud Project Save</h2>
+        <p>
+          Save the current PopGroups workspace to your account dashboard, including loaded groups,
+          vehicles.meta references, installed scan results, and library matching context.
+        </p>
+      </div>
+
+      <div class="pg-cloud-save-form">
+        <label>
+          Project Name
+          <input id="pgCloudProjectName" type="text" value="PopGroups traffic setup" maxlength="90">
+        </label>
+
+        <label>
+          Description
+          <input id="pgCloudProjectDescription" type="text" placeholder="Optional note about this setup" maxlength="180">
+        </label>
+
+        <div class="pg-cloud-save-actions">
+          <button id="pgSaveCloudProject" class="pg-button" type="button">Save to Cloud Project</button>
+          <a class="pg-button pg-button-secondary" href="dashboard.html">View Dashboard</a>
+        </div>
+
+        <div id="pgCloudProjectStatus" class="pg-status-line">Not saved yet.</div>
+      </div>
+    </section>
+
     <section class="pg-module-grid">
       <article class="module-card pg-module">
         <div class="pg-module-heading">
