@@ -1,189 +1,246 @@
-﻿<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <title>PopGroups Workspace | GTA Traffic Studio</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Popgroups Workspace | GTA Traffic Studio</title>
+
   <link rel="stylesheet" href="/css/site-shell.css">
-  <link rel="stylesheet" href="css/style.css?v=popgroups-rebuild-1">
-  <link rel="stylesheet" href="css/popgroups.css?v=popgroups-rebuild-2">
+  <link rel="stylesheet" href="css/style.css?v=popgroups-legacy-clean-1">
+  <link rel="stylesheet" href="css/popgroups.css?v=popgroups-legacy-clean-1">
 </head>
-<body data-page="popgroups" class="popgroups-workspace-page">
-  <main class="pg-page-shell">
-    <section class="pg-hero module-card">
-      <div>
-        <p class="eyebrow">Traffic Workspace</p>
-        <h1>Popgroups Workspace</h1>
-        <p>
-          Import PopGroups XML, connect vehicles.meta data, scan installed add-on vehicles,
-          and build a cleaner traffic reference without the old pack builder clutter.
-        </p>
+
+<body data-page="popgroups" class="popgroups-legacy-page">
+<header class="app-header">
+  <div class="brand-left">
+    <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic Studio Logo">
+    <div class="brand-copy">
+      <div class="brand-title">GTA Traffic Studio</div>
+      <div class="tagline">Traffic tools built for modders</div>
+    </div>
+  </div>
+</header>
+
+<div id="siteToolMenu"></div>
+
+<section class="pg-legacy-hero">
+  <div>
+    <p class="eyebrow">Traffic Workspace</p>
+    <h1>PopGroups Workspace</h1>
+    <p>Import PopGroups XML, load vehicles.meta references, scan installed add-on vehicles, drag vehicles into groups, and export a rebuilt PopGroups file.</p>
+  </div>
+</section>
+
+<main class="pg-legacy-shell">
+
+  <section class="pg-cloud-project panel">
+    <div>
+      <h2>Cloud Project Save</h2>
+      <p class="small">Save the current PopGroups workspace as a cloud project connected to your account dashboard.</p>
+    </div>
+
+    <div class="pg-cloud-project-form">
+      <label>
+        Project Name
+        <input id="projectNameInput" value="PopGroups traffic setup">
+      </label>
+
+      <label>
+        Description
+        <input id="projectDescriptionInput" placeholder="Optional note about this setup">
+      </label>
+
+      <div class="toolbar">
+        <button id="saveCloudProjectBtn" class="btn-blue" type="button">Save to Cloud Project</button>
+        <button class="secondary" type="button" onclick="location.href='dashboard.html'">View Dashboard</button>
       </div>
 
-      <div class="pg-hero-actions">
-        <a class="pg-button pg-button-secondary" href="vehicle-library.html">Open Vehicle Library</a>
-        <a class="pg-button pg-button-secondary" href="vehicle-meta.html">Open Vehicles.meta</a>
+      <div id="cloudProjectStatus" class="small">Not saved yet.</div>
+    </div>
+  </section>
+
+  <div class="pg-top-grid">
+
+    <section id="importsPanel" class="panel tool-card imports-card">
+      <h2><span class="icon-orange">⇩</span> Imports</h2>
+
+      <div class="drop-row">
+        <div id="popgroupsDropZone" class="dropZone drop-popgroups">
+          <div class="drop-icon orange-icon">▱</div>
+          <div>Drop your popgroups.xml</div>
+          <small>or popgroups.ymt XML export here</small>
+        </div>
+
+        <div id="metaDropZone" class="dropZone drop-meta">
+          <div class="drop-icon purple-icon">▱</div>
+          <div>Drop vehicles.meta here</div>
+          <small>Used for model names, classes, handling IDs, and sidebar matching.</small>
+        </div>
       </div>
-    </section>
 
-    <!-- POPGROUPS_CLOUD_PROJECT_SAVE_V3 -->
-    <section class="pg-cloud-save module-card">
-      <div class="pg-cloud-save-copy">
-        <p class="eyebrow">Cloud Workspace</p>
-        <h2>Cloud Project Save</h2>
-        <p>
-          Save the current PopGroups workspace to your account dashboard, including loaded groups,
-          vehicles.meta references, installed scan results, and library matching context.
-        </p>
+      <input type="file" id="metaFilePicker" multiple accept=".meta,.xml,.txt">
+
+      <div class="toolbar action-row">
+        <button class="btn-orange" onclick="showSection('vehicles')">Vehicles</button>
+        <button class="btn-purple" onclick="showSection('peds')">Peds</button>
+        <button class="btn-blue" onclick="toggleImageMode()">Toggle Images</button>
+        <button class="btn-green" onclick="refreshImages()">Refresh Images</button>
+        <button class="secondary" onclick="openAllGroups()">Open All</button>
+        <button class="secondary" onclick="closeAllGroups()">Close All</button>
       </div>
 
-      <div class="pg-cloud-save-form">
-        <label>
-          Project Name
-          <input id="pgCloudProjectName" type="text" value="PopGroups traffic setup" maxlength="90">
-        </label>
-
-        <label>
-          Description
-          <input id="pgCloudProjectDescription" type="text" placeholder="Optional note about this setup" maxlength="180">
-        </label>
-
-        <div class="pg-cloud-save-actions">
-          <button id="pgSaveCloudProject" class="pg-button" type="button">Save to Cloud Project</button>
-          <a class="pg-button pg-button-secondary" href="dashboard.html">View Dashboard</a>
-        </div>
-
-        <div id="pgCloudProjectStatus" class="pg-status-line">Not saved yet.</div>
+      <div class="toolbar action-row">
+        <button onclick="copyVehGroupsToClipboard()">Copy VEH Groups</button>
+        <button onclick="copyCurrentGroupOnly()">Copy Current Group</button>
+        <button onclick="exportEditedXML()">Export Safe XML</button>
       </div>
-    </section>
 
-    <section class="pg-module-grid">
-      <article class="module-card pg-module">
-        <div class="pg-module-heading">
-          <p class="eyebrow">Cloud Reference</p>
-          <h2>Cloud Vehicle Metadata</h2>
-        </div>
-        <p class="pg-muted">
-          Pulls saved vehicle metadata from the cloud library so PopGroups work can reference your existing vehicle records.
-        </p>
-        <div id="pgCloudStatus" class="pg-status-box">Loading cloud vehicle metadata...</div>
-      </article>
+      <div id="status"></div>
+      <div id="metaStatus"></div>
+      <div id="stats"></div>
 
-      <article class="module-card pg-module">
-        <div class="pg-module-heading">
-          <p class="eyebrow">Import</p>
-          <h2>PopGroups XML</h2>
-        </div>
-        <div id="pgPopgroupsDropZone" class="pg-drop-zone">
-          <strong>Drop popgroups.ymt.xml here</strong>
-          <span>or click to browse</span>
-        </div>
-        <input id="pgPopgroupsFile" class="pg-hidden-input" type="file" accept=".xml,.ymt,.txt">
-        <div id="pgPopgroupsStatus" class="pg-status-line">No PopGroups file loaded.</div>
-      </article>
-
-      <article class="module-card pg-module">
-        <div class="pg-module-heading">
-          <p class="eyebrow">Import</p>
-          <h2>Vehicles.meta</h2>
-        </div>
-        <div id="pgMetaDropZone" class="pg-drop-zone">
-          <strong>Drop vehicles.meta here</strong>
-          <span>Used for model names, handling IDs, class/category hints, and library matching.</span>
-        </div>
-        <input id="pgMetaFile" class="pg-hidden-input" type="file" accept=".meta,.xml,.txt">
-        <div id="pgMetaStatus" class="pg-status-line">No vehicles.meta file loaded.</div>
-      </article>
-
-      <article class="module-card pg-module pg-scanner-module">
-        <div class="pg-module-heading">
-          <p class="eyebrow">Scanner</p>
-          <h2>Installed Add-on Vehicles</h2>
-        </div>
-        <p class="pg-muted">
-          Paste or drop a file list from an add-on DLC folder. The scanner detects .yft/.ytd model names and marks what is installed.
-        </p>
-        <div id="pgScannerDropZone" class="pg-drop-zone pg-drop-zone-compact">
-          <strong>Drop file list here</strong>
-          <span>Accepts copied folder listings, OpenIV export lists, or plain text.</span>
-        </div>
-        <input id="pgScannerFiles" class="pg-hidden-input" type="file" multiple accept=".txt,.log,.xml,.meta,.ini,.csv">
-        <textarea id="pgScannerInput" class="pg-textarea" placeholder="Paste installed vehicle file list here, example:&#10;dlcpacks/mycar/dlc.rpf/.../vehicles.rpf/2018zl1.yft&#10;2018zl1_hi.yft&#10;2018zl1.ytd"></textarea>
-        <div class="pg-button-row">
-          <button id="pgRunScanner" class="pg-button" type="button">Run Scanner</button>
-          <button id="pgMarkInstalled" class="pg-button pg-button-secondary" type="button">Mark Installed in Cloud</button>
-          <button id="pgCopyInstalled" class="pg-button pg-button-secondary" type="button">Copy Models</button>
-          <button id="pgClearScanner" class="pg-button pg-button-danger" type="button">Clear</button>
-        </div>
-        <div id="pgScannerStatus" class="pg-status-line">No installed add-on scan yet.</div>
-      </article>
-    </section>
-
-    <section class="pg-workspace-layout">
-      <article class="module-card pg-editor-panel">
-        <div class="pg-panel-header">
+      <div class="workspace-save-box">
+        <div class="workspace-save-heading">
           <div>
-            <p class="eyebrow">Editor</p>
-            <h2>Loaded PopGroups</h2>
+            <h3>Saved Workspace</h3>
+            <p class="small">Parsed metadata and the most recent PopGroups project are restored automatically in this browser.</p>
           </div>
-          <div class="pg-button-row pg-button-row-right">
-            <button id="pgShowVehicles" class="pg-button pg-button-small is-active" type="button">Vehicles</button>
-            <button id="pgShowPeds" class="pg-button pg-button-small pg-button-secondary" type="button">Peds</button>
-          </div>
+          <span class="workspace-autosave-badge">Autosave On</span>
         </div>
 
-        <div id="pgStats" class="pg-stat-grid">
-          <div><strong>0</strong><span>Vehicle Groups</span></div>
-          <div><strong>0</strong><span>Ped Groups</span></div>
-          <div><strong>0</strong><span>Meta Vehicles</span></div>
-          <div><strong>0</strong><span>Installed</span></div>
+        <div id="workspaceStorageStatus">
+          <div class="small">Checking browser storage...</div>
         </div>
 
-        <div class="pg-toolbar">
-          <input id="pgGroupSearch" class="pg-search" type="search" placeholder="Search groups or vehicle names...">
-          <button id="pgAddGroup" class="pg-button pg-button-secondary" type="button">Add Group</button>
-          <button id="pgExportXml" class="pg-button pg-button-secondary" type="button">Export Rebuilt XML</button>
-          <button id="pgClearWorkspace" class="pg-button pg-button-danger" type="button">Clear Workspace</button>
+        <div class="workspace-save-actions">
+          <button class="btn-green" type="button" onclick="saveWorkspaceNow()">Save Now</button>
+          <button type="button" onclick="exportWorkspaceBackup()">Export Workspace Backup</button>
+          <button class="secondary" type="button" onclick="document.getElementById('workspaceBackupImport').click()">Import Workspace Backup</button>
+          <button class="secondary" type="button" onclick="clearSavedVehicleMetadata()">Clear Meta Cache</button>
+          <button class="danger" type="button" onclick="clearSavedPopgroupsProject()">Clear Saved Popgroups</button>
+          <input id="workspaceBackupImport" type="file" accept=".json" hidden>
         </div>
-
-        <div id="pgGroupList" class="pg-group-list">
-          <div class="pg-empty-state">
-            Import a PopGroups XML file to begin.
-          </div>
-        </div>
-      </article>
-
-      <aside class="module-card pg-library-panel">
-        <div class="pg-panel-header">
-          <div>
-            <p class="eyebrow">Reference</p>
-            <h2>Vehicle Library</h2>
-          </div>
-          <a class="pg-button pg-button-small" href="vehicle-library.html">Open Full Library</a>
-        </div>
-
-        <input id="pgLibrarySearch" class="pg-search" type="search" placeholder="Search model, name, class, handling, pack...">
-
-        <div class="pg-library-filters">
-          <button id="pgFilterInstalled" class="pg-button pg-button-small pg-button-secondary" type="button">Installed</button>
-          <button id="pgFilterMeta" class="pg-button pg-button-small pg-button-secondary" type="button">Meta Loaded</button>
-          <button id="pgFilterCloud" class="pg-button pg-button-small pg-button-secondary" type="button">Cloud</button>
-        </div>
-
-        <div id="pgLibraryList" class="pg-library-list">
-          <div class="pg-empty-state">Vehicle library will appear after cloud metadata or vehicles.meta loads.</div>
-        </div>
-      </aside>
+      </div>
     </section>
-  </main>
 
-  <script src="js/vehiclecloud.js?v=popgroups-rebuild-1"></script>
-  <script src="js/shared/metafilecloud.js?v=popgroups-builder-1"></script>
-  <script src="js/popgroups-workspace.js?v=popgroups-rebuild-2"></script>
-  <script src="/js/shared/siteheader.js"></script>
-  <script src="js/shared/siteshell.js"></script>
-  <script src="/js/accountnav.js"></script>
+    <section class="panel tool-card pg-installed-scanner">
+      <h2><span class="icon-orange">⇧</span> Installed Add-on Vehicle Scanner</h2>
+      <p class="small">Paste or drop a DLC folder/file list. The scanner detects .yft and .ytd model names and helps mark installed vehicles.</p>
+
+      <div id="installedScannerDropZone" class="dropZone asset-drop-zone">
+        <div class="drop-icon orange-icon">◫</div>
+        <div>Drop installed vehicle file list here</div>
+        <small>Accepts copied folder listings, OpenIV export lists, or plain text.</small>
+      </div>
+
+      <textarea id="installedScannerInput" placeholder="Paste installed vehicle file list here, example:
+dlcpacks/mycar/dlc.rpf/.../vehicles.rpf/2018zl1.yft
+2018zl1_hi.yft
+2018zl1.ytd"></textarea>
+
+      <div class="toolbar action-row">
+        <button id="pgRunInstalledScan" class="btn-orange" type="button">Run Scanner</button>
+        <button id="pgMarkInstalledCloud" class="btn-blue" type="button">Mark Installed in Cloud</button>
+        <button id="pgCopyInstalledModels" type="button">Copy Models</button>
+        <button id="pgClearInstalledScan" class="danger" type="button">Clear</button>
+      </div>
+
+      <div id="installedScannerStatus" class="small">No installed add-on scan yet.</div>
+    </section>
+
+  </div>
+
+  <div id="mainLayout" class="pg-wide-main-layout">
+    <section id="editorPanel" class="panel">
+      <h2 id="sectionTitle">Vehicles</h2>
+
+      <div class="search-wrap">
+        <input id="searchBox" placeholder="Search current popgroups...">
+      </div>
+
+      <div id="results"></div>
+    </section>
+
+    <section id="libraryPanel" class="panel">
+      <div class="pg-library-heading">
+        <h2>Vehicle Library</h2>
+        <button class="btn-orange" type="button" onclick="location.href='vehicle-library.html'">Open Full Library</button>
+      </div>
+
+      <div class="search-wrap">
+        <input id="librarySearchBox" placeholder="Search library vehicle, class, make, handling, pack...">
+      </div>
+
+      <div id="vehicleLibrary"></div>
+    </section>
+  </div>
+
+  <!-- Hidden compatibility elements for legacy scripts. Do not display. -->
+  <section class="pg-hidden-legacy">
+    <section id="packBuilderPanel"></section>
+    <section id="packPanel"></section>
+    <section id="lodScannerPanel"></section>
+
+    <input id="packDbImport" type="file">
+    <input id="assetFilePicker" type="file">
+    <input id="assetFolderPicker" type="file">
+    <input id="assetDbImport" type="file">
+
+    <div id="packList"></div>
+    <div id="packStatus"></div>
+    <div id="activePackBox"></div>
+    <input id="packSearchBox">
+
+    <input id="packNameInput">
+    <input id="packCreatorInput">
+    <input id="packDlcInput">
+    <input id="packVersionInput">
+    <input id="packWebsiteInput">
+    <input id="packNotesInput">
+
+    <input id="builderPackNameInput">
+    <input id="builderCreatorInput">
+    <input id="builderDlcInput">
+    <input id="builderVersionInput">
+    <input id="builderWebsiteInput">
+    <input id="builderNotesInput">
+    <textarea id="builderFileListInput"></textarea>
+    <div id="packBuilderStatus"></div>
+    <div id="packBuilderVehicleList"></div>
+
+    <div id="assetDropZone"></div>
+    <div id="assetStatus"></div>
+    <div id="assetSummary"></div>
+  </section>
+
+</main>
+
+<button id="backToTopBtn" class="back-to-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<footer class="app-footer">
+  <div>Built for Modders</div>
+  <div>Browser Based</div>
+  <div>Your Files Stay Local</div>
+  <div>Export Ready</div>
+  <div><strong>GTA Traffic Studio</strong></div>
+</footer>
+
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/vehiclecloud.js"></script>
+<script src="js/projectscloud.js"></script>
+<script src="js/workspacestorage.js"></script>
+<script src="js/popgroups.js"></script>
+<script src="js/vehiclemeta.js"></script>
+<script src="js/packdatabase.js"></script>
+<script src="js/imagemanager.js"></script>
+<script src="js/exporttools.js"></script>
+<script src="js/lodtracker.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+<script src="js/popgroups-workspace.js"></script>
+<script src="/js/shared/siteheader.js"></script>
+<script src="js/shared/siteshell.js"></script>
+<script src="/js/accountnav.js"></script>
 </body>
 </html>
-
-
