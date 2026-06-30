@@ -1738,6 +1738,412 @@ function normalizePackImportBody(body) {
   };
 }
 
+function normalizeAppearanceImportText(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const clean = value.trim();
+
+  return clean || null;
+}
+
+function normalizeAppearanceImportKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function appearanceImportId(workspaceId, type, key) {
+  const cleanWorkspace =
+    normalizeAppearanceImportKey(workspaceId) || "default";
+
+  const cleanKey =
+    normalizeAppearanceImportKey(key) ||
+    Date.now().toString(36) + "_" + Math.random().toString(36).slice(2);
+
+  return cleanWorkspace + ":appearance:" + type + ":" + cleanKey;
+}
+
+function safeAppearanceJson(value) {
+  return JSON.stringify(value ?? null);
+}
+
+function normalizeVehicleAppearanceImportBody(body = {}) {
+  const workspaceId =
+    normalizeAppearanceImportText(body.workspaceId) ||
+    "default";
+
+  const sourceLabel =
+    normalizeAppearanceImportText(body.sourceLabel) ||
+    "Appearance Metadata";
+
+  const carvariations = body.carvariations || {};
+  const carcols = body.carcols || {};
+
+  const variationFileName =
+    normalizeAppearanceImportText(carvariations.fileName) ||
+    "carvariations.meta";
+
+  const carcolsFileName =
+    normalizeAppearanceImportText(carcols.fileName) ||
+    "carcols.meta";
+
+  const variations = Array.isArray(carvariations.vehicles)
+    ? carvariations.vehicles
+        .map(vehicle => {
+          const modelName =
+            normalizeAppearanceImportText(vehicle.modelName)?.toLowerCase();
+
+          if (!modelName) {
+            return null;
+          }
+
+          return {
+            id: appearanceImportId(workspaceId, "variation", modelName),
+            workspaceId,
+            modelName,
+            sourceFileName: variationFileName,
+            sourceLabel,
+            dlcFolder: normalizeAppearanceImportText(body.dlcFolder),
+            colors: Array.isArray(vehicle.colors) ? vehicle.colors : [],
+            kits: Array.isArray(vehicle.kits) ? vehicle.kits : [],
+            liveryCount: Number(vehicle.liveryCount || 0),
+            enabledLiveries: Array.isArray(vehicle.enabledLiveries)
+              ? vehicle.enabledLiveries
+              : [],
+            plateProbabilities: Array.isArray(vehicle.plateProbabilities)
+              ? vehicle.plateProbabilities
+              : [],
+            lightSettings: normalizeAppearanceImportText(vehicle.lightSettings),
+            sirenSettings: normalizeAppearanceImportText(vehicle.sirenSettings),
+            rawVariationJson: safeAppearanceJson(vehicle)
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  const kits = Array.isArray(carcols.kits)
+    ? carcols.kits
+        .map(kit => {
+          const kitName =
+            normalizeAppearanceImportText(kit.kitName);
+
+          if (!kitName) {
+            return null;
+          }
+
+          return {
+            id: appearanceImportId(workspaceId, "kit", kitName),
+            workspaceId,
+            kitName,
+            kitId: normalizeAppearanceImportText(kit.id),
+            kitType: normalizeAppearanceImportText(kit.kitType),
+            sourceFileName: carcolsFileName,
+            sourceLabel,
+            statModCount: Number(kit.statModCount || 0),
+            statModTypes: Array.isArray(kit.statModTypes)
+              ? kit.statModTypes
+              : [],
+            visibleModCount: Number(kit.visibleModCount || 0),
+            linkedModCount: Number(kit.linkedModCount || 0),
+            rawKitJson: safeAppearanceJson(kit)
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  const lights = Array.isArray(carcols.lights)
+    ? carcols.lights
+        .map(light => {
+          const lightId =
+            normalizeAppearanceImportText(light.id);
+
+          if (!lightId) {
+            return null;
+          }
+
+          return {
+            id: appearanceImportId(workspaceId, "light", lightId),
+            workspaceId,
+            lightId,
+            name: normalizeAppearanceImportText(light.name),
+            sourceFileName: carcolsFileName,
+            sourceLabel,
+            headLightTexture:
+              normalizeAppearanceImportText(light.headLightTexture),
+            headLightColor:
+              normalizeAppearanceImportText(light.headLightColor),
+            tailLightColor:
+              normalizeAppearanceImportText(light.tailLightColor),
+            indicatorColor:
+              normalizeAppearanceImportText(light.indicatorColor),
+            rawLightJson: safeAppearanceJson(light)
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  return {
+    workspaceId,
+    sourceLabel,
+    variations,
+    kits,
+    lights
+  };
+}
+
+async function handleVehicleAppearanceImport(request, env) {
+  const authorizationError =
+    checkLibraryWriteAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const parsed = await readJsonRequest(request);
+
+  if (parsed.error) {
+    return parsed.error;
+  }
+
+  const {
+    workspaceId,
+    variations,
+    kits,
+    lights
+  } = normalizeVehicleAppearanceImportBody(parsed.body || {});
+
+  if (
+    variations.length === 0 &&
+    kits.length === 0 &&
+    lights.length === 0
+  ) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "No vehicle appearance metadata was found to import"
+      },
+      400
+    );
+  }
+
+  if (variations.length > 5000) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "A maximum of 5000 vehicle appearance records may be imported per request"
+      },
+      400
+    );
+  }
+
+  if (kits.length > 1000 || lights.length > 1000) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "A maximum of 1000 mod kits and 1000 light settings may be imported per request"
+      },
+      400
+    );
+  }
+
+  const statements = [
+    env.DB
+      .prepare(`
+        INSERT OR IGNORE INTO workspaces (
+          id,
+          owner_user_id,
+          name,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ?,
+          NULL,
+          'Default Workspace',
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+      `)
+      .bind(workspaceId)
+  ];
+
+  variations.forEach(variation => {
+    statements.push(
+      env.DB.prepare(`
+        INSERT INTO vehicle_appearance_variations (
+          id,
+          workspace_id,
+          model_name,
+          source_file_name,
+          source_label,
+          dlc_folder,
+          colors_json,
+          kits_json,
+          livery_count,
+          enabled_liveries_json,
+          plate_probabilities_json,
+          light_settings,
+          siren_settings,
+          raw_variation_json,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+        ON CONFLICT(workspace_id, model_name)
+        DO UPDATE SET
+          source_file_name = excluded.source_file_name,
+          source_label = excluded.source_label,
+          dlc_folder = excluded.dlc_folder,
+          colors_json = excluded.colors_json,
+          kits_json = excluded.kits_json,
+          livery_count = excluded.livery_count,
+          enabled_liveries_json = excluded.enabled_liveries_json,
+          plate_probabilities_json = excluded.plate_probabilities_json,
+          light_settings = excluded.light_settings,
+          siren_settings = excluded.siren_settings,
+          raw_variation_json = excluded.raw_variation_json,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(
+        variation.id,
+        variation.workspaceId,
+        variation.modelName,
+        variation.sourceFileName,
+        variation.sourceLabel,
+        variation.dlcFolder,
+        safeAppearanceJson(variation.colors),
+        safeAppearanceJson(variation.kits),
+        variation.liveryCount,
+        safeAppearanceJson(variation.enabledLiveries),
+        safeAppearanceJson(variation.plateProbabilities),
+        variation.lightSettings,
+        variation.sirenSettings,
+        variation.rawVariationJson
+      )
+    );
+  });
+
+  kits.forEach(kit => {
+    statements.push(
+      env.DB.prepare(`
+        INSERT INTO vehicle_appearance_mod_kits (
+          id,
+          workspace_id,
+          kit_name,
+          kit_id,
+          kit_type,
+          source_file_name,
+          source_label,
+          stat_mod_count,
+          stat_mod_types_json,
+          visible_mod_count,
+          linked_mod_count,
+          raw_kit_json,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+        ON CONFLICT(workspace_id, kit_name)
+        DO UPDATE SET
+          kit_id = excluded.kit_id,
+          kit_type = excluded.kit_type,
+          source_file_name = excluded.source_file_name,
+          source_label = excluded.source_label,
+          stat_mod_count = excluded.stat_mod_count,
+          stat_mod_types_json = excluded.stat_mod_types_json,
+          visible_mod_count = excluded.visible_mod_count,
+          linked_mod_count = excluded.linked_mod_count,
+          raw_kit_json = excluded.raw_kit_json,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(
+        kit.id,
+        kit.workspaceId,
+        kit.kitName,
+        kit.kitId,
+        kit.kitType,
+        kit.sourceFileName,
+        kit.sourceLabel,
+        kit.statModCount,
+        safeAppearanceJson(kit.statModTypes),
+        kit.visibleModCount,
+        kit.linkedModCount,
+        kit.rawKitJson
+      )
+    );
+  });
+
+  lights.forEach(light => {
+    statements.push(
+      env.DB.prepare(`
+        INSERT INTO vehicle_appearance_light_settings (
+          id,
+          workspace_id,
+          light_id,
+          name,
+          source_file_name,
+          source_label,
+          head_light_texture,
+          head_light_color,
+          tail_light_color,
+          indicator_color,
+          raw_light_json,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+        ON CONFLICT(workspace_id, light_id)
+        DO UPDATE SET
+          name = excluded.name,
+          source_file_name = excluded.source_file_name,
+          source_label = excluded.source_label,
+          head_light_texture = excluded.head_light_texture,
+          head_light_color = excluded.head_light_color,
+          tail_light_color = excluded.tail_light_color,
+          indicator_color = excluded.indicator_color,
+          raw_light_json = excluded.raw_light_json,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(
+        light.id,
+        light.workspaceId,
+        light.lightId,
+        light.name,
+        light.sourceFileName,
+        light.sourceLabel,
+        light.headLightTexture,
+        light.headLightColor,
+        light.tailLightColor,
+        light.indicatorColor,
+        light.rawLightJson
+      )
+    );
+  });
+
+  await env.DB.batch(statements);
+
+  return jsonResponse({
+    ok: true,
+    workspaceId,
+    variationsImported: variations.length,
+    modKitsImported: kits.length,
+    lightSettingsImported: lights.length
+  });
+}
+
 async function handlePackImport(request, env) {
   const authorizationError =
     checkLibraryWriteAuthorization(request, env);
@@ -4052,6 +4458,12 @@ if (
   return await handleVehiclePackList(request, env);
 }
 
+if (
+  request.method === "POST" &&
+  url.pathname === "/api/vehicle-appearance/import"
+) {
+  return await handleVehicleAppearanceImport(request, env);
+}
 if (
   request.method === "POST" &&
   url.pathname === "/api/packs/import"

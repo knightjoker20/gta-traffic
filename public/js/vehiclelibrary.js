@@ -2266,3 +2266,127 @@ if (pageSizeSelect) {
 })();
 
 
+
+/* VEHICLE_APPEARANCE_CLOUD_SAVE_V1 */
+(function () {
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function setAppearanceCloudStatus(message, type) {
+    if (typeof setStatus === "function") {
+      setStatus(message, type || "good");
+      return;
+    }
+
+    const statusHost = byId("vlStatus");
+
+    if (statusHost) {
+      statusHost.textContent = message;
+    }
+  }
+
+  function getImportFieldValue(id) {
+    const input = byId(id);
+
+    return input ? String(input.value || "").trim() : "";
+  }
+
+  async function saveAppearanceMetadataToCloud() {
+    const metadata = window.vehicleAppearanceMetaPreview || {};
+    const hasCarvariations =
+      metadata.carvariations &&
+      Array.isArray(metadata.carvariations.vehicles) &&
+      metadata.carvariations.vehicles.length;
+
+    const hasCarcols =
+      metadata.carcols &&
+      (
+        Array.isArray(metadata.carcols.kits) &&
+        metadata.carcols.kits.length ||
+        Array.isArray(metadata.carcols.lights) &&
+        metadata.carcols.lights.length
+      );
+
+    if (!hasCarvariations && !hasCarcols) {
+      setAppearanceCloudStatus(
+        "Upload carvariations.meta or carcols.meta before saving appearance metadata.",
+        "warn"
+      );
+      return;
+    }
+
+    if (!window.vehicleCloud?.importVehicleAppearanceMetadata) {
+      setAppearanceCloudStatus(
+        "Vehicle appearance cloud import is not available in this build.",
+        "warn"
+      );
+      return;
+    }
+
+    const sourceLabel =
+      getImportFieldValue("vlSourceLabelInput") ||
+      getImportFieldValue("vlSourceLabel") ||
+      "Appearance Metadata";
+
+    const dlcFolder =
+      getImportFieldValue("vlDlcFolderInput") ||
+      getImportFieldValue("vlSourceDlcInput") ||
+      getImportFieldValue("vlDlcFolder") ||
+      "";
+
+    setAppearanceCloudStatus(
+      "Saving appearance metadata to cloud...",
+      "good"
+    );
+
+    try {
+      const result =
+        await window.vehicleCloud.importVehicleAppearanceMetadata(
+          metadata,
+          {
+            workspaceId: "default",
+            sourceLabel,
+            dlcFolder
+          }
+        );
+
+      setAppearanceCloudStatus(
+        "Appearance metadata saved to cloud: " +
+          Number(result.variationsImported || 0) +
+          " variation record(s), " +
+          Number(result.modKitsImported || 0) +
+          " mod kit(s), " +
+          Number(result.lightSettingsImported || 0) +
+          " light setting(s).",
+        "good"
+      );
+    } catch (error) {
+      console.warn("Appearance metadata cloud save failed.", error);
+
+      setAppearanceCloudStatus(
+        error.message ||
+          "Appearance metadata cloud save failed.",
+        "warn"
+      );
+    }
+  }
+
+  function bindAppearanceCloudSave() {
+    const button = byId("vlSaveAppearanceMetaCloud");
+
+    if (!button) {
+      return;
+    }
+
+    button.addEventListener("click", function () {
+      saveAppearanceMetadataToCloud();
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindAppearanceCloudSave);
+  } else {
+    bindAppearanceCloudSave();
+  }
+})();

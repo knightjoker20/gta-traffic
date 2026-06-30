@@ -591,6 +591,50 @@ async function updateVehicle(
 
   return result.vehicle;
 }
+async function importVehicleAppearanceMetadata(metadata, options = {}) {
+  const token = getLibraryWriteToken();
+
+  if (!token) {
+    throw new Error(
+      "The library write token was not entered."
+    );
+  }
+
+  const payload = {
+    workspaceId: options.workspaceId || "default",
+    sourceLabel: options.sourceLabel || "Appearance Metadata",
+    dlcFolder: options.dlcFolder || "",
+    carvariations: metadata?.carvariations || null,
+    carcols: metadata?.carcols || null
+  };
+
+  const response = await fetch(
+    "/api/vehicle-appearance/import",
+    {
+      method: "POST",
+
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Library-Token": token
+      },
+
+      body: JSON.stringify(payload)
+    }
+  );
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok || result.ok === false) {
+    throw new Error(
+      result.error ||
+      "Vehicle appearance metadata could not be imported."
+    );
+  }
+
+  return result;
+}
+
 async function importLibraryBatch(payload) {
   const token = getLibraryWriteToken();
 
@@ -802,6 +846,7 @@ window.vehicleCloud = {
   updateVehicle,
   importLibraryBatch,
   importPackDatabaseToCloud,
+  importVehicleAppearanceMetadata,
   clearLibraryWriteToken,
   uploadVehicleImage,
   deleteVehicleImage,
