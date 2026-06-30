@@ -1,4 +1,4 @@
-﻿/* POPGROUPS_WORKSPACE_REBUILD_V2 */
+﻿/* POPGROUPS_VISUAL_BUILDER_V4 */
 
 (() => {
   const state = {
@@ -37,6 +37,131 @@
     "Trains",
     "Uncategorized"
   ];
+
+  const CLASS_ALIASES = new Map([
+    ["vc_super", "Super"],
+    ["super", "Super"],
+    ["veh_class_super", "Super"],
+
+    ["vc_sport", "Sports"],
+    ["vc_sports", "Sports"],
+    ["sport", "Sports"],
+    ["sports", "Sports"],
+    ["veh_class_sport", "Sports"],
+    ["veh_class_sports", "Sports"],
+
+    ["vc_sport_classic", "Sports Classics"],
+    ["vc_sports_classic", "Sports Classics"],
+    ["vc_sportsclassics", "Sports Classics"],
+    ["sport classic", "Sports Classics"],
+    ["sports classic", "Sports Classics"],
+    ["sports classics", "Sports Classics"],
+    ["veh_class_sport_classic", "Sports Classics"],
+
+    ["vc_muscle", "Muscle"],
+    ["muscle", "Muscle"],
+    ["veh_class_muscle", "Muscle"],
+
+    ["vc_sedan", "Sedans"],
+    ["vc_sedans", "Sedans"],
+    ["sedan", "Sedans"],
+    ["sedans", "Sedans"],
+    ["veh_class_sedan", "Sedans"],
+
+    ["vc_coupe", "Coupes"],
+    ["vc_coupes", "Coupes"],
+    ["coupe", "Coupes"],
+    ["coupes", "Coupes"],
+    ["veh_class_coupe", "Coupes"],
+
+    ["vc_compact", "Compacts"],
+    ["vc_compacts", "Compacts"],
+    ["compact", "Compacts"],
+    ["compacts", "Compacts"],
+    ["veh_class_compact", "Compacts"],
+
+    ["vc_suv", "SUVs"],
+    ["vc_suvs", "SUVs"],
+    ["suv", "SUVs"],
+    ["suvs", "SUVs"],
+    ["veh_class_suv", "SUVs"],
+
+    ["vc_offroad", "Off-Road"],
+    ["vc_off_road", "Off-Road"],
+    ["offroad", "Off-Road"],
+    ["off road", "Off-Road"],
+    ["off-road", "Off-Road"],
+    ["veh_class_offroad", "Off-Road"],
+
+    ["vc_van", "Vans"],
+    ["vc_vans", "Vans"],
+    ["van", "Vans"],
+    ["vans", "Vans"],
+    ["veh_class_van", "Vans"],
+
+    ["vc_motorcycle", "Motorcycles"],
+    ["vc_motorcycles", "Motorcycles"],
+    ["motorcycle", "Motorcycles"],
+    ["motorcycles", "Motorcycles"],
+    ["bike", "Motorcycles"],
+    ["bikes", "Motorcycles"],
+    ["veh_class_motorcycle", "Motorcycles"],
+
+    ["vc_commercial", "Commercial"],
+    ["commercial", "Commercial"],
+    ["veh_class_commercial", "Commercial"],
+
+    ["vc_industrial", "Industrial"],
+    ["industrial", "Industrial"],
+    ["veh_class_industrial", "Industrial"],
+
+    ["vc_utility", "Utility"],
+    ["utility", "Utility"],
+    ["veh_class_utility", "Utility"],
+
+    ["vc_service", "Service"],
+    ["service", "Service"],
+    ["veh_class_service", "Service"],
+
+    ["vc_emergency", "Emergency"],
+    ["emergency", "Emergency"],
+    ["veh_class_emergency", "Emergency"],
+
+    ["vc_military", "Military"],
+    ["military", "Military"],
+    ["veh_class_military", "Military"],
+
+    ["vc_openwheel", "Open Wheel"],
+    ["vc_open_wheel", "Open Wheel"],
+    ["openwheel", "Open Wheel"],
+    ["open wheel", "Open Wheel"],
+
+    ["vc_boat", "Boats"],
+    ["vc_boats", "Boats"],
+    ["boat", "Boats"],
+    ["boats", "Boats"],
+
+    ["vc_plane", "Planes"],
+    ["vc_planes", "Planes"],
+    ["plane", "Planes"],
+    ["planes", "Planes"],
+
+    ["vc_helicopter", "Helicopters"],
+    ["vc_helicopters", "Helicopters"],
+    ["helicopter", "Helicopters"],
+    ["helicopters", "Helicopters"],
+    ["heli", "Helicopters"],
+
+    ["vc_cycle", "Cycles"],
+    ["vc_cycles", "Cycles"],
+    ["cycle", "Cycles"],
+    ["cycles", "Cycles"],
+
+    ["vc_train", "Trains"],
+    ["vc_trains", "Trains"],
+    ["train", "Trains"],
+    ["trains", "Trains"]
+  ]);
 
   function $(id) {
     return document.getElementById(id);
@@ -88,155 +213,54 @@
     if (mode) target.classList.add(mode);
   }
 
-  function readFileAsText(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ""));
-      reader.onerror = () => reject(reader.error || new Error("Could not read file"));
-      reader.readAsText(file);
-    });
-  }
-
-  function bindDropZone(zoneId, inputId, onFiles) {
-    const zone = $(zoneId);
-    const input = $(inputId);
-
-    if (!zone || !input) return;
-
-    zone.addEventListener("click", () => input.click());
-
-    zone.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      zone.classList.add("is-dragover");
-    });
-
-    zone.addEventListener("dragleave", () => {
-      zone.classList.remove("is-dragover");
-    });
-
-    zone.addEventListener("drop", (event) => {
-      event.preventDefault();
-      zone.classList.remove("is-dragover");
-      const files = Array.from(event.dataTransfer?.files || []);
-      if (files.length) onFiles(files);
-    });
-
-    input.addEventListener("change", () => {
-      const files = Array.from(input.files || []);
-      if (files.length) onFiles(files);
-      input.value = "";
-    });
-  }
-
-  function parseXml(text) {
-    const doc = new DOMParser().parseFromString(text, "application/xml");
-    const parserError = doc.querySelector("parsererror");
-    if (parserError) {
-      throw new Error("XML parser error");
-    }
-    return doc;
-  }
-
-  function collectItemText(container) {
-    if (!container) return [];
-
-    return Array.from(container.getElementsByTagName("*"))
-      .filter((node) => localName(node) === "item")
-      .map((item) => item.textContent.trim())
-      .filter(Boolean)
-      .filter((value) => !value.includes("\n"))
-      .filter((value, index, array) => array.indexOf(value) === index);
-  }
-
-  function parseGroupItems(container) {
-    if (!container) return [];
-
-    return directChildren(container, "item").map((item, index) => {
-      const name =
-        directText(item, ["name", "Name"]) ||
-        item.getAttribute("name") ||
-        "Group " + (index + 1);
-
-      const modelsContainer =
-        directChild(item, ["models", "Models", "peds", "Peds", "items", "Items"]) ||
-        item;
-
-      const entries = collectItemText(modelsContainer)
-        .filter((entry) => entry !== name)
-        .filter((entry) => entry.length < 80);
-
-      return {
-        name,
-        entries
-      };
-    });
-  }
-
-  async function handlePopgroupsFiles(files) {
-    const file = files[0];
-    if (!file) return;
-
-    try {
-      const text = await readFileAsText(file);
-      const doc = parseXml(text);
-
-      const vehContainer =
-        doc.querySelector("vehGroups") ||
-        doc.querySelector("VehGroups") ||
-        Array.from(doc.getElementsByTagName("*")).find((node) => localName(node) === "vehgroups");
-
-      const pedContainer =
-        doc.querySelector("pedGroups") ||
-        doc.querySelector("PedGroups") ||
-        Array.from(doc.getElementsByTagName("*")).find((node) => localName(node) === "pedgroups");
-
-      state.vehicleGroups = parseGroupItems(vehContainer);
-      state.pedGroups = parseGroupItems(pedContainer);
-
-      setStatus(
-        "pgPopgroupsStatus",
-        `Loaded ${file.name}: ${state.vehicleGroups.length} vehicle group(s), ${state.pedGroups.length} ped group(s).`,
-        "success"
-      );
-
-      renderAll();
-    } catch (error) {
-      console.error(error);
-      setStatus("pgPopgroupsStatus", "Could not parse PopGroups XML.", "error");
-    }
+  function normalizeModelName(value) {
+    return String(value || "")
+      .trim()
+      .replace(/\.(yft|ytd)$/i, "")
+      .replace(/(\+hi|_hi)$/i, "")
+      .toLowerCase();
   }
 
   function normalizeCategory(value) {
     const raw = String(value || "").trim();
     if (!raw) return "Uncategorized";
 
-    const cleaned = raw
+    const key = raw
       .replace(/^vehicle[_\s-]*/i, "")
       .replace(/^class[_\s-]*/i, "")
+      .replace(/^veh[_\s-]class[_\s-]*/i, "")
+      .replace(/-/g, " ")
       .replace(/_/g, " ")
       .replace(/\s+/g, " ")
-      .trim();
+      .trim()
+      .toLowerCase();
 
-    if (!cleaned) return "Uncategorized";
+    const aliasKey = raw
+      .replace(/-/g, "_")
+      .replace(/\s+/g, "_")
+      .toLowerCase();
 
-    const lower = cleaned.toLowerCase();
-    const known = CATEGORY_ORDER.find((item) => item.toLowerCase() === lower);
+    if (CLASS_ALIASES.has(aliasKey)) return CLASS_ALIASES.get(aliasKey);
+    if (CLASS_ALIASES.has(key)) return CLASS_ALIASES.get(key);
+
+    const known = CATEGORY_ORDER.find((item) => item.toLowerCase() === key);
     if (known) return known;
 
-    return cleaned.replace(/\b\w/g, (letter) => letter.toUpperCase());
+    if (key === "sport classics") return "Sports Classics";
+    if (key === "suv") return "SUVs";
+
+    return key.replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
-
-  // POPGROUPS_CATEGORY_INFERENCE_V3
   function findDeepValueByKeys(source, keys, depth = 0) {
-    if (!source || typeof source !== "object" || depth > 4) return "";
+    if (!source || typeof source !== "object" || depth > 5) return "";
 
     const wanted = new Set(keys.map((key) => key.toLowerCase()));
 
     for (const [key, value] of Object.entries(source)) {
-      if (wanted.has(String(key).toLowerCase()) && value !== null && value !== undefined && typeof value !== "object") {
-        return String(value);
-      }
+      if (!wanted.has(String(key).toLowerCase())) continue;
+      if (value === null || value === undefined) continue;
+      if (typeof value !== "object") return String(value);
     }
 
     for (const value of Object.values(source)) {
@@ -266,16 +290,24 @@
       "vehicle_type"
     ]);
 
-    const normalized = normalizeCategory(direct);
+    const directCategory = normalizeCategory(direct);
+    if (directCategory && directCategory !== "Uncategorized") return directCategory;
 
-    if (normalized && normalized !== "Uncategorized") {
-      return normalized;
-    }
-
-    const model = String(record?.modelName || record?.model || record?.spawnName || "").toLowerCase();
-    const handling = String(record?.handlingId || record?.handlingName || "").toLowerCase();
-    const pack = String(record?.packName || record?.dlcName || record?.sourcePack || "").toLowerCase();
-    const text = [model, handling, pack].join(" ");
+    const text = [
+      record?.modelName,
+      record?.model,
+      record?.spawnName,
+      record?.handlingId,
+      record?.handlingName,
+      record?.packName,
+      record?.dlcName,
+      record?.sourcePack,
+      record?.displayName,
+      record?.vehicleName
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
 
     if (/police|sheriff|fbi|riot|ambulance|fire|ems|lguard|pranger/.test(text)) return "Emergency";
     if (/bus|coach|taxi|trash|mule|pounder|benson|packer|phantom|hauler|stockade/.test(text)) return "Commercial";
@@ -284,24 +316,143 @@
     if (/maverick|frogger|buzzard|annihilator|havok|swift|volatus|heli/.test(text)) return "Helicopters";
     if (/luxor|shamal|cuban|dodo|mammatus|velum|vestra|plane|jet/.test(text)) return "Planes";
     if (/bati|akuma|daemon|double|hexer|nemesis|pcj|ruffian|sanchez|vader|wolfsbane|zombie|bike/.test(text)) return "Motorcycles";
-    if (/rebel|sandking|mesa|dubsta|everon|freecrawler|hellion|kamacho|riata|yosemite|outlaw|offroad/.test(text)) return "Off-Road";
+    if (/rebel|sandking|mesa|dubsta|everon|freecrawler|hellion|kamacho|riata|outlaw|offroad/.test(text)) return "Off-Road";
     if (/issi|panto|brioso|blista|rhapsody/.test(text)) return "Compacts";
-    if (/baller|cavalcade|gresley|huntley|landstalker|mesa|patriot|radi|rocoto|seminole|xls/.test(text)) return "SUVs";
-    if (/dominator|dukes|gauntlet|ruiner|sabregt|stalion|tampa|vigero|vamos|yosemite|ellie/.test(text)) return "Muscle";
-    if (/adder|zentorno|t20|osiris|entity|cheetah|turismo|vacca|infernus|reaper|nero|tyrus|xa21|super/.test(text)) return "Super";
-    if (/ninef|alpha|banshee|buffalo|carbonizzare|comet|coquette|elegy|feltzer|furore|jester|khamelion|kuruma|lynx|massacro|omnis|pariah|rapidgt|schafter|sultan|surano|verlierer|sports/.test(text)) return "Sports";
-    if (/asea|asterope|emperor|fugitive|glendale|ingot|intruder|premier|primo|regina|schafter|stanier|stratum|stretch|superd|surge|tailgater|warrener|washington/.test(text)) return "Sedans";
+    if (/baller|cavalcade|gresley|huntley|landstalker|patriot|radi|rocoto|seminole|xls/.test(text)) return "SUVs";
+    if (/dominator|dukes|gauntlet|ruiner|sabregt|stalion|tampa|vigero|vamos|ellie/.test(text)) return "Muscle";
+    if (/adder|zentorno|osiris|entity|cheetah|turismo|vacca|infernus|reaper|nero|tyrus|xa21/.test(text)) return "Super";
+    if (/ninef|alpha|banshee|buffalo|carbonizzare|comet|coquette|elegy|feltzer|furore|jester|khamelion|kuruma|lynx|massacro|omnis|pariah|rapidgt|schafter|sultan|surano|verlierer/.test(text)) return "Sports";
+    if (/asea|asterope|emperor|fugitive|glendale|ingot|intruder|premier|primo|regina|stanier|stratum|stretch|superd|surge|tailgater|warrener|washington/.test(text)) return "Sedans";
     if (/cogcabrio|exemplar|f620|felon|jackal|oracle|sentinel|windsor|zion/.test(text)) return "Coupes";
 
     return "Uncategorized";
   }
 
-  function normalizeModelName(value) {
-    return String(value || "")
-      .trim()
-      .replace(/\.(yft|ytd)$/i, "")
-      .replace(/(\+hi|_hi)$/i, "")
-      .toLowerCase();
+  function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("Could not read file"));
+      reader.readAsText(file);
+    });
+  }
+
+  function parseXml(text) {
+    const doc = new DOMParser().parseFromString(text, "application/xml");
+    const parserError = doc.querySelector("parsererror");
+    if (parserError) throw new Error("XML parser error");
+    return doc;
+  }
+
+  function bindDropZone(zoneId, inputId, onFiles) {
+    const zone = $(zoneId);
+    const input = $(inputId);
+    if (!zone || !input) return;
+
+    zone.addEventListener("click", () => input.click());
+
+    zone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      zone.classList.add("is-dragover");
+    });
+
+    zone.addEventListener("dragleave", () => {
+      zone.classList.remove("is-dragover");
+    });
+
+    zone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      zone.classList.remove("is-dragover");
+      const files = Array.from(event.dataTransfer?.files || []);
+      if (files.length) onFiles(files);
+    });
+
+    input.addEventListener("change", () => {
+      const files = Array.from(input.files || []);
+      if (files.length) onFiles(files);
+      input.value = "";
+    });
+  }
+
+  function collectItemText(container) {
+    if (!container) return [];
+
+    return Array.from(container.getElementsByTagName("*"))
+      .filter((node) => localName(node) === "item")
+      .map((item) => item.textContent.trim())
+      .filter(Boolean)
+      .filter((value) => !value.includes("\n"))
+      .filter((value) => value.length < 90)
+      .filter((value, index, array) => array.indexOf(value) === index);
+  }
+
+  function parseGroupItems(container) {
+    if (!container) return [];
+
+    return directChildren(container, "item").map((item, index) => {
+      const name =
+        directText(item, ["name", "Name"]) ||
+        item.getAttribute("name") ||
+        "Group " + (index + 1);
+
+      const modelsContainer =
+        directChild(item, ["models", "Models", "peds", "Peds", "items", "Items"]) ||
+        item;
+
+      const entries = collectItemText(modelsContainer)
+        .filter((entry) => entry !== name);
+
+      return {
+        id: crypto.randomUUID(),
+        name,
+        type: inferGroupType(name),
+        entries
+      };
+    });
+  }
+
+  function inferGroupType(groupName) {
+    const name = String(groupName || "").toLowerCase();
+
+    if (/super/.test(name)) return "Super";
+    if (/sport.*classic|classic.*sport/.test(name)) return "Sports Classics";
+    if (/sport/.test(name)) return "Sports";
+    if (/muscle/.test(name)) return "Muscle";
+    if (/sedan/.test(name)) return "Sedans";
+    if (/coupe/.test(name)) return "Coupes";
+    if (/compact/.test(name)) return "Compacts";
+    if (/suv/.test(name)) return "SUVs";
+    if (/off|dirt|country|rural|desert|mountain/.test(name)) return "Off-Road";
+    if (/van/.test(name)) return "Vans";
+    if (/bike|moto/.test(name)) return "Motorcycles";
+    if (/commercial|truck/.test(name)) return "Commercial";
+    if (/emergency|police|sheriff|fire|ambulance/.test(name)) return "Emergency";
+    if (/military/.test(name)) return "Military";
+    if (/boat/.test(name)) return "Boats";
+    if (/plane|air/.test(name)) return "Planes";
+    if (/heli/.test(name)) return "Helicopters";
+
+    return "Uncategorized";
+  }
+
+  function parseVehicleMetaItem(item) {
+    const modelName = directText(item, "modelName");
+    if (!modelName) return null;
+
+    const record = {
+      modelName,
+      displayName:
+        directText(item, ["gameName", "vehicleName", "displayName"]) ||
+        modelName,
+      handlingId: directText(item, "handlingId"),
+      rawClass:
+        directText(item, ["vehicleClass", "class", "className", "category", "type"]),
+      make: directText(item, ["vehicleMakeName", "make", "manufacturer"]),
+      source: "meta"
+    };
+
+    record.category = inferVehicleCategory(record);
+    return record;
   }
 
   function upsertVehicle(record, source) {
@@ -324,6 +475,13 @@
       ...existing,
       ...record,
       modelName: normalized,
+      displayName:
+        record.displayName ||
+        record.custom?.displayName ||
+        existing.displayName ||
+        existing.custom?.displayName ||
+        normalized,
+      category: inferVehicleCategory({ ...existing, ...record }),
       source: existing.source || source,
       sources: Array.from(new Set([...(existing.sources || []), source].filter(Boolean)))
     };
@@ -335,22 +493,36 @@
     }
   }
 
-  function parseVehicleMetaItem(item) {
-    const modelName = directText(item, "modelName");
-    if (!modelName) return null;
+  async function handlePopgroupsFiles(files) {
+    const file = files[0];
+    if (!file) return;
 
-    return {
-      modelName,
-      displayName:
-        directText(item, ["gameName", "vehicleName", "displayName"]) ||
-        modelName,
-      handlingId: directText(item, "handlingId"),
-      category: normalizeCategory(
-        directText(item, ["vehicleClass", "class", "className", "category", "type"])
-      ),
-      make: directText(item, ["vehicleMakeName", "make", "manufacturer"]),
-      source: "meta"
-    };
+    try {
+      const text = await readFileAsText(file);
+      const doc = parseXml(text);
+
+      const vehContainer =
+        doc.querySelector("vehGroups") ||
+        Array.from(doc.getElementsByTagName("*")).find((node) => localName(node) === "vehgroups");
+
+      const pedContainer =
+        doc.querySelector("pedGroups") ||
+        Array.from(doc.getElementsByTagName("*")).find((node) => localName(node) === "pedgroups");
+
+      state.vehicleGroups = parseGroupItems(vehContainer);
+      state.pedGroups = parseGroupItems(pedContainer);
+
+      setStatus(
+        "pgPopgroupsStatus",
+        `Loaded ${file.name}: ${state.vehicleGroups.length} vehicle group(s), ${state.pedGroups.length} ped group(s).`,
+        "success"
+      );
+
+      renderAll();
+    } catch (error) {
+      console.error(error);
+      setStatus("pgPopgroupsStatus", "Could not parse PopGroups XML.", "error");
+    }
   }
 
   async function handleMetaFiles(files) {
@@ -359,20 +531,7 @@
     for (const file of files) {
       try {
         const text = await readFileAsText(file);
-        const doc = parseXml(text);
-        const items = Array.from(doc.getElementsByTagName("*"))
-          .filter((node) => localName(node) === "item");
-
-        let fileCount = 0;
-
-        items.forEach((item) => {
-          const vehicle = parseVehicleMetaItem(item);
-          if (!vehicle) return;
-          upsertVehicle(vehicle, "meta");
-          fileCount++;
-        });
-
-        total += fileCount;
+        total += parseVehiclesMetaText(text);
       } catch (error) {
         console.error(error);
       }
@@ -382,12 +541,29 @@
     renderAll();
   }
 
+  function parseVehiclesMetaText(text) {
+    const doc = parseXml(text);
+    const items = Array.from(doc.getElementsByTagName("*"))
+      .filter((node) => localName(node) === "item");
+
+    let count = 0;
+
+    items.forEach((item) => {
+      const vehicle = parseVehicleMetaItem(item);
+      if (!vehicle) return;
+      upsertVehicle(vehicle, "meta");
+      count++;
+    });
+
+    return count;
+  }
+
   function collectCloudVehicleCandidates(data) {
     const output = [];
     const seen = new Set();
 
     function visit(value, depth = 0) {
-      if (!value || depth > 4) return;
+      if (!value || depth > 5) return;
 
       if (Array.isArray(value)) {
         value.forEach((item) => visit(item, depth + 1));
@@ -418,16 +594,12 @@
         "records",
         "items",
         "library",
-        "data"
+        "data",
+        "metadata",
+        "meta"
       ].forEach((key) => {
         if (value[key]) visit(value[key], depth + 1);
       });
-
-      if (depth < 2) {
-        Object.values(value).forEach((child) => {
-          if (child && typeof child === "object") visit(child, depth + 1);
-        });
-      }
     }
 
     visit(data);
@@ -438,8 +610,9 @@
     const custom = record.custom || {};
     const meta = record.meta || {};
 
-    return {
+    const merged = {
       ...record,
+      ...meta,
       modelName:
         record.modelName ||
         record.model ||
@@ -453,7 +626,6 @@
         record.gameName ||
         record.modelName ||
         record.model,
-      category: inferVehicleCategory(record),
       handlingId:
         record.handlingId ||
         record.handlingName ||
@@ -471,6 +643,9 @@
         record.thumbnailUrl ||
         custom.imageUrl
     };
+
+    merged.category = inferVehicleCategory(merged);
+    return merged;
   }
 
   async function loadCloudLibrary() {
@@ -495,7 +670,60 @@
       setStatus("pgCloudStatus", "Cloud vehicle metadata could not be loaded.", "error");
     }
 
+    await loadSavedRawMetaFiles();
     renderAll();
+  }
+
+  async function loadSavedRawMetaFiles() {
+    if (!window.metaFileCloud || typeof window.metaFileCloud.listFiles !== "function") {
+      return;
+    }
+
+    try {
+      const listResult = await window.metaFileCloud.listFiles();
+      const files = Array.isArray(listResult)
+        ? listResult
+        : listResult.files || listResult.items || listResult.data || [];
+
+      const vehiclesMetaFiles = files.filter((file) => {
+        const name = String(file.fileName || file.name || file.key || file.path || "").toLowerCase();
+        const type = String(file.fileType || file.type || "").toLowerCase();
+        return name.includes("vehicles.meta") || type.includes("vehicle");
+      });
+
+      let loaded = 0;
+
+      for (const file of vehiclesMetaFiles.slice(0, 3)) {
+        if (typeof window.metaFileCloud.getFile !== "function") continue;
+
+        const id =
+          file.id ||
+          file.fileId ||
+          file.key ||
+          file.path ||
+          file.fileName ||
+          file.name;
+
+        const result = await window.metaFileCloud.getFile(id);
+        const content =
+          result.content ||
+          result.text ||
+          result.raw ||
+          result.fileContent ||
+          result.body ||
+          "";
+
+        if (!content) continue;
+
+        loaded += parseVehiclesMetaText(content);
+      }
+
+      if (loaded) {
+        setStatus("pgMetaStatus", `Auto-loaded ${loaded} vehicle record(s) from saved vehicles.meta cloud files.`, "success");
+      }
+    } catch (error) {
+      console.warn("Saved raw meta auto-load skipped:", error);
+    }
   }
 
   function extractInstalledModels(text) {
@@ -504,21 +732,9 @@
 
     matches.forEach((match) => {
       const model = normalizeModelName(match);
-      if (!model) return;
-      if (model.includes("vehshare")) return;
+      if (!model || model.includes("vehshare")) return;
       found.add(model);
     });
-
-    String(text || "")
-      .split(/[\r\n]+/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .forEach((line) => {
-        const file = line.split(/[\\/]/).pop() || line;
-        if (!/\.(yft|ytd)$/i.test(file)) return;
-        const model = normalizeModelName(file);
-        if (model && !model.includes("vehshare")) found.add(model);
-      });
 
     return Array.from(found).sort();
   }
@@ -554,8 +770,8 @@
         ...existing,
         modelName,
         installed: true,
-        category: existing.category || "Uncategorized",
-        displayName: existing.displayName || modelName
+        displayName: existing.displayName || modelName,
+        category: inferVehicleCategory(existing)
       };
 
       if (state.cloudVehicles.has(modelName)) {
@@ -606,6 +822,7 @@
 
   async function copyInstalledModels() {
     const models = Array.from(state.installedModels);
+
     if (!models.length) {
       setStatus("pgScannerStatus", "No installed vehicle models to copy.", "error");
       return;
@@ -627,6 +844,7 @@
     const merged = new Map();
 
     state.cloudVehicles.forEach((value, key) => merged.set(key, value));
+
     state.metaVehicles.forEach((value, key) => {
       merged.set(key, {
         ...(merged.get(key) || {}),
@@ -641,13 +859,13 @@
         modelName,
         installed: true,
         displayName: merged.get(modelName)?.displayName || modelName,
-        category: merged.get(modelName)?.category || "Uncategorized"
+        category: inferVehicleCategory(merged.get(modelName) || { modelName })
       });
     });
 
     return Array.from(merged.values()).map((vehicle) => ({
       ...vehicle,
-      category: normalizeCategory(vehicle.category || vehicle.vehicleClass || vehicle.className || vehicle.class)
+      category: inferVehicleCategory(vehicle)
     }));
   }
 
@@ -664,6 +882,7 @@
 
   function matchesQuery(values, query) {
     if (!query) return true;
+
     return values
       .filter(Boolean)
       .join(" ")
@@ -683,6 +902,12 @@
     `;
   }
 
+  function categoryOptions(selected) {
+    return CATEGORY_ORDER.map((category) => `
+      <option value="${escapeHtml(category)}" ${category === selected ? "selected" : ""}>${escapeHtml(category)}</option>
+    `).join("");
+  }
+
   function renderGroups() {
     const target = $("pgGroupList");
     if (!target) return;
@@ -691,13 +916,13 @@
     const groups = state.groupMode === "peds" ? state.pedGroups : state.vehicleGroups;
 
     const filtered = groups.filter((group) =>
-      matchesQuery([group.name, ...(group.entries || [])], query)
+      matchesQuery([group.name, group.type, ...(group.entries || [])], query)
     );
 
     if (!filtered.length) {
       target.innerHTML = `
         <div class="pg-empty-state">
-          ${groups.length ? "No groups match the current search." : "Import a PopGroups XML file to begin."}
+          ${groups.length ? "No groups match the current search." : "Import a PopGroups XML file or add a group to begin."}
         </div>
       `;
       return;
@@ -705,31 +930,36 @@
 
     target.innerHTML = filtered
       .map((group) => {
-        const entries = (group.entries || []).slice(0, 80);
-        const hiddenCount = Math.max(0, (group.entries || []).length - entries.length);
+        const realIndex = groups.indexOf(group);
+        const entries = group.entries || [];
 
         return `
-          <article class="pg-group-card">
+          <article class="pg-group-card pg-drop-target" data-group-index="${realIndex}">
             <div class="pg-group-card-header">
-              <h3>${escapeHtml(group.name)}</h3>
-              <span class="pg-count-pill">${(group.entries || []).length} entries</span>
+              <div>
+                <input class="pg-group-name-input" data-group-action="rename" data-group-index="${realIndex}" value="${escapeHtml(group.name)}">
+                <select class="pg-group-type-select" data-group-action="type" data-group-index="${realIndex}">
+                  ${categoryOptions(group.type || "Uncategorized")}
+                </select>
+              </div>
+              <span class="pg-count-pill">${entries.length} entries</span>
             </div>
-            <div class="pg-model-pill-grid">
-              ${entries
-                .map((entry) => {
-                  const model = normalizeModelName(entry);
-                  const installed = state.installedModels.has(model);
-                  const hasMeta = state.metaVehicles.has(model) || state.cloudVehicles.has(model);
 
-                  return `
-                    <a class="pg-model-pill ${installed ? "is-installed" : ""} ${hasMeta ? "is-meta" : ""}"
-                       href="vehicle-details.html?model=${encodeURIComponent(model)}">
-                      ${escapeHtml(entry)}
-                    </a>
-                  `;
-                })
-                .join("")}
-              ${hiddenCount ? `<span class="pg-model-pill">+${hiddenCount} more</span>` : ""}
+            <div class="pg-group-drop-hint">Drag vehicles from the library sidebar into this group</div>
+
+            <div class="pg-model-pill-grid">
+              ${entries.map((entry, entryIndex) => {
+                const model = normalizeModelName(entry);
+                const installed = state.installedModels.has(model);
+                const hasMeta = state.metaVehicles.has(model) || state.cloudVehicles.has(model);
+
+                return `
+                  <span class="pg-model-pill ${installed ? "is-installed" : ""} ${hasMeta ? "is-meta" : ""}">
+                    <a href="vehicle-details.html?model=${encodeURIComponent(model)}">${escapeHtml(entry)}</a>
+                    <button type="button" data-group-action="remove-entry" data-group-index="${realIndex}" data-entry-index="${entryIndex}">x</button>
+                  </span>
+                `;
+              }).join("")}
             </div>
           </article>
         `;
@@ -778,7 +1008,7 @@
     const groups = new Map();
 
     vehicles.forEach((vehicle) => {
-      const category = normalizeCategory(vehicle.category);
+      const category = inferVehicleCategory(vehicle);
       if (!groups.has(category)) groups.set(category, []);
       groups.get(category).push(vehicle);
     });
@@ -804,7 +1034,7 @@
             const hasCloud = state.cloudVehicles.has(model);
 
             return `
-              <a class="pg-vehicle-card" href="vehicle-details.html?model=${encodeURIComponent(model)}">
+              <article class="pg-vehicle-card" draggable="true" data-model="${escapeHtml(model)}">
                 ${vehicle.imageUrl
                   ? `<img class="pg-vehicle-thumb" src="${escapeHtml(vehicle.imageUrl)}" alt="">`
                   : `<div class="pg-vehicle-thumb" aria-hidden="true"></div>`}
@@ -812,24 +1042,25 @@
                   <h4>${escapeHtml(vehicleTitle(vehicle))}</h4>
                   <p>${escapeHtml(model)}</p>
                   <div class="pg-card-badges">
-                    ${installed ? '<span class="pg-badge">Installed</span>' : ""}
-                    ${hasMeta ? '<span class="pg-badge">Meta</span>' : ""}
-                    ${hasCloud ? '<span class="pg-badge">Cloud</span>' : ""}
+                    ${installed ? '<span class="pg-badge is-installed">Installed</span>' : ""}
+                    ${hasMeta ? '<span class="pg-badge is-meta">Meta</span>' : ""}
+                    ${hasCloud ? '<span class="pg-badge is-cloud">Cloud</span>' : ""}
                   </div>
+                  <a class="pg-details-link" href="vehicle-details.html?model=${encodeURIComponent(model)}">Details</a>
                 </div>
-              </a>
+              </article>
             `;
           })
           .join("");
 
         return `
-          <section class="pg-library-category">
-            <div class="pg-library-category-header">
+          <details class="pg-library-category" open>
+            <summary class="pg-library-category-header">
               <strong>${escapeHtml(category)}</strong>
               <span>${items.length}</span>
-            </div>
+            </summary>
             ${cards}
-          </section>
+          </details>
         `;
       })
       .join("");
@@ -848,6 +1079,34 @@
       const value = name.toLowerCase();
       $(id)?.setAttribute("aria-pressed", state.libraryFilter === value ? "true" : "false");
     });
+  }
+
+  function addModelToGroup(groupIndex, modelName) {
+    const groups = state.groupMode === "peds" ? state.pedGroups : state.vehicleGroups;
+    const group = groups[groupIndex];
+    const model = normalizeModelName(modelName);
+
+    if (!group || !model) return;
+
+    group.entries = group.entries || [];
+
+    if (!group.entries.some((entry) => normalizeModelName(entry) === model)) {
+      group.entries.push(model);
+    }
+
+    renderAll();
+  }
+
+  function addGroup() {
+    const groups = state.groupMode === "peds" ? state.pedGroups : state.vehicleGroups;
+    groups.push({
+      id: crypto.randomUUID(),
+      name: state.groupMode === "peds" ? "NEW_PED_GROUP" : "NEW_VEHICLE_GROUP",
+      type: "Uncategorized",
+      entries: []
+    });
+
+    renderAll();
   }
 
   function exportRebuiltXml() {
@@ -900,11 +1159,9 @@ ${(group.entries || []).map((entry) => `        <Item>${escapeXml(entry)}</Item>
     renderAll();
   }
 
-
-  // POPGROUPS_CLOUD_SAVE_HANDLER_V3
   function buildCloudProjectPayload() {
     return {
-      version: 3,
+      version: 4,
       tool: "popgroups",
       savedAt: new Date().toISOString(),
       vehicleGroups: state.vehicleGroups,
@@ -956,22 +1213,82 @@ ${(group.entries || []).map((entry) => `        <Item>${escapeXml(entry)}</Item>
       setStatus("pgCloudProjectStatus", "Saved to cloud project dashboard.", "success");
     } catch (error) {
       console.error(error);
-
       localStorage.setItem(
         "gtaTraffic.popgroups.lastCloudProjectDraft",
-        JSON.stringify({
-          name,
-          description,
-          payload
-        })
+        JSON.stringify({ name, description, payload })
       );
-
-      setStatus(
-        "pgCloudProjectStatus",
-        "Cloud save did not complete. A local draft backup was saved in this browser.",
-        "error"
-      );
+      setStatus("pgCloudProjectStatus", "Cloud save failed. Local draft backup saved in this browser.", "error");
     }
+  }
+
+  function bindBuilderEvents() {
+    const groupList = $("pgGroupList");
+    const libraryList = $("pgLibraryList");
+
+    libraryList?.addEventListener("dragstart", (event) => {
+      const card = event.target.closest(".pg-vehicle-card");
+      if (!card) return;
+
+      event.dataTransfer.setData("text/plain", card.dataset.model || "");
+      event.dataTransfer.effectAllowed = "copy";
+    });
+
+    groupList?.addEventListener("dragover", (event) => {
+      const card = event.target.closest(".pg-group-card");
+      if (!card) return;
+
+      event.preventDefault();
+      card.classList.add("is-dragover");
+      event.dataTransfer.dropEffect = "copy";
+    });
+
+    groupList?.addEventListener("dragleave", (event) => {
+      const card = event.target.closest(".pg-group-card");
+      if (card) card.classList.remove("is-dragover");
+    });
+
+    groupList?.addEventListener("drop", (event) => {
+      const card = event.target.closest(".pg-group-card");
+      if (!card) return;
+
+      event.preventDefault();
+      card.classList.remove("is-dragover");
+
+      const model = event.dataTransfer.getData("text/plain");
+      addModelToGroup(Number(card.dataset.groupIndex), model);
+    });
+
+    groupList?.addEventListener("input", (event) => {
+      const action = event.target.dataset.groupAction;
+      const index = Number(event.target.dataset.groupIndex);
+      const groups = state.groupMode === "peds" ? state.pedGroups : state.vehicleGroups;
+      const group = groups[index];
+
+      if (!group) return;
+
+      if (action === "rename") {
+        group.name = event.target.value;
+      }
+
+      if (action === "type") {
+        group.type = event.target.value;
+      }
+    });
+
+    groupList?.addEventListener("click", (event) => {
+      const action = event.target.dataset.groupAction;
+      if (action !== "remove-entry") return;
+
+      const index = Number(event.target.dataset.groupIndex);
+      const entryIndex = Number(event.target.dataset.entryIndex);
+      const groups = state.groupMode === "peds" ? state.pedGroups : state.vehicleGroups;
+      const group = groups[index];
+
+      if (!group) return;
+
+      group.entries.splice(entryIndex, 1);
+      renderAll();
+    });
   }
 
   function bindEvents() {
@@ -1012,9 +1329,12 @@ ${(group.entries || []).map((entry) => `        <Item>${escapeXml(entry)}</Item>
       renderAll();
     });
 
+    $("pgAddGroup")?.addEventListener("click", addGroup);
     $("pgExportXml")?.addEventListener("click", exportRebuiltXml);
     $("pgClearWorkspace")?.addEventListener("click", clearWorkspace);
     $("pgSaveCloudProject")?.addEventListener("click", saveCloudProject);
+
+    bindBuilderEvents();
   }
 
   document.addEventListener("DOMContentLoaded", () => {

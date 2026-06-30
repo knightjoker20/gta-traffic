@@ -711,3 +711,180 @@
     height: 180px;
   }
 }
+
+/* POPGROUPS_VISUAL_BUILDER_V4 */
+
+.pg-scanner-module {
+  grid-column: 1 / -1;
+}
+
+.pg-scanner-module .pg-textarea {
+  min-height: 150px;
+}
+
+.pg-scanner-module .pg-button-row {
+  margin-top: 12px;
+}
+
+.pg-workspace-layout {
+  grid-template-columns: minmax(0, 1.35fr) minmax(560px, 0.95fr);
+}
+
+.pg-library-panel {
+  position: sticky;
+  top: 18px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+}
+
+.pg-library-category {
+  display: block;
+  border-radius: 18px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.pg-library-category summary {
+  list-style: none;
+}
+
+.pg-library-category summary::-webkit-details-marker {
+  display: none;
+}
+
+.pg-library-category-header {
+  cursor: pointer;
+}
+
+.pg-library-category-header::before {
+  content: "▾";
+  color: #ffb35a;
+  margin-right: 8px;
+}
+
+.pg-library-category:not([open]) .pg-library-category-header::before {
+  content: "▸";
+}
+
+.pg-vehicle-card {
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 160px;
+  cursor: grab;
+}
+
+.pg-vehicle-card:active {
+  cursor: grabbing;
+}
+
+.pg-vehicle-thumb {
+  width: 220px;
+  height: 145px;
+}
+
+.pg-details-link {
+  display: inline-flex;
+  margin-top: 10px;
+  color: #79c8ff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.pg-group-card {
+  position: relative;
+  border-color: rgba(121, 200, 255, 0.12);
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.pg-group-card.is-dragover {
+  border-color: rgba(255, 179, 90, 0.9);
+  background:
+    linear-gradient(180deg, rgba(255, 122, 16, 0.13), rgba(8, 14, 25, 0.84));
+  transform: translateY(-1px);
+}
+
+.pg-group-card-header > div {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pg-group-name-input,
+.pg-group-type-select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 10px;
+  background: rgba(4, 9, 18, 0.74);
+  color: #f8fbff;
+  padding: 0 11px;
+  font-weight: 800;
+}
+
+.pg-group-name-input {
+  font-size: 1rem;
+}
+
+.pg-group-type-select {
+  color: #ffcf8a;
+}
+
+.pg-group-drop-hint {
+  border: 1px dashed rgba(121, 200, 255, 0.22);
+  border-radius: 12px;
+  background: rgba(5, 10, 19, 0.58);
+  color: rgba(234, 242, 255, 0.58);
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.pg-model-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pg-model-pill a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.pg-model-pill button {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+  color: #ffffff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.pg-model-pill button:hover {
+  background: rgba(200, 62, 70, 0.9);
+}
+
+@media (max-width: 1320px) {
+  .pg-workspace-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pg-library-panel {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .pg-vehicle-card {
+    grid-template-columns: 1fr;
+  }
+
+  .pg-vehicle-thumb {
+    width: 100%;
+    height: 190px;
+  }
+}

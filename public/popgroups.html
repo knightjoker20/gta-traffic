@@ -95,7 +95,7 @@
         <div id="pgMetaStatus" class="pg-status-line">No vehicles.meta file loaded.</div>
       </article>
 
-      <article class="module-card pg-module">
+      <article class="module-card pg-module pg-scanner-module">
         <div class="pg-module-heading">
           <p class="eyebrow">Scanner</p>
           <h2>Installed Add-on Vehicles</h2>
@@ -141,6 +141,7 @@
 
         <div class="pg-toolbar">
           <input id="pgGroupSearch" class="pg-search" type="search" placeholder="Search groups or vehicle names...">
+          <button id="pgAddGroup" class="pg-button pg-button-secondary" type="button">Add Group</button>
           <button id="pgExportXml" class="pg-button pg-button-secondary" type="button">Export Rebuilt XML</button>
           <button id="pgClearWorkspace" class="pg-button pg-button-danger" type="button">Clear Workspace</button>
         </div>
@@ -177,9 +178,12 @@
   </main>
 
   <script src="js/vehiclecloud.js?v=popgroups-rebuild-1"></script>
+  <script src="js/shared/metafilecloud.js?v=popgroups-builder-1"></script>
   <script src="js/popgroups-workspace.js?v=popgroups-rebuild-2"></script>
   <script src="/js/shared/siteheader.js"></script>
   <script src="js/shared/siteshell.js"></script>
   <script src="/js/accountnav.js"></script>
 </body>
 </html>
+
+
