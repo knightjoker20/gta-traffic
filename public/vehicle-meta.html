@@ -45,6 +45,7 @@
             <small>or click to choose a file</small>
           </div>
           <input id="vmFilePicker" class="vm-hidden" type="file" accept=".meta,.xml,.txt">
+          <div id="vmCloudBanner" class="vm-cloud-banner" hidden></div>
           <div id="vmStatus" class="vm-status warn">No vehicles.meta loaded yet.</div>
 
           <div class="vm-dlc-name-box">
@@ -79,11 +80,12 @@
         <section class="panel">
           <h2>Export</h2>
           <div class="vm-export-actions">
-            <button id="vmExportXmlButton" class="btn-green" type="button" onclick="vehicleMetaEditor.exportXml()">Export vehicles.meta</button>
+            <button id="vmExportXmlButton" class="btn-green" type="button" onclick="vehicleMetaEditor.exportXml()">Export Full vehicles.meta</button>
+            <button class="btn-orange" type="button" onclick="vehicleMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
             <button type="button" onclick="vehicleMetaEditor.exportJson()">Export JSON Backup</button>
             <button class="secondary" type="button" onclick="vehicleMetaEditor.copyXml()">Copy XML</button>
           </div>
-          <p class="small vm-muted">The editor modifies the loaded XML nodes directly so the original structure is preserved as much as the browser XML serializer allows.</p>
+          <p class="small vm-muted">The editor modifies loaded XML nodes directly — original structure is preserved. "Export This Vehicle Only" creates a single-entry file safe to use as a standalone vehicles.meta.</p>
         </section>
       </div>
 
@@ -178,6 +180,7 @@
 
   <script src="/js/shared/siteheader.js"></script>
 <script src="js/shared/siteshell.js"></script>
+  <script src="js/shared/metafilecloud.js"></script>
   <script src="js/vehiclemetaeditor.js"></script>
   <script defer src="/js/accountnav.js"></script>
 </body>

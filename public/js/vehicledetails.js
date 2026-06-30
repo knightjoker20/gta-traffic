@@ -165,6 +165,21 @@ const el = id => document.getElementById(id);
       <span class="vd-source-chip ${(vehicle.popgroups || []).length ? "ready" : ""}">${(vehicle.popgroups || []).length ? "✓" : "—"} Popgroups</span>
     `;
 
+    const handlingId = state.handling?.handlingName || meta.handlingId;
+    const handlingEditorLink = el("vdOpenHandlingEditor");
+    if (handlingEditorLink) {
+      handlingEditorLink.href = handlingId
+        ? `handling-meta.html?handlingId=${encodeURIComponent(handlingId)}`
+        : "handling-meta.html";
+    }
+
+    const vehicleMetaLink = el("vdOpenVehicleMetaEditor");
+    if (vehicleMetaLink && vehicle.modelName) {
+      const vmParams = new URLSearchParams({ modelName: vehicle.modelName });
+      if (vehicle.custom?.sourcePack) vmParams.set("sourcePack", vehicle.custom.sourcePack);
+      vehicleMetaLink.href = `vehicle-meta.html?${vmParams.toString()}`;
+    }
+
     el("vdFavorite").textContent = vehicle.custom?.favorite ? "★ Favorite" : "☆ Add Favorite";
     const installButton = el("vdInstallButton");
     const isInstalled = vehicle.custom?.installed === true;
@@ -1288,11 +1303,12 @@ async function initialize() {
   }
 }
 
+
   document.addEventListener("DOMContentLoaded", initialize);
+
+  // Expose reload hook for vd-meta-upload.js
+  window.vdReloadVehicle = () => {
+    const model = currentModelFromUrl() || (state.vehicles[0] && state.vehicles[0].modelName);
+    if (model) loadVehicle(model);
+  };
 })();
-
-
-
-
-
-

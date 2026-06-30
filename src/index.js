@@ -549,6 +549,20 @@ function safeParseObject(value, fallback = {}) {
   }
 }
 
+async function handleVehicleByModel(modelName, env) {
+  const row = await env.DB.prepare(`
+    SELECT * FROM vehicles
+    WHERE model_name = ? COLLATE NOCASE
+    LIMIT 1
+  `).bind(modelName).first();
+
+  if (!row) {
+    return jsonResponse({ ok: false, error: "Vehicle not found" }, 404);
+  }
+
+  return jsonResponse({ ok: true, vehicle: normalizeVehicle(row) });
+}
+
 async function handleHandlingProfileList(env) {
   const result = await env.DB
     .prepare(`
@@ -592,6 +606,43 @@ async function handleHandlingProfileList(env) {
     total: handlingProfiles.length,
     handlingProfiles
   });
+}
+
+async function handleHandlingProfileByName(name, env) {
+  const result = await env.DB
+    .prepare(`
+      SELECT
+        id,
+        handling_name,
+        ai_handling,
+        source_file,
+        handling_data_json,
+        created_at,
+        updated_at
+      FROM handling_profiles
+      WHERE handling_name = ? COLLATE NOCASE
+      LIMIT 1
+    `)
+    .bind(name)
+    .first();
+
+  if (!result) {
+    return jsonResponse({ ok: false, error: "Handling profile not found" }, 404);
+  }
+
+  const storedProfile = safeParseObject(result.handling_data_json);
+
+  const profile = {
+    ...storedProfile,
+    id: result.id,
+    handlingName: result.handling_name,
+    AIHandling: result.ai_handling ?? storedProfile.AIHandling ?? "",
+    sourceFile: result.source_file ?? storedProfile.sourceFile ?? "",
+    createdAt: result.created_at,
+    updatedAt: result.updated_at
+  };
+
+  return jsonResponse({ ok: true, profile });
 }
 
 async function handleVehiclePopgroupList(env) {
@@ -2884,6 +2935,208 @@ function tagsForDatabase(value) {
   return JSON.stringify([...new Set(cleanedTags)]);
 }
 
+
+// =====================================================
+// Raw Meta File Storage  V1.0
+// Stores/retrieves full raw GTA meta files in R2.
+// Index and model→pack lookups live in D1.
+// Reusable for vehicles-meta, handling-meta, etc.
+// =====================================================
+
+const META_FILE_PREFIX = "meta-files/";
+const VALID_FILE_TYPES = new Set([
+  "vehicles-meta",
+  "handling-meta",
+  "carcols-meta",
+  "carvariations-meta",
+  "popgroups"
+]);
+
+function metaFileR2Key(fileType, packName) {
+  return `${META_FILE_PREFIX}${fileType}/${packName}`;
+}
+
+function sanitizeMetaPackName(value) {
+  return String(value || "")
+    .replace(/\.(meta|xml|txt)$/i, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/, "")
+    || "unnamed";
+}
+
+async function handleMetaFileGet(request, env, fileType, packOrModel) {
+  if (!VALID_FILE_TYPES.has(fileType)) {
+    return jsonResponse({ ok: false, error: `Unknown file type: ${fileType}` }, 400);
+  }
+
+  // First try direct pack name lookup
+  let packName = sanitizeMetaPackName(packOrModel);
+  let row = await env.DB.prepare(
+    `SELECT pack_name, r2_key, original_filename, entry_count, entry_names_json, updated_at
+     FROM raw_meta_files WHERE file_type = ? AND pack_name = ? LIMIT 1`
+  ).bind(fileType, packName).first();
+
+  // If not found, try model name lookup
+  if (!row) {
+    const ref = await env.DB.prepare(
+      `SELECT pack_name FROM meta_file_model_refs WHERE model_name = ? COLLATE NOCASE AND file_type = ? LIMIT 1`
+    ).bind(packOrModel, fileType).first();
+
+    if (ref) {
+      packName = ref.pack_name;
+      row = await env.DB.prepare(
+        `SELECT pack_name, r2_key, original_filename, entry_count, entry_names_json, updated_at
+         FROM raw_meta_files WHERE file_type = ? AND pack_name = ? LIMIT 1`
+      ).bind(fileType, packName).first();
+    }
+  }
+
+  if (!row) {
+    return jsonResponse({ ok: false, error: `No ${fileType} file found for "${packOrModel}"` }, 404);
+  }
+
+  // Fetch raw XML from R2
+  const object = await env.VEHICLE_IMAGES.get(row.r2_key);
+  if (!object) {
+    return jsonResponse({ ok: false, error: "File record exists but R2 object is missing" }, 404);
+  }
+
+  const xml = await object.text();
+  return jsonResponse({
+    ok: true,
+    file: {
+      fileType,
+      packName: row.pack_name,
+      originalFilename: row.original_filename,
+      entryCount: row.entry_count,
+      entryNames: safeParseObject(row.entry_names_json) || [],
+      updatedAt: row.updated_at,
+      xml
+    }
+  });
+}
+
+async function handleMetaFilePut(request, env, fileType, packOrModel) {
+  const authError = checkLibraryWriteAuthorization(request, env);
+  if (authError) return authError;
+
+  if (!VALID_FILE_TYPES.has(fileType)) {
+    return jsonResponse({ ok: false, error: `Unknown file type: ${fileType}` }, 400);
+  }
+
+  const packName = sanitizeMetaPackName(packOrModel);
+  if (!packName || packName === "unnamed") {
+    return jsonResponse({ ok: false, error: "A valid pack name is required" }, 400);
+  }
+
+  const rawXml = await request.text();
+  if (!rawXml || rawXml.trim().length < 10) {
+    return jsonResponse({ ok: false, error: "Request body must be the raw XML file content" }, 400);
+  }
+
+  const originalFilename = request.headers.get("x-original-filename") || "";
+  let entryNames = [];
+  try {
+    const namesHeader = request.headers.get("x-entry-names") || "[]";
+    entryNames = JSON.parse(namesHeader);
+    if (!Array.isArray(entryNames)) entryNames = [];
+  } catch { entryNames = []; }
+
+  const r2Key = metaFileR2Key(fileType, packName);
+
+  // Store in R2
+  await env.VEHICLE_IMAGES.put(r2Key, rawXml, {
+    httpMetadata: { contentType: "application/xml; charset=utf-8" },
+    customMetadata: { fileType, packName, originalFilename }
+  });
+
+  const now = new Date().toISOString();
+
+  // Upsert index record in D1
+  await env.DB.prepare(`
+    INSERT INTO raw_meta_files (file_type, pack_name, r2_key, original_filename, entry_count, entry_names_json, uploaded_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(file_type, pack_name) DO UPDATE SET
+      r2_key = excluded.r2_key,
+      original_filename = COALESCE(NULLIF(excluded.original_filename, ''), raw_meta_files.original_filename),
+      entry_count = excluded.entry_count,
+      entry_names_json = excluded.entry_names_json,
+      updated_at = excluded.updated_at
+  `).bind(
+    fileType, packName, r2Key, originalFilename,
+    entryNames.length,
+    JSON.stringify(entryNames),
+    now, now
+  ).run();
+
+  // Upsert model→pack refs (batch)
+  if (entryNames.length > 0) {
+    const batch = entryNames.map(name =>
+      env.DB.prepare(`
+        INSERT INTO meta_file_model_refs (model_name, file_type, pack_name)
+        VALUES (?, ?, ?)
+        ON CONFLICT(model_name, file_type) DO UPDATE SET pack_name = excluded.pack_name
+      `).bind(name.toLowerCase(), fileType, packName)
+    );
+    // D1 batch limit is 100
+    for (let i = 0; i < batch.length; i += 100) {
+      await env.DB.batch(batch.slice(i, i + 100));
+    }
+  }
+
+  return jsonResponse({
+    ok: true,
+    message: `Stored ${fileType} for pack "${packName}"`,
+    file: { fileType, packName, r2Key, entryCount: entryNames.length, updatedAt: now }
+  });
+}
+
+async function handleMetaFileDelete(request, env, fileType, packOrModel) {
+  const authError = checkLibraryWriteAuthorization(request, env);
+  if (authError) return authError;
+
+  const packName = sanitizeMetaPackName(packOrModel);
+  const row = await env.DB.prepare(
+    `SELECT r2_key FROM raw_meta_files WHERE file_type = ? AND pack_name = ? LIMIT 1`
+  ).bind(fileType, packName).first();
+
+  if (!row) {
+    return jsonResponse({ ok: false, error: "File not found" }, 404);
+  }
+
+  await env.VEHICLE_IMAGES.delete(row.r2_key);
+  await env.DB.prepare(`DELETE FROM raw_meta_files WHERE file_type = ? AND pack_name = ?`).bind(fileType, packName).run();
+  await env.DB.prepare(`DELETE FROM meta_file_model_refs WHERE file_type = ? AND pack_name = ?`).bind(fileType, packName).run();
+
+  return jsonResponse({ ok: true, message: `Deleted ${fileType} for pack "${packName}"` });
+}
+
+async function handleMetaFileList(request, env) {
+  const url = new URL(request.url);
+  const fileType = url.searchParams.get("fileType") || "";
+
+  const rows = fileType
+    ? await env.DB.prepare(
+        `SELECT file_type, pack_name, original_filename, entry_count, updated_at FROM raw_meta_files WHERE file_type = ? ORDER BY updated_at DESC`
+      ).bind(fileType).all()
+    : await env.DB.prepare(
+        `SELECT file_type, pack_name, original_filename, entry_count, updated_at FROM raw_meta_files ORDER BY file_type, updated_at DESC`
+      ).all();
+
+  return jsonResponse({
+    ok: true,
+    files: (rows.results || []).map(r => ({
+      fileType: r.file_type,
+      packName: r.pack_name,
+      originalFilename: r.original_filename,
+      entryCount: r.entry_count,
+      updatedAt: r.updated_at
+    }))
+  });
+}
+
 async function handleVehiclePatch(
   request,
   env,
@@ -4539,11 +4792,27 @@ export default {
       ) {
         return await handleVehicleList(request, env);
       }
+
+      if (
+        request.method === "GET" &&
+        url.pathname.startsWith("/api/vehicles/")
+      ) {
+        const modelName = decodeURIComponent(url.pathname.slice("/api/vehicles/".length));
+        if (modelName) return await handleVehicleByModel(modelName, env);
+      }
 if (
   request.method === "GET" &&
   url.pathname === "/api/handling-profiles"
 ) {
   return await handleHandlingProfileList(env);
+}
+
+if (
+  request.method === "GET" &&
+  url.pathname.startsWith("/api/handling-profiles/")
+) {
+  const name = decodeURIComponent(url.pathname.slice("/api/handling-profiles/".length));
+  if (name) return await handleHandlingProfileByName(name, env);
 }
 
 if (
@@ -4654,6 +4923,33 @@ if (
 ) {
   return await handlePackImport(request, env);
 }
+
+// ── Raw Meta File routes ──────────────────────────
+if (
+  request.method === "GET" &&
+  url.pathname === "/api/meta-files"
+) {
+  return await handleMetaFileList(request, env);
+}
+
+const metaFileRoute = url.pathname.match(
+  /^\/api\/meta-files\/([a-z-]+)\/(.+)$/
+);
+
+if (metaFileRoute) {
+  const [, fileType, packOrModel] = metaFileRoute;
+  const decodedPackOrModel = decodeURIComponent(packOrModel);
+  if (request.method === "GET") {
+    return await handleMetaFileGet(request, env, fileType, decodedPackOrModel);
+  }
+  if (request.method === "PUT") {
+    return await handleMetaFilePut(request, env, fileType, decodedPackOrModel);
+  }
+  if (request.method === "DELETE") {
+    return await handleMetaFileDelete(request, env, fileType, decodedPackOrModel);
+  }
+}
+
 
 const vehiclePatchRoute =
   url.pathname.match(
@@ -5314,115 +5610,3 @@ async function handleProjectVersionCreate(request, env, projectId) {
   ).run();
 
   await env.DB.prepare(`
-    UPDATE saved_projects
-    SET current_version_id = ?,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-      AND workspace_id = ?
-  `).bind(versionId, projectId, auth.workspaceId).run();
-
-  const version = await env.DB.prepare(`
-    SELECT *
-    FROM saved_project_versions
-    WHERE id = ?
-      AND workspace_id = ?
-    LIMIT 1
-  `).bind(versionId, auth.workspaceId).first();
-
-  return jsonAuthResponse(
-    {
-      ok: true,
-      message: "Project version saved",
-      version: normalizeSavedProjectVersionRow(version)
-    },
-    {
-      status: 201
-    }
-  );
-}
-
-      if (
-        request.method === "GET" &&
-        url.pathname === "/api/projects"
-      ) {
-        return await handleProjectList(request, env);
-      }
-
-      if (
-        request.method === "POST" &&
-        url.pathname === "/api/projects"
-      ) {
-        return await handleProjectCreate(request, env);
-      }
-
-      const projectVersionCreateRoute = url.pathname.match(
-        /^\/api\/projects\/([^/]+)\/versions$/
-      );
-
-      if (
-        projectVersionCreateRoute &&
-        request.method === "POST"
-      ) {
-        return await handleProjectVersionCreate(
-          request,
-          env,
-          decodeURIComponent(projectVersionCreateRoute[1])
-        );
-      }
-
-      const projectDetailRoute = url.pathname.match(
-        /^\/api\/projects\/([^/]+)$/
-      );
-
-      if (
-        projectDetailRoute &&
-        request.method === "GET"
-      ) {
-        return await handleProjectDetail(
-          request,
-          env,
-          decodeURIComponent(projectDetailRoute[1])
-        );
-      }
-
-      if (
-        projectDetailRoute &&
-        request.method === "PATCH"
-      ) {
-        return await handleProjectUpdate(
-          request,
-          env,
-          decodeURIComponent(projectDetailRoute[1])
-        );
-      }
-
-return jsonResponse(
-          {
-            ok: false,
-            error: "API route not found"
-          },
-          404
-        );
-      }
-
-      return env.ASSETS.fetch(request);
-    } catch (error) {
-      console.error("Worker request failed:", error);
-
-      return jsonResponse(
-        {
-          ok: false,
-          error: "Internal server error",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Unknown error"
-        },
-        500
-      );
-    }
-  }
-};
-
-
-

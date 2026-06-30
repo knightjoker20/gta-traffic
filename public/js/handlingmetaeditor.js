@@ -1138,6 +1138,93 @@ const handlingMetaEditor = (() => {
     setStatus(`Exported ${filename}.`, "good");
   }
 
+  // -------------------------------------------------------
+  // Cloud load helpers
+  // -------------------------------------------------------
+
+  function buildHandlingMetaXml(profile) {
+    const STORED_TEXT = new Set(["handlingName", "AIHandling"]);
+    const fields = [
+      "handlingName",
+      "fMass", "fInitialDragCoeff", "fDownForceModifier", "fPercentSubmerged",
+      "fDriveBiasFront", "nInitialDriveGears", "fInitialDriveForce", "fDriveInertia",
+      "fClutchChangeRateScaleUpShift", "fClutchChangeRateScaleDownShift", "fInitialDriveMaxFlatVel",
+      "fBrakeForce", "fBrakeBiasFront", "fHandBrakeForce", "fSteeringLock",
+      "fTractionCurveMax", "fTractionCurveMin", "fTractionCurveLateral",
+      "fTractionSpringDeltaMax", "fLowSpeedTractionLossMult", "fCamberStiffnesss",
+      "fTractionBiasFront", "fTractionLossMult",
+      "fSuspensionForce", "fSuspensionCompDamp", "fSuspensionReboundDamp",
+      "fSuspensionUpperLimit", "fSuspensionLowerLimit", "fSuspensionRaise",
+      "fSuspensionBiasFront", "fAntiRollBarForce", "fAntiRollBarBiasFront",
+      "fRollCentreHeightFront", "fRollCentreHeightRear",
+      "fCollisionDamageMult", "fWeaponDamageMult", "fDeformationDamageMult", "fEngineDamageMult",
+      "AIHandling"
+    ];
+
+    const esc = v => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    const fieldLines = fields
+      .map(f => {
+        const val = profile[f];
+        if (val === undefined || val === null || val === "") return null;
+        return STORED_TEXT.has(f)
+          ? `      <${f}>${esc(val)}</${f}>`
+          : `      <${f} value="${esc(val)}" />`;
+      })
+      .filter(Boolean);
+
+    const subTypes = Array.isArray(profile.subHandlingTypes) && profile.subHandlingTypes.length
+      ? profile.subHandlingTypes
+      : ["NULL"];
+    const subItems = subTypes.map(t => `        <Item type="${esc(t)}" />`).join("\n");
+
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<CHandlingDataMgr>\n  <HandlingData>\n    <Item type="CHandlingData">\n${fieldLines.join("\n")}\n      <SubHandlingData>\n${subItems}\n      </SubHandlingData>\n    </Item>\n  </HandlingData>\n</CHandlingDataMgr>`;
+  }
+
+  async function loadFromCloud(handlingId) {
+    setStatus(`Loading "${handlingId}" from cloud…`, "warn");
+    try {
+      const response = await fetch(
+        `/api/handling-profiles/${encodeURIComponent(handlingId)}`,
+        { method: "GET", headers: { Accept: "application/json" }, cache: "no-store" }
+      );
+      if (!response.ok) {
+        setStatus(`No cloud profile found for "${handlingId}". Drop a handling.meta file to load one.`, "warn");
+        return;
+      }
+      const result = await response.json();
+      if (!result.ok || !result.profile) {
+        setStatus(`No cloud profile found for "${handlingId}". Drop a handling.meta file to load one.`, "warn");
+        return;
+      }
+      const xml = buildHandlingMetaXml(result.profile);
+      const loaded = parseHandling(xml, `${handlingId}.meta`, { dlcName: handlingId });
+      if (loaded) {
+        const banner = el("hmCloudBanner");
+        if (banner) {
+          banner.hidden = false;
+          banner.textContent = `Loaded from cloud: ${handlingId}. Drop a handling.meta file to override with a full version.`;
+        }
+      }
+    } catch (err) {
+      console.warn("Cloud handling load failed:", err);
+      setStatus(`Could not load cloud profile for "${handlingId}". Drop a handling.meta file to continue.`, "warn");
+    }
+  }
+
+  function exportSingleVehicleXml() {
+    if (!state.entries.length || state.activeProfileIndex < 0) {
+      return setStatus("Open a vehicle in the Per-Vehicle Editor first, then export.", "warn");
+    }
+    const entry = state.entries[state.activeProfileIndex];
+    const name = entry.handlingName || "handling";
+    const serializer = new XMLSerializer();
+    const itemXml = serializer.serializeToString(entry.item);
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<CHandlingDataMgr>\n  <HandlingData>\n    ${itemXml}\n  </HandlingData>\n</CHandlingDataMgr>`;
+    downloadText(`${name}.meta`, xml, "application/xml");
+    setStatus(`Exported ${name}.meta (single vehicle).`, "good");
+  }
+
   function elementToObject(element) {
     const output = {
       tag: element.tagName,
@@ -1571,7 +1658,14 @@ const handlingMetaEditor = (() => {
     updateStats();
     updateExportFilenamePreview();
     const ready = await initializeProjectDatabase();
-    if (ready) await restoreLastProject();
+
+    const params = new URLSearchParams(window.location.search);
+    const handlingId = params.get("handlingId");
+    if (handlingId) {
+      await loadFromCloud(handlingId);
+    } else if (ready) {
+      await restoreLastProject();
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);
@@ -1583,6 +1677,7 @@ const handlingMetaEditor = (() => {
     runAnalyzer,
     saveCurrentProject,
     exportXml,
+    exportSingleVehicleXml,
     exportJson,
     copyXml,
     openProfile

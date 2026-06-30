@@ -59,8 +59,8 @@
           <div class="vd-title-actions">
             <button id="vdFavorite" class="btn-orange" type="button">☆ Add Favorite</button>
             <button id="vdInstallButton" class="vd-install-button" type="button">+ Install Vehicle</button>
-            <a href="vehicle-meta.html">Open Vehicle.meta Editor</a>
-            <a href="handling-meta.html">Open Handling.meta Editor</a>
+            <a id="vdOpenVehicleMetaEditor" href="vehicle-meta.html">Open Vehicle.meta Editor</a>
+            <a id="vdOpenHandlingEditor" href="handling-meta.html">Open Handling.meta Editor</a>
           </div>
         </div>
       </section>
@@ -114,6 +114,27 @@
         </div>
 
         <aside class="vd-side-column">
+          <section class="panel">
+            <div class="vd-section-heading">
+              <div><h2>Upload Meta Files</h2><p>Updates this vehicle's cloud record.</p></div>
+            </div>
+            <div class="vd-upload-grid">
+              <div class="vd-upload-zone" id="vdVehiclesMetaZone" role="button" tabindex="0" data-state="idle">
+                <div class="vd-upload-icon">📄</div>
+                <strong>vehicles.meta</strong>
+                <span class="vd-upload-msg">Drop or click to upload</span>
+              </div>
+              <input id="vdVehiclesMetaPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt">
+              <div class="vd-upload-zone" id="vdHandlingMetaZone" role="button" tabindex="0" data-state="idle">
+                <div class="vd-upload-icon">⚙️</div>
+                <strong>handling.meta</strong>
+                <span class="vd-upload-msg">Drop or click to upload</span>
+              </div>
+              <input id="vdHandlingMetaPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt">
+            </div>
+            <p class="vd-upload-note">Only the entry matching this vehicle's model name is extracted and saved.</p>
+          </section>
+
           <section class="panel vd-custom-panel">
             <div class="vd-section-heading">
 <div>
@@ -194,7 +215,9 @@
 <script src="js/shared/siteshell.js"></script>
 <script src="js/vehiclelibrarystore.js"></script>
 <script src="js/vehiclecloud.js"></script>
+<script src="js/shared/metafilecloud.js"></script>
 <script src="js/vehicledetails.js"></script>
+  <script src="js/vd-meta-upload.js"></script>
   <script defer src="/js/accountnav.js"></script>
 </body>
 </html>

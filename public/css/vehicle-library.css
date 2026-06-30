@@ -885,21 +885,54 @@
   display: none;
 }
 
-/* VEHICLE_DETAILS_APPEARANCE_METADATA_V1 */
-.vd-appearance-list {
+/* ── VD Meta Upload Drop Zones ─────────────────── */
+.vd-upload-grid {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
+  margin-bottom: 10px;
 }
 
-.vd-appearance-entry {
-  padding: 16px;
-  border: 1px solid rgba(251, 191, 36, .25);
-  border-radius: 14px;
-  background: rgba(15, 23, 42, .45);
+.vd-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 20px 12px;
+  border: 1px dashed rgba(255,255,255,.22);
+  border-radius: 10px;
+  background: rgba(255,255,255,.03);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+.vd-upload-zone:hover,
+.vd-upload-zone.drag-over {
+  border-color: #f59e0b;
+  background: rgba(245,158,11,.07);
+}
+.vd-upload-zone strong { font-size: .82rem; color: rgba(255,255,255,.85); }
+.vd-upload-icon { font-size: 1.5rem; line-height: 1; }
+
+.vd-upload-msg {
+  font-size: .73rem;
+  color: rgba(255,255,255,.48);
+  margin-top: 2px;
 }
 
-.vd-appearance-entry h3 {
-  margin: 0 0 10px;
-  color: #fbbf24;
-  font-size: 1rem;
+.vd-upload-zone[data-state="loading"] { border-color: rgba(245,158,11,.5); }
+.vd-upload-zone[data-state="loading"] .vd-upload-msg { color: #f59e0b; }
+
+.vd-upload-zone[data-state="success"] { border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.07); }
+.vd-upload-zone[data-state="success"] .vd-upload-msg { color: #4ade80; }
+
+.vd-upload-zone[data-state="error"] { border-color: rgba(248,113,113,.45); background: rgba(248,113,113,.06); }
+.vd-upload-zone[data-state="error"] .vd-upload-msg { color: #f87171; }
+
+.vd-upload-note {
+  font-size: .73rem;
+  color: rgba(255,255,255,.38);
+  margin: 4px 0 0;
 }

@@ -45,6 +45,7 @@
             <small>or click to choose a file</small>
           </div>
           <input id="hmFilePicker" class="hm-hidden" type="file" accept=".meta,.xml,.txt">
+          <div id="hmCloudBanner" class="hm-cloud-banner" hidden></div>
           <div id="hmStatus" class="hm-status warn">No handling.meta loaded yet.</div>
 
           <div class="hm-dlc-name-box">
@@ -79,7 +80,8 @@
         <section class="panel">
           <h2>Export</h2>
           <div class="hm-export-actions">
-            <button id="hmExportXmlButton" class="btn-green" type="button" onclick="handlingMetaEditor.exportXml()">Export handling.meta</button>
+            <button id="hmExportXmlButton" class="btn-green" type="button" onclick="handlingMetaEditor.exportXml()">Export Full handling.meta</button>
+            <button class="btn-orange" type="button" onclick="handlingMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
             <button type="button" onclick="handlingMetaEditor.exportJson()">Export JSON Backup</button>
             <button class="secondary" type="button" onclick="handlingMetaEditor.copyXml()">Copy XML</button>
           </div>

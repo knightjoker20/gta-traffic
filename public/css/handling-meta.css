@@ -488,3 +488,14 @@
 @media (max-width: 800px) {
   .hm-nested-field-grid { grid-template-columns: 1fr; }
 }
+
+.hm-cloud-banner {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 177, 91, 0.12);
+  border: 1px solid rgba(255, 177, 91, 0.35);
+  border-radius: 6px;
+  color: #ffb15b;
+  font-size: .85rem;
+  line-height: 1.4;
+}

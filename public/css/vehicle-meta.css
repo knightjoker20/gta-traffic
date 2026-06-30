@@ -505,3 +505,39 @@
   padding: 7px 9px;
   font-size: 0.78rem;
 }
+
+/* ── Cloud load banner ─────────────────────────── */
+.vm-cloud-banner {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(245,158,11,.12);
+  border: 1px solid rgba(245,158,11,.35);
+  color: #fbbf24;
+  font-size: .82rem;
+  line-height: 1.4;
+}
+.vm-cloud-banner[hidden] { display: none; }
+
+/* ── Pack target row highlight ─────────────────── */
+.vm-target-row {
+  background: rgba(245,158,11,.12) !important;
+  outline: 2px solid rgba(245,158,11,.5);
+  outline-offset: -2px;
+}
+.vm-target-row td { color: #fbbf24; }
+
+/* ── Cloud/pack warning banner ─────────────────── */
+.vm-cloud-banner {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(245,158,11,.12);
+  border: 1px solid rgba(245,158,11,.35);
+  color: #fbbf24;
+  font-size: .82rem;
+  line-height: 1.6;
+}
+.vm-cloud-banner[hidden] { display: none; }
+.vm-cloud-banner strong { color: #fde68a; }
+.vm-cloud-banner em { color: #f87171; font-style: normal; font-weight: 600; }

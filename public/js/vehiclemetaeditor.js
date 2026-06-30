@@ -65,7 +65,9 @@ const vehicleMetaEditor = (() => {
     vehicles: [],
     filteredIndexes: [],
     selectedKeys: new Set(),
-    warnings: []
+    warnings: [],
+    targetModel: "",
+    sourcePack: ""
   };
 
   function el(id) {
@@ -661,7 +663,7 @@ const vehicleMetaEditor = (() => {
       const selected = state.selectedKeys.has(vehicle.key);
 
       return `
-        <tr class="${selected ? "selected-row" : ""}" data-key="${escapeHTML(vehicle.key)}">
+        <tr class="${selected ? "selected-row" : ""}${state.targetModel && vehicle.modelName.toLowerCase() === state.targetModel.toLowerCase() ? " vm-target-row" : ""}" data-key="${escapeHTML(vehicle.key)}" data-model="${escapeHTML(vehicle.modelName)}">
           <td><input type="checkbox" class="vm-row-check" data-key="${escapeHTML(vehicle.key)}" ${selected ? "checked" : ""}></td>
           ${editableCell(vehicle, "modelName")}
           ${editableCell(vehicle, "gameName")}
@@ -681,6 +683,7 @@ const vehicleMetaEditor = (() => {
     }).join("");
 
     body.innerHTML = rows || `<tr><td colspan="14" class="vm-muted">No vehicles match the current filters.</td></tr>`;
+    scrollToTargetModel();
 
     const visibleKeys = state.filteredIndexes.map(index => state.vehicles[index].key);
     const selectedVisibleCount = visibleKeys.filter(key => state.selectedKeys.has(key)).length;
@@ -1027,14 +1030,204 @@ const vehicleMetaEditor = (() => {
     });
   }
 
+  // ── Build a minimal valid vehicles.meta XML from a cloud vehicle record ──
+  function buildVehiclesMetaXml(vehicle) {
+    function textTag(tag, value) {
+      if (value == null || value === "") return "";
+      return `    <${tag}>${String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</${tag}>`;
+    }
+    function valueTag(tag, value) {
+      if (value == null || value === "") return "";
+      return `    <${tag} value="${String(value).replace(/"/g,"&quot;")}"/>`;
+    }
+
+    const modelName = vehicle.modelName || "";
+    const lines = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<CVehicleModelInfo__InitDataList>',
+      '  <InitDatas>',
+      '    <Item>',
+      textTag("modelName", modelName),
+      textTag("txdName", vehicle.txdName || modelName),
+      textTag("handlingId", vehicle.handlingId),
+      textTag("gameName", vehicle.gameName),
+      textTag("vehicleMakeName", vehicle.makeName || vehicle.vehicleMakeName),
+      textTag("vehicleClass", vehicle.vehicleClass),
+      textTag("type", vehicle.vehicleType),
+      textTag("audioNameHash", vehicle.audioName || vehicle.audioNameHash),
+      textTag("layout", vehicle.layoutName || vehicle.layout),
+      valueTag("frequency", vehicle.frequency),
+      valueTag("maxNum", vehicle.maxNum),
+      valueTag("maxNumOfSameColor", vehicle.maxNumOfSameColor),
+      valueTag("identicalModelSpawnDistance", vehicle.identicalModelSpawnDistance),
+      textTag("swankness", vehicle.swankness),
+      '    </Item>',
+      '  </InitDatas>',
+      '</CVehicleModelInfo__InitDataList>'
+    ].filter(Boolean);
+
+    return lines.join("\n");
+  }
+
+  // ── Scroll table to highlight the target model row ──
+  function scrollToTargetModel() {
+    if (!state.targetModel) return;
+    const row = el("vmTableBody") && el("vmTableBody").querySelector(".vm-target-row");
+    if (row) {
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  // ── Show pack warning banner when opening from Vehicle Details ──
+  function showPackWarning(modelName, sourcePack) {
+    const banner = el("vmCloudBanner");
+    if (!banner) return;
+    banner.hidden = false;
+    const packText = sourcePack ? ` (Pack: <strong>${sourcePack}</strong>)` : "";
+    banner.innerHTML =
+      `⚠ <strong>${modelName}</strong> is part of a multi-vehicle pack${packText}. ` +
+      `Drop the full <strong>vehicles.meta</strong> for that pack below — all vehicles will load and ` +
+      `<strong>${modelName}</strong> will be highlighted in the table. ` +
+      `<em>Do not export until the full pack is loaded.</em>`;
+    setStatus(`Drop the pack's vehicles.meta to load all vehicles. Editing ${modelName} alone risks breaking the DLC.`, "warn");
+  }
+
+  // ── After any file loads, check if the target model is present ──
+  function checkTargetAfterLoad() {
+    if (!state.targetModel) return;
+    const found = state.vehicles.find(
+      v => v.modelName.toLowerCase() === state.targetModel.toLowerCase()
+    );
+    const banner = el("vmCloudBanner");
+    if (found) {
+      if (banner) {
+        banner.hidden = false;
+        banner.innerHTML =
+          `✓ Found <strong>${found.modelName}</strong> in this file ` +
+          `(${state.vehicles.length} vehicles total). ` +
+          `Edit it below, then use <strong>Export Full vehicles.meta</strong> to export the complete pack.`;
+      }
+      // Filter table to highlight the row, then clear filter so all vehicles show
+      el("vmSearch").value = found.modelName;
+      applyFilters();
+      setTimeout(() => {
+        el("vmSearch").value = "";
+        applyFilters();
+      }, 1500);
+    }
+  }
+
+  // ── Export just the currently visible/active single vehicle ──
+
+  function exportSingleVehicleXml() {
+    if (!state.vehicles.length) {
+      return setStatus("No vehicle loaded to export.", "warn");
+    }
+
+    // Use first visible/filtered vehicle, or first vehicle overall
+    const index = state.filteredIndexes.length > 0
+      ? state.filteredIndexes[0]
+      : 0;
+    const vehicle = state.vehicles[index];
+    if (!vehicle) return setStatus("No vehicle to export.", "warn");
+
+    const serializer = new XMLSerializer();
+
+    // Preserve residentTxd and residentAnims from the source document
+    const residentTxdNode = state.xmlDoc && state.xmlDoc.querySelector("residentTxd");
+    const residentTxd = residentTxdNode ? residentTxdNode.textContent.trim() : "vehshare";
+
+    const residentAnimsNode = state.xmlDoc && state.xmlDoc.querySelector("residentAnims");
+    const residentAnimsXml = residentAnimsNode
+      ? "  " + serializer.serializeToString(residentAnimsNode)
+      : "  <residentAnims />";
+
+    // Collect txdRelationships entries for this vehicle
+    const modelNameLower = (vehicle.modelName || "").toLowerCase();
+    const txdItems = [];
+    if (state.xmlDoc) {
+      state.xmlDoc.querySelectorAll("txdRelationships > Item").forEach(item => {
+        const child = item.querySelector("child");
+        if (child && child.textContent.trim().toLowerCase() === modelNameLower) {
+          txdItems.push("    " + serializer.serializeToString(item));
+        }
+      });
+    }
+
+    const txdSection = txdItems.length
+      ? "  <txdRelationships>\n" + txdItems.join("\n") + "\n  </txdRelationships>"
+      : "";
+
+    const itemXml = "    " + serializer.serializeToString(vehicle.item);
+
+    const parts = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<CVehicleModelInfo__InitDataList>',
+      `  <residentTxd>${residentTxd}</residentTxd>`,
+      residentAnimsXml,
+      '  <InitDatas>',
+      itemXml,
+      '  </InitDatas>',
+      txdSection,
+      '</CVehicleModelInfo__InitDataList>'
+    ].filter(Boolean);
+
+    const filename = `${vehicle.modelName || "vehicle"}.meta`;
+    downloadText(filename, parts.join("\n"), "application/xml");
+    setStatus(`Exported ${filename} with all original fields preserved.`, "good");
+  }
+
   async function init() {
     setupQuickEditFields();
     setupEvents();
     updateStats();
     updateExportFilenamePreview();
 
-    const ready = await initializeProjectDatabase();
-    if (ready) await restoreLastProject();
+    const params = new URLSearchParams(window.location.search);
+    const modelName = params.get("modelName");
+    const sourcePack = params.get("sourcePack") || "";
+
+    if (modelName) {
+      state.targetModel = modelName;
+      state.sourcePack = sourcePack;
+
+      // Try to auto-load from cloud (R2) before showing the drop-zone warning
+      if (window.metaFileCloud) {
+        const banner = el("vmCloudBanner");
+        try {
+          if (banner) {
+            banner.hidden = false;
+            banner.innerHTML = `⏳ Looking for <strong>${modelName}</strong> in the cloud…`;
+          }
+          // Try by pack name first (more precise), then fall back to model name
+          const lookupKey = sourcePack || modelName;
+          const result = await window.metaFileCloud.getFile("vehicles-meta", lookupKey);
+          if (result && result.ok && result.file && result.file.xml) {
+            const { xml, packName, entryCount, updatedAt } = result.file;
+            const dateStr = updatedAt ? new Date(updatedAt).toLocaleDateString() : "";
+            parseVehicles(xml, result.file.originalFilename || "vehicles.meta");
+            if (banner) {
+              banner.hidden = false;
+              banner.innerHTML =
+                `✓ Auto-loaded pack <strong>${packName}</strong> from cloud ` +
+                `(${entryCount} vehicles${dateStr ? ", saved " + dateStr : ""}). ` +
+                `<strong>${modelName}</strong> is highlighted. ` +
+                `Edit then use <strong>Export Full vehicles.meta</strong>.`;
+            }
+            setStatus(`Loaded ${entryCount} vehicles from cloud. ${modelName} highlighted.`, "good");
+            return; // done — no need to show the drop warning
+          }
+        } catch (_e) {
+          // Not found in cloud or network error — fall through to drop-zone warning
+        }
+      }
+
+      // Nothing in the cloud yet — show the standard drop-zone warning
+      showPackWarning(modelName, sourcePack);
+    } else {
+      const ready = await initializeProjectDatabase();
+      if (ready) await restoreLastProject();
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);
@@ -1046,6 +1239,7 @@ const vehicleMetaEditor = (() => {
     runAnalyzer,
     saveCurrentProject,
     exportXml,
+    exportSingleVehicleXml,
     exportJson,
     copyXml
   };

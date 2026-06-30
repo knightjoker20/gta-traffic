@@ -850,7 +850,6 @@ async function deleteVehicleImage(modelName) {
       `Image deletion failed with status ${response.status}.`
     );
   }
-
   return result.image;
 }
 
@@ -879,4 +878,3 @@ window.vehicleCloud = {
   getSourceHistory
 };
 })();
-
