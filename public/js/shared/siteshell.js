@@ -1,4 +1,4 @@
-// =====================================================
+﻿// =====================================================
 // [MODULE: SITE_TOOL_MENU]
 // Shared GTA-Traffic.com tool navigation.
 // Edit SITE_TOOL_NAV_ITEMS once to update every page using it.
@@ -97,3 +97,6 @@ document.addEventListener(
 );
 
 // [END MODULE: SITE_TOOL_MENU]
+
+
+

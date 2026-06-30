@@ -1,0 +1,441 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Popgroups Workspace - GTA Traffic Studio</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="popgroups">
+<header class="app-header">
+  <div class="brand-left">
+    <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic Studio Logo">
+
+    <div class="brand-copy">
+      <div class="brand-title">GTA Traffic Studio</div>
+      <div class="tagline">Traffic tools built for modders</div>
+    </div>
+  </div>
+
+
+</header>
+
+<div id="siteToolMenu"></div>
+
+<section class="hero-banner">
+  <div class="hero-shade">
+    <div class="hero-content">
+      <div class="hero-kicker">Traffic Configuration Manager</div>
+      <h1>Popgroups Workspace</h1>
+      <p>Import, edit, balance, and export GTA V traffic groups from one focused workspace.</p>
+    </div>
+  </div>
+</section>
+
+<main>
+
+  <!-- =====================================================
+       DASHBOARD GRID
+       Three main tool cards, matching the new mockup layout.
+       ===================================================== -->
+  <div class="dashboard-grid">
+
+    <!-- ================= IMPORTS ================= -->
+    <section id="importsPanel" class="panel tool-card imports-card">
+      <h2><span class="icon-orange">â¬‡</span> Imports</h2>
+
+      <div class="drop-row">
+        <div id="popgroupsDropZone" class="dropZone drop-popgroups">
+          <div class="drop-icon orange-icon">â–±</div>
+          <div>Drop your popgroups.xml</div>
+          <small>or popgroups.ymt XML export here</small>
+        </div>
+
+        <div id="metaDropZone" class="dropZone drop-meta">
+          <div class="drop-icon purple-icon">â–±</div>
+          <div>Drop vehicles.meta here</div>
+          <small>If an active pack is selected, vehicles will be tagged to that pack.</small>
+        </div>
+      </div>
+
+      <div class="import-picker-row">
+        <label class="file-picker-label popgroups-file-picker">
+          <span>Choose PopGroups XML</span>
+          <input type="file" id="popgroupsFilePicker" accept=".xml,.ymt,.txt">
+        </label>
+
+        <label class="file-picker-label meta-file-picker">
+          <span>Choose vehicles.meta Files</span>
+          <input type="file" id="metaFilePicker" multiple accept=".meta,.xml,.txt">
+        </label>
+      </div>
+
+      <div class="toolbar action-row">
+        <button class="btn-orange" onclick="showSection('vehicles')">Vehicles</button>
+        <button class="btn-purple" onclick="showSection('peds')">Peds</button>
+        <button class="btn-blue" onclick="toggleImageMode()">Toggle Images</button>
+        <button class="btn-green" onclick="refreshImages()">Refresh Images</button>
+        <button class="secondary" onclick="openAllGroups()">Open All</button>
+        <button class="secondary" onclick="closeAllGroups()">Close All</button>
+      </div>
+
+      <div class="toolbar action-row">
+        <button onclick="copyVehGroupsToClipboard()">Copy VEH Groups</button>
+        <button onclick="copyCurrentGroupOnly()">Copy Current Group</button>
+        <button onclick="exportEditedXML()">Export Safe XML</button>
+      </div>
+
+
+      <div id="status"></div>
+      <div id="metaStatus"></div>
+      <div id="stats"></div>
+
+      <!-- =====================================================
+           [SECTION: SAVED_WORKSPACE]
+           IndexedDB cache for vehicles.meta and the most recent
+           Popgroups project, plus portable JSON backup controls.
+           ===================================================== -->
+      <div class="workspace-save-box">
+        <div class="workspace-save-heading">
+          <div>
+            <h3>Saved Workspace</h3>
+            <p class="small">
+              Your parsed metadata and most recent Popgroups project
+              are restored automatically in this browser.
+            </p>
+          </div>
+
+          <span class="workspace-autosave-badge">
+            Autosave On
+          </span>
+        </div>
+
+        <div id="workspaceStorageStatus">
+          <div class="small">Checking browser storage...</div>
+        </div>
+
+        <div class="workspace-save-actions">
+          <button
+            class="btn-green"
+            type="button"
+            onclick="saveWorkspaceNow()"
+          >
+            Save Now
+          </button>
+
+          <button
+            type="button"
+            onclick="exportWorkspaceBackup()"
+          >
+            Export Workspace Backup
+          </button>
+
+          <button
+            class="secondary"
+            type="button"
+            onclick="document.getElementById('workspaceBackupImport').click()"
+          >
+            Import Workspace Backup
+          </button>
+
+          <button
+            class="secondary"
+            type="button"
+            onclick="clearSavedVehicleMetadata()"
+          >
+            Clear Meta Cache
+          </button>
+
+          <button
+            class="danger"
+            type="button"
+            onclick="clearSavedPopgroupsProject()"
+          >
+            Clear Saved Popgroups
+          </button>
+
+          <input
+            id="workspaceBackupImport"
+            type="file"
+            accept=".json"
+            hidden
+          >
+        </div>
+
+        <p class="small workspace-backup-note">
+          Browser data can be removed when site data is cleared. Export a
+          workspace backup occasionally for a permanent copy.
+        </p>
+      </div>
+      <!-- [END SECTION: SAVED_WORKSPACE] -->
+
+      <p class="small">
+        Images must be in the images folder beside this HTML file. Example: images/crownvic98.jpg.
+      </p>
+    </section>
+
+    <!-- ================= PACK DB BUILDER ================= -->
+        <!-- ================= PACK DB BUILDER ================= -->
+    <section id="packBuilderPanel" class="panel tool-card builder-card">
+      <h2><span class="icon-orange">PACK</span> DB Builder</h2>
+
+      <p class="small">
+        Paste a DLC file list or drop a vehicles.meta file to build a clean vehicle list for your pack.
+      </p>
+
+      <div id="packBuilderModePanel" class="pack-builder-mode-panel">
+        <div class="pack-builder-mode-label">Build Mode</div>
+        <div class="pack-builder-mode-buttons">
+          <button id="packBuilderModeModButton" class="secondary is-active" type="button" onclick="setPackBuilderMode('mod-pack')">Mod Pack</button>
+          <button id="packBuilderModeDlcButton" class="secondary" type="button" onclick="setPackBuilderMode('gta-dlc-reference')">GTA DLC Reference</button>
+        </div>
+        <div id="packBuilderModeHelp" class="small pack-builder-mode-help">
+          Build a normal creator/mod pack for Pack Tracker.
+        </div>
+      </div>
+
+      <div id="packBuilderDlcReferenceFields" class="pack-builder-reference-fields" hidden>
+        <select id="builderSourceTypeInput">
+          <option value="rockstar-dlc">Rockstar DLC</option>
+          <option value="base-game">Base Game</option>
+          <option value="patchday">Patchday</option>
+          <option value="update-rpf">update.rpf</option>
+          <option value="custom-reference">Custom Reference</option>
+        </select>
+        <input id="builderSourceFileInput" placeholder="Source file, example: vehicles.meta">
+      </div>
+
+      <div class="pack-form-grid">
+        <input id="builderPackNameInput" placeholder="Pack name">
+        <input id="builderCreatorInput" placeholder="Creator">
+        <input id="builderDlcInput" placeholder="DLC folder / dlcpack name">
+        <input id="builderVersionInput" placeholder="Version">
+        <input id="builderWebsiteInput" placeholder="Website / download URL">
+        <input id="builderNotesInput" placeholder="Notes">
+      </div>
+
+      <textarea id="builderFileListInput" placeholder="Paste file list here, example:
+350z.yft
+350z_hi.yft
+350z.ytd
+750li.yft
+750li_hi.yft
+750li.ytd" spellcheck="false"></textarea>
+
+      <div id="packBuilderMetaDropZone" class="pack-meta-drop-zone" role="button" tabindex="0">
+        <input id="packBuilderMetaFileInput" type="file" accept=".meta,.xml,.txt,text/xml,text/plain" style="display:none">
+        <div class="pack-meta-drop-icon">META</div>
+        <div class="pack-meta-drop-title">Drop vehicles.meta here</div>
+        <div class="pack-meta-drop-subtitle">or click to browse. The builder will auto-detect modelName entries.</div>
+      </div>
+
+      <textarea id="builderVehicleMetaInput" class="pack-meta-paste-box" placeholder="Or paste vehicles.meta here." spellcheck="false"></textarea>
+
+      <div class="builder-buttons">
+        <button class="btn-orange wide-btn" onclick="buildPackJsonFromFileList()">Build From File List</button>
+        <button class="btn-orange wide-btn" onclick="buildPackJsonFromVehicleMeta()">Build From vehicles.meta</button>
+        <button class="btn-purple wide-btn" onclick="importBuiltPackJson()">Import Into Tracker</button>
+        <button class="btn-purple wide-btn" onclick="saveBuiltPackToTrackerAndCloud()">Save Tracker to Cloud</button>
+        <button class="secondary wide-btn" onclick="clearPackBuilder()">Clear Builder</button>
+      </div>
+
+      <div id="packBuilderStatus"></div>
+
+      <h3>Detected Vehicles</h3>
+      <div id="packBuilderVehicleList" class="builder-output small">
+        No pack built yet.
+      </div>
+    </section>
+
+    <!-- ================= MOD PACK TRACKER ================= -->
+    <section id="packPanel" class="panel tool-card tracker-card">
+      <h2><span class="icon-purple">â–£</span> Mod Pack Tracker</h2>
+
+      <div class="pack-form-grid">
+        <input id="packNameInput" placeholder="Pack name">
+        <input id="packCreatorInput" placeholder="Creator">
+        <input id="packDlcInput" placeholder="DLC folder / dlcpack name">
+        <input id="packVersionInput" placeholder="Version">
+        <input id="packWebsiteInput" placeholder="Website / download URL">
+        <input id="packNotesInput" placeholder="Notes">
+      </div>
+
+      <div class="pack-actions">
+        <button class="btn-purple" onclick="createOrUpdatePack()">Save / Select Pack</button>
+        <button class="secondary" onclick="clearActivePack()">No Active Pack</button>
+        <button onclick="downloadPackDatabase()">Export Pack DB</button>
+        <button class="secondary" onclick="document.getElementById('packDbImport').click()">Import Pack DB</button>
+        <button class="btn-green" onclick="manualSyncPackDatabaseToCloud()">Sync Pack DB to Cloud</button>
+        <button class="secondary" onclick="resetPackCloudToken()">Reset Cloud Token</button>
+        <input type="file" id="packDbImport" accept=".json" style="display:none">
+      </div>
+
+      <div id="activePackBox" class="active-pack">
+        Active pack: none. Meta imports will be unassigned.
+      </div>
+
+      <div id="packStatus"></div>
+      <div id="packCloudStatus" class="pack-cloud-status">Cloud sync: not checked yet.</div>
+
+      <div class="search-wrap">
+        <input id="packSearchBox" placeholder="Search packs or vehicles...">
+      </div>
+
+      <div id="packList"></div>
+    </section>
+  </div>
+
+
+  <!-- =====================================================
+       VEHICLE LOD + STREAMING LOAD SCANNER
+       Reads file names and sizes only. No files are uploaded.
+       ===================================================== -->
+  <section id="lodScannerPanel" class="panel scanner-panel">
+    <div class="scanner-heading">
+      <div>
+        <h2><span class="icon-orange">âš </span> Vehicle LOD & Streaming Scanner</h2>
+        <p class="small">
+          Scan vehicle <code>.yft</code> and <code>.ytd</code> files. The browser records names and sizes locally,
+          matches them to spawn names, and combines them with LOD distance values parsed from vehicles.meta.
+        </p>
+      </div>
+      <div class="calibration-note">
+        <strong>Reference points</strong><br>
+        Adder: about 1.96 MB total<br>
+        Topcar 720: about 56.8 MB total
+      </div>
+    </div>
+
+    <div id="assetDropZone" class="dropZone asset-drop-zone">
+      <div class="drop-icon orange-icon">â—«</div>
+      <div>Drop vehicle .yft and .ytd files here</div>
+      <small>Folder selection is also available. Files stay on your computer.</small>
+    </div>
+
+    <div class="asset-picker-grid">
+      <label class="file-picker-label">
+        <span>Choose Vehicle Files</span>
+        <input type="file" id="assetFilePicker" multiple accept=".yft,.ytd">
+      </label>
+
+      <label class="file-picker-label">
+        <span>Choose DLC Folder</span>
+        <input type="file" id="assetFolderPicker" webkitdirectory directory multiple>
+      </label>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-orange" onclick="renderAssetSummary()">Refresh Report</button>
+      <button onclick="downloadVehicleAssetDatabase()">Export Asset DB</button>
+      <button class="secondary" onclick="document.getElementById('assetDbImport').click()">Import Asset DB</button>
+      <button class="danger" onclick="clearVehicleAssetDatabase()">Clear Asset DB</button>
+      <input type="file" id="assetDbImport" accept=".json" style="display:none">
+    </div>
+
+    <div id="assetStatus"></div>
+    <div id="assetSummary" class="asset-summary"></div>
+
+    <details class="rating-guide">
+      <summary>Streaming-load rating guide</summary>
+      <div class="rating-guide-grid">
+        <div><span class="load-badge rating-vanilla">Vanilla</span><strong>0â€“3 MB</strong><small>Common traffic</small></div>
+        <div><span class="load-badge rating-light">Light</span><strong>3â€“8 MB</strong><small>Frequent traffic</small></div>
+        <div><span class="load-badge rating-moderate">Moderate</span><strong>8â€“20 MB</strong><small>Watch density</small></div>
+        <div><span class="load-badge rating-heavy">Heavy</span><strong>20â€“40 MB</strong><small>Limited spawning</small></div>
+        <div><span class="load-badge rating-extreme">Extreme</span><strong>40â€“60 MB</strong><small>Rare traffic</small></div>
+        <div><span class="load-badge rating-critical">Critical</span><strong>60+ MB</strong><small>Avoid common groups</small></div>
+      </div>
+      <p class="small">
+        These are practical traffic-management guidelines based on your vanilla and high-end examples.
+        They are not official Rockstar engine limits.
+      </p>
+    </details>
+	 <div class="search-wrap">
+        <input id="searchBox" placeholder="Search current popgroups...">
+      </div>
+  </section>
+
+
+  <!-- =====================================================
+       MAIN WORK AREA
+       Popgroups editor on left, vehicle library on right.
+       ===================================================== -->
+  <div id="mainLayout">
+    <section id="editorPanel" class="panel">
+      <h2 id="sectionTitle">Vehicles</h2>
+      <div id="results"></div>
+    </section>
+
+    <section id="libraryPanel" class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <h2 style="margin-bottom:0">Vehicle Library</h2>
+        <button class="btn-orange" type="button" onclick="location.href='vehicle-library.html'">Open Full Library</button>
+      </div>
+      <div class="search-wrap">
+        <input id="librarySearchBox" placeholder="Search library vehicle, class, make, handling, pack...">
+      </div>
+
+      <div class="main-library-filter-row" aria-label="Vehicle Library quick filters">
+        <button id="mainLibraryInstalledFilter" class="main-library-filter-btn" type="button" onclick="toggleMainLibraryFilter('installed')">
+          Installed
+        </button>
+        <button id="mainLibraryFavoritesFilter" class="main-library-filter-btn" type="button" onclick="toggleMainLibraryFilter('favorites')">
+          Favorites
+        </button>
+      </div>
+
+      <div id="vehicleLibrary"></div>
+    </section>
+  </div>
+
+</main>
+
+<!-- Back to top button -->
+<button
+  id="backToTopBtn"
+  class="back-to-top"
+  type="button"
+  title="Back to top"
+  aria-label="Back to top">
+  â†‘
+</button>
+
+<footer class="app-footer">
+  <div>â˜† Built for Modders</div>
+  <div>â—Ž 100% Browser Based</div>
+  <div>â—‡ No Uploads</div>
+  <div>â–¢ Your Files Stay Local</div>
+  <div>â‡© Export Ready</div>
+  <div><strong>GTA Traffic Studio</strong> V11</div>
+</footer>
+
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/vehiclecloud.js"></script>
+<script src="js/projectscloud.js"></script>
+<script src="js/popgroups-cloud-save.js"></script>
+<script src="js/popgroups-cloud-open.js"></script>
+<script src="js/workspacestorage.js"></script>
+<script src="js/popgroups.js"></script>
+<script src="js/vehiclemeta.js"></script>
+<script src="js/packdatabase.js"></script>
+<script src="js/maincloudsync.js"></script>
+<script src="js/imagemanager.js"></script>
+<script src="js/exporttools.js"></script>
+<script src="js/packbuilder.js"></script>
+<script src="js/packbuilder-meta-dropzone.js"></script>
+<script src="js/lodtracker.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+<script src="/js/shared/siteheader.js"></script>
+<script src="js/shared/siteshell.js"></script>
+  <script defer src="/js/accountnav.js"></script>
+  <script src="js/popgroups-quickclear.js"></script>
+</body>
+</html>
+
+
+

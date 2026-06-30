@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const PAGE_TAGLINES = {
     "popgroups": "Traffic tools built for modders",
     "popcycle": "PopCycle Editor",
@@ -43,3 +43,5 @@
 
   renderSiteHeader();
 })();
+
+
