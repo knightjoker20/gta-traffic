@@ -884,3 +884,22 @@
 #vlAppearanceMetaPreview[hidden] {
   display: none;
 }
+
+/* VEHICLE_DETAILS_APPEARANCE_METADATA_V1 */
+.vd-appearance-list {
+  display: grid;
+  gap: 12px;
+}
+
+.vd-appearance-entry {
+  padding: 16px;
+  border: 1px solid rgba(251, 191, 36, .25);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, .45);
+}
+
+.vd-appearance-entry h3 {
+  margin: 0 0 10px;
+  color: #fbbf24;
+  font-size: 1rem;
+}

@@ -591,6 +591,30 @@ async function updateVehicle(
 
   return result.vehicle;
 }
+async function getVehicleAppearance(modelName, options = {}) {
+  const normalizedModelName =
+    String(modelName || "").trim();
+
+  if (!normalizedModelName) {
+    return null;
+  }
+
+  const params = new URLSearchParams();
+
+  params.set("modelName", normalizedModelName);
+
+  if (options.workspaceId) {
+    params.set("workspaceId", options.workspaceId);
+  }
+
+  const result = await fetchCloudJson(
+    `/api/vehicle-appearance?${params.toString()}`,
+    "Vehicle appearance metadata"
+  );
+
+  return result.appearance || null;
+}
+
 async function importVehicleAppearanceMetadata(metadata, options = {}) {
   const token = getLibraryWriteToken();
 
@@ -842,6 +866,7 @@ window.vehicleCloud = {
   getVehicleImages,
   getPacks,
   getVehiclePacks,
+  getVehicleAppearance,
   getLibraryData,
   updateVehicle,
   importLibraryBatch,
@@ -854,3 +879,4 @@ window.vehicleCloud = {
   getSourceHistory
 };
 })();
+

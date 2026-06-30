@@ -1895,6 +1895,184 @@ function normalizeVehicleAppearanceImportBody(body = {}) {
   };
 }
 
+function parseAppearanceJsonField(value, fallback = null) {
+  if (!value) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function normalizeVehicleAppearanceVariationRow(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    modelName: row.model_name,
+    sourceFileName: row.source_file_name,
+    sourceLabel: row.source_label,
+    dlcFolder: row.dlc_folder,
+    colors: parseAppearanceJsonField(row.colors_json, []),
+    kits: parseAppearanceJsonField(row.kits_json, []),
+    liveryCount: Number(row.livery_count || 0),
+    enabledLiveries: parseAppearanceJsonField(row.enabled_liveries_json, []),
+    plateProbabilities: parseAppearanceJsonField(row.plate_probabilities_json, []),
+    lightSettings: row.light_settings,
+    sirenSettings: row.siren_settings,
+    rawVariation: parseAppearanceJsonField(row.raw_variation_json, null),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function normalizeVehicleAppearanceKitRow(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    kitName: row.kit_name,
+    kitId: row.kit_id,
+    kitType: row.kit_type,
+    sourceFileName: row.source_file_name,
+    sourceLabel: row.source_label,
+    statModCount: Number(row.stat_mod_count || 0),
+    statModTypes: parseAppearanceJsonField(row.stat_mod_types_json, []),
+    visibleModCount: Number(row.visible_mod_count || 0),
+    linkedModCount: Number(row.linked_mod_count || 0),
+    rawKit: parseAppearanceJsonField(row.raw_kit_json, null),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function normalizeVehicleAppearanceLightRow(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    lightId: row.light_id,
+    name: row.name,
+    sourceFileName: row.source_file_name,
+    sourceLabel: row.source_label,
+    headLightTexture: row.head_light_texture,
+    headLightColor: row.head_light_color,
+    tailLightColor: row.tail_light_color,
+    indicatorColor: row.indicator_color,
+    rawLight: parseAppearanceJsonField(row.raw_light_json, null),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+async function handleVehicleAppearanceGet(request, env) {
+  const url = new URL(request.url);
+
+  const modelName =
+    String(url.searchParams.get("modelName") || "")
+      .trim()
+      .toLowerCase();
+
+  const workspaceId =
+    String(url.searchParams.get("workspaceId") || "default")
+      .trim() ||
+    "default";
+
+  if (!modelName) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "modelName is required"
+      },
+      400
+    );
+  }
+
+  const variationRow =
+    await env.DB.prepare(`
+      SELECT *
+      FROM vehicle_appearance_variations
+      WHERE workspace_id = ?
+        AND model_name = ?
+      LIMIT 1
+    `).bind(
+      workspaceId,
+      modelName
+    ).first();
+
+  const variation =
+    normalizeVehicleAppearanceVariationRow(variationRow);
+
+  let kits = [];
+  let lights = [];
+
+  if (variation?.kits?.length) {
+    const kitPlaceholders =
+      variation.kits.map(() => "?").join(",");
+
+    const kitResult =
+      await env.DB.prepare(`
+        SELECT *
+        FROM vehicle_appearance_mod_kits
+        WHERE workspace_id = ?
+          AND kit_name IN (${kitPlaceholders})
+        ORDER BY kit_name COLLATE NOCASE ASC
+      `).bind(
+        workspaceId,
+        ...variation.kits
+      ).all();
+
+    kits =
+      (kitResult.results || [])
+        .map(normalizeVehicleAppearanceKitRow)
+        .filter(Boolean);
+  }
+
+  if (variation?.lightSettings) {
+    const lightRow =
+      await env.DB.prepare(`
+        SELECT *
+        FROM vehicle_appearance_light_settings
+        WHERE workspace_id = ?
+          AND light_id = ?
+        LIMIT 1
+      `).bind(
+        workspaceId,
+        String(variation.lightSettings)
+      ).first();
+
+    const light =
+      normalizeVehicleAppearanceLightRow(lightRow);
+
+    if (light) {
+      lights = [light];
+    }
+  }
+
+  return jsonResponse({
+    ok: true,
+    workspaceId,
+    modelName,
+    appearance: {
+      variation,
+      kits,
+      lights
+    }
+  });
+}
+
 async function handleVehicleAppearanceImport(request, env) {
   const authorizationError =
     checkLibraryWriteAuthorization(request, env);
@@ -4459,6 +4637,12 @@ if (
 }
 
 if (
+  request.method === "GET" &&
+  url.pathname === "/api/vehicle-appearance"
+) {
+  return await handleVehicleAppearanceGet(request, env);
+}
+if (
   request.method === "POST" &&
   url.pathname === "/api/vehicle-appearance/import"
 ) {
@@ -5239,4 +5423,6 @@ return jsonResponse(
     }
   }
 };
+
+
 

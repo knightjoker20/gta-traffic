@@ -37,7 +37,9 @@ const state = {
   vehicle: null,
   handling: null,
   saveTimer: null,
-  source: "local"
+  source: "local",
+  appearanceMetadata: null,
+  appearanceMetadataError: ""
 };
 
 const el = id => document.getElementById(id);
@@ -276,6 +278,31 @@ const el = id => document.getElementById(id);
     }
 
     return url;
+  }
+
+  async function loadAppearanceMetadata(modelName) {
+    state.appearanceMetadata = null;
+    state.appearanceMetadataError = "";
+
+    if (!window.vehicleCloud?.getVehicleAppearance) {
+      state.appearanceMetadataError =
+        "Vehicle appearance lookup is not available in this build.";
+      return;
+    }
+
+    try {
+      state.appearanceMetadata =
+        await window.vehicleCloud.getVehicleAppearance(
+          modelName,
+          { workspaceId: "default" }
+        );
+    } catch (error) {
+      console.warn("Vehicle appearance metadata could not be loaded.", error);
+
+      state.appearanceMetadataError =
+        error.message ||
+        "Vehicle appearance metadata could not be loaded.";
+    }
   }
 
   async function loadPackMemberships(modelName) {
@@ -523,6 +550,126 @@ const el = id => document.getElementById(id);
     ].join("");
   }
 
+  function renderAppearanceValue(label, value) {
+    if (!String(value || "").trim()) {
+      return "";
+    }
+
+    return (
+      '<span><strong>' +
+      escapeHTML(label) +
+      ':</strong> ' +
+      escapeHTML(value) +
+      '</span>'
+    );
+  }
+
+  function renderAppearanceMetadata() {
+    const host = el("vdAppearanceMetadata");
+
+    if (!host) {
+      return;
+    }
+
+    if (state.appearanceMetadataError) {
+      host.innerHTML =
+        '<div class="vd-no-data">' +
+        escapeHTML(state.appearanceMetadataError) +
+        '</div>';
+      return;
+    }
+
+    const appearance = state.appearanceMetadata || {};
+    const variation = appearance.variation || null;
+    const kits = Array.isArray(appearance.kits) ? appearance.kits : [];
+    const lights = Array.isArray(appearance.lights) ? appearance.lights : [];
+
+    if (!variation && !kits.length && !lights.length) {
+      host.innerHTML =
+        '<div class="vd-no-data">No carvariations.meta or carcols.meta data has been saved for this vehicle yet.</div>';
+      return;
+    }
+
+    const cards = [];
+
+    if (variation) {
+      const meta = [
+        renderAppearanceValue("Source", variation.sourceLabel),
+        renderAppearanceValue("DLC Folder", variation.dlcFolder),
+        renderAppearanceValue("Source File", variation.sourceFileName),
+        renderAppearanceValue("Colors", (variation.colors || []).join(", ")),
+        renderAppearanceValue("Kits", (variation.kits || []).join(", ")),
+        renderAppearanceValue("Livery Count", variation.liveryCount),
+        renderAppearanceValue("Enabled Liveries", (variation.enabledLiveries || []).map(item => item.index).join(", ")),
+        renderAppearanceValue("Light Settings", variation.lightSettings),
+        renderAppearanceValue("Siren Settings", variation.sirenSettings)
+      ].filter(Boolean).join("");
+
+      const plates = (variation.plateProbabilities || [])
+        .map(item =>
+          [
+            item.name || "Plate",
+            item.value || ""
+          ].filter(Boolean).join(": ")
+        )
+        .filter(Boolean)
+        .join(", ");
+
+      cards.push([
+        '<article class="vd-appearance-entry">',
+        '<h3>Appearance / Variations</h3>',
+        meta ? '<div class="vd-pack-meta">' + meta + '</div>' : '',
+        plates
+          ? '<p class="vd-pack-notes"><strong>Plate Probabilities:</strong> ' +
+            escapeHTML(plates) +
+            '</p>'
+          : '',
+        '</article>'
+      ].join(""));
+    }
+
+    kits.forEach(kit => {
+      const meta = [
+        renderAppearanceValue("Kit Name", kit.kitName),
+        renderAppearanceValue("Kit ID", kit.kitId),
+        renderAppearanceValue("Kit Type", kit.kitType),
+        renderAppearanceValue("Stat Mods", kit.statModCount),
+        renderAppearanceValue("Stat Types", (kit.statModTypes || []).join(", ")),
+        renderAppearanceValue("Visible Mods", kit.visibleModCount),
+        renderAppearanceValue("Linked Mods", kit.linkedModCount),
+        renderAppearanceValue("Source File", kit.sourceFileName)
+      ].filter(Boolean).join("");
+
+      cards.push([
+        '<article class="vd-appearance-entry">',
+        '<h3>Customization / Mod Kit</h3>',
+        meta ? '<div class="vd-pack-meta">' + meta + '</div>' : '',
+        '</article>'
+      ].join(""));
+    });
+
+    lights.forEach(light => {
+      const meta = [
+        renderAppearanceValue("Light ID", light.lightId),
+        renderAppearanceValue("Name", light.name),
+        renderAppearanceValue("Headlight Texture", light.headLightTexture),
+        renderAppearanceValue("Headlight Color", light.headLightColor),
+        renderAppearanceValue("Taillight Color", light.tailLightColor),
+        renderAppearanceValue("Indicator Color", light.indicatorColor),
+        renderAppearanceValue("Source File", light.sourceFileName)
+      ].filter(Boolean).join("");
+
+      cards.push([
+        '<article class="vd-appearance-entry">',
+        '<h3>Lighting Profile</h3>',
+        meta ? '<div class="vd-pack-meta">' + meta + '</div>' : '',
+        '</article>'
+      ].join(""));
+    });
+
+    host.innerHTML = cards.join("");
+  }
+
   function renderSources() {
     const entries = [];
     (state.vehicle.sources?.vehiclesMeta || []).forEach(file => entries.push(["vehicles.meta", file]));
@@ -743,6 +890,7 @@ async function loadVehicle(modelName) {
       : null;
 
   await loadPackMemberships(vehicle.modelName);
+  await loadAppearanceMetadata(vehicle.modelName);
 
   el("vdPage").hidden = false;
 
@@ -752,6 +900,7 @@ async function loadVehicle(modelName) {
   renderHandling();
   renderPopgroups();
   renderPackMemberships();
+  renderAppearanceMetadata();
   renderSources();
   populateCustomForm();
 
@@ -1141,4 +1290,9 @@ async function initialize() {
 
   document.addEventListener("DOMContentLoaded", initialize);
 })();
+
+
+
+
+
 
