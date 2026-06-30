@@ -84,8 +84,10 @@
             <button class="btn-orange" type="button" onclick="vehicleMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
             <button type="button" onclick="vehicleMetaEditor.exportJson()">Export JSON Backup</button>
             <button class="secondary" type="button" onclick="vehicleMetaEditor.copyXml()">Copy XML</button>
+            <button id="vmSaveCloudBtn" class="btn-green" type="button" onclick="vehicleMetaEditor.saveToCloud()">&#9729; Save to Cloud</button>
           </div>
-          <p class="small vm-muted">The editor modifies loaded XML nodes directly — original structure is preserved. "Export This Vehicle Only" creates a single-entry file safe to use as a standalone vehicles.meta.</p>
+          <div id="vmCloudSaveStatus" class="vm-cloud-save-status" hidden></div>
+          <p class="small vm-muted">The editor modifies loaded XML nodes directly — original structure is preserved. "Export This Vehicle Only" creates a single-entry file safe to use as a standalone vehicles.meta. "Save to Cloud" stores the full pack in R2 so it auto-loads next visit.</p>
         </section>
       </div>
 

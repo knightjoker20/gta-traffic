@@ -939,6 +939,35 @@ const vehicleMetaEditor = (() => {
     }
   }
 
+  async function saveToCloud() {
+    if (!state.xmlDoc) return setStatus("Load a vehicles.meta file before saving to cloud.", "warn");
+    if (!window.metaFileCloud) return setStatus("Cloud module not loaded.", "bad");
+
+    const btn = el("vmSaveCloudBtn");
+    const statusEl = el("vmCloudSaveStatus");
+    if (btn) btn.disabled = true;
+    if (statusEl) { statusEl.hidden = false; statusEl.textContent = "Saving to cloud…"; statusEl.className = "vm-cloud-save-status loading"; }
+
+    try {
+      // Use sourcePack if set (came from vehicle details page), else use DLC name or file name
+      const packName = state.sourcePack || state.dlcName || state.fileName;
+      const entryNames = state.vehicles.map(v => v.modelName);
+      await window.metaFileCloud.saveFile("vehicles-meta", packName, serializeXml(), {
+        originalFilename: state.fileName,
+        entryNames
+      });
+      const msg = "✓ Saved " + entryNames.length + " vehicle" + (entryNames.length !== 1 ? "s" : "") + " to cloud as pack \"" + window.metaFileCloud.sanitizePackName(packName) + "\".";
+      if (statusEl) { statusEl.textContent = msg; statusEl.className = "vm-cloud-save-status success"; }
+      setStatus(msg, "good");
+    } catch (e) {
+      const errMsg = "Cloud save failed: " + (e.message || "Unknown error");
+      if (statusEl) { statusEl.textContent = errMsg; statusEl.className = "vm-cloud-save-status error"; }
+      setStatus(errMsg, "bad");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
   function setStatus(message, tone = "warn") {
     const host = el("vmStatus");
     host.className = `vm-status ${tone}`;
@@ -1177,6 +1206,7 @@ const vehicleMetaEditor = (() => {
     setStatus(`Exported ${filename} with all original fields preserved.`, "good");
   }
 
+
   async function init() {
     setupQuickEditFields();
     setupEvents();
@@ -1199,30 +1229,28 @@ const vehicleMetaEditor = (() => {
             banner.hidden = false;
             banner.innerHTML = `⏳ Looking for <strong>${modelName}</strong> in the cloud…`;
           }
-          // Try by pack name first (more precise), then fall back to model name
           const lookupKey = sourcePack || modelName;
           const result = await window.metaFileCloud.getFile("vehicles-meta", lookupKey);
           if (result && result.ok && result.file && result.file.xml) {
-            const { xml, packName, entryCount, updatedAt } = result.file;
-            const dateStr = updatedAt ? new Date(updatedAt).toLocaleDateString() : "";
-            parseVehicles(xml, result.file.originalFilename || "vehicles.meta");
+            const f = result.file;
+            const dateStr = f.updatedAt ? new Date(f.updatedAt).toLocaleDateString() : "";
+            parseVehicles(f.xml, f.originalFilename || "vehicles.meta");
             if (banner) {
               banner.hidden = false;
               banner.innerHTML =
-                `✓ Auto-loaded pack <strong>${packName}</strong> from cloud ` +
-                `(${entryCount} vehicles${dateStr ? ", saved " + dateStr : ""}). ` +
-                `<strong>${modelName}</strong> is highlighted. ` +
-                `Edit then use <strong>Export Full vehicles.meta</strong>.`;
+                "✓ Auto-loaded pack <strong>" + f.packName + "</strong> from cloud " +
+                "(" + f.entryCount + " vehicles" + (dateStr ? ", saved " + dateStr : "") + "). " +
+                "<strong>" + modelName + "</strong> is highlighted. " +
+                "Edit then use <strong>Export Full vehicles.meta</strong>.";
             }
-            setStatus(`Loaded ${entryCount} vehicles from cloud. ${modelName} highlighted.`, "good");
-            return; // done — no need to show the drop warning
+            setStatus("Loaded " + f.entryCount + " vehicles from cloud. " + modelName + " highlighted.", "good");
+            return;
           }
         } catch (_e) {
-          // Not found in cloud or network error — fall through to drop-zone warning
+          // Not found or network error - fall through to drop-zone warning
         }
       }
 
-      // Nothing in the cloud yet — show the standard drop-zone warning
       showPackWarning(modelName, sourcePack);
     } else {
       const ready = await initializeProjectDatabase();
@@ -1241,6 +1269,7 @@ const vehicleMetaEditor = (() => {
     exportXml,
     exportSingleVehicleXml,
     exportJson,
-    copyXml
+    copyXml,
+    saveToCloud
   };
 })();
