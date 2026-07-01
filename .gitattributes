@@ -1,0 +1,15 @@
+# Normalize line endings for everyone, regardless of OS/editor.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF (traditional requirement for .bat, safe default for .ps1)
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# Binary files - never touch line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.dat binary
+*.webp binary
