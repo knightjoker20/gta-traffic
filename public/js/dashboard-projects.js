@@ -15,6 +15,21 @@
     "general": "General"
   };
 
+  // Where each saved project type's editor actually lives. "Open" links
+  // build on this instead of pointing at the homepage, which has no
+  // projectId handling at all.
+  const PROJECT_TYPE_PAGES = {
+    "popgroups": "/popgroups.html",
+    "popcycle": "/popcycle.html",
+    "vehicle-meta": "/vehicle-meta.html",
+    "handling-meta": "/handling-meta.html",
+    "vehicle-library": "/vehicle-library.html"
+  };
+
+  function getProjectTypePage(projectType) {
+    return PROJECT_TYPE_PAGES[projectType] || "/";
+  }
+
   function formatDate(value) {
     if (!value) {
       return "Never";
@@ -141,7 +156,7 @@
             }
           </p>
           <div class="saved-project-card-actions">
-            <a class="button" href="/">Open PopGroups Tool</a>
+            <a class="button" href="/popgroups.html">Open PopGroups Tool</a>
             <a class="button ghost" href="/vehicle-library.html">Vehicle Library</a>
           </div>
         </div>
@@ -183,7 +198,7 @@
           </div>
 
           <div class="saved-project-card-actions">
-            <a class="button" href="/?projectId=${encodeURIComponent(project.id)}">
+            <a class="button" href="${getProjectTypePage(project.projectType)}?projectId=${encodeURIComponent(project.id)}">
               Open
             </a>
 
@@ -637,7 +652,7 @@
     };
   }
 
-  function getProjectOpenUrl(projectId, versionId = "") {
+  function getProjectOpenUrl(projectId, versionId = "", projectType = "") {
     const params = new URLSearchParams();
 
     params.set("projectId", projectId);
@@ -646,7 +661,7 @@
       params.set("versionId", versionId);
     }
 
-    return "/?" + params.toString();
+    return getProjectTypePage(projectType) + "?" + params.toString();
   }
 
   function closeProjectVersionsModal() {
@@ -714,7 +729,7 @@
       (sortedVersions.length === 1 ? "" : "s");
 
     modal.querySelector("[data-project-versions-actions]").innerHTML = `
-      <a class="button" href="${escapeProjectModalHTML(getProjectOpenUrl(project.id))}">
+      <a class="button" href="${escapeProjectModalHTML(getProjectOpenUrl(project.id, "", project.projectType))}">
         Open Latest
       </a>
 
@@ -758,7 +773,7 @@
 
               <a
                 class="button"
-                href="${escapeProjectModalHTML(getProjectOpenUrl(project.id, version.id))}"
+                href="${escapeProjectModalHTML(getProjectOpenUrl(project.id, version.id, project.projectType))}"
               >
                 Open This Version
               </a>
@@ -812,7 +827,36 @@
       dashboardProjectFilter =
         filterButton.getAttribute("data-project-filter") || "active";
 
-      document.addEventListener("input", event => {
+      loadSavedProjects();
+    }
+
+    if (detailsButton) {
+      showProjectDetails(detailsButton.getAttribute("data-project-details"));
+    }
+
+    if (editButton) {
+      openProjectEditModal(editButton.getAttribute("data-project-edit"));
+    }
+
+    if (statusButton) {
+      updateProjectStatus(
+        statusButton.getAttribute("data-project-status-id"),
+        statusButton.getAttribute("data-project-status")
+      );
+    }
+
+    if (clearSearchButton) {
+      dashboardProjectSearch = "";
+      dashboardProjectTypeFilter = "all";
+      loadSavedProjects();
+    }
+  });
+
+  // Registered once, not inside the click handler above — that was
+  // re-registering a fresh copy of both listeners on every filter-button
+  // click, so search/sort would fire loadSavedProjects() more and more
+  // times per keystroke the longer the page stayed open.
+  document.addEventListener("input", event => {
     const searchInput = event.target.closest("[data-project-search]");
 
     if (!searchInput) {
@@ -840,25 +884,6 @@
     if (sortSelect) {
       dashboardProjectSort = sortSelect.value || "pinned-newest";
       loadSavedProjects();
-    }
-  });
-
-  loadSavedProjects();
-    }
-
-    if (detailsButton) {
-      showProjectDetails(detailsButton.getAttribute("data-project-details"));
-    }
-
-    if (editButton) {
-      openProjectEditModal(editButton.getAttribute("data-project-edit"));
-    }
-
-    if (statusButton) {
-      updateProjectStatus(
-        statusButton.getAttribute("data-project-status-id"),
-        statusButton.getAttribute("data-project-status")
-      );
     }
   });
 

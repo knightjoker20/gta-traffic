@@ -148,26 +148,73 @@
 
 .pg-library-heading h2 {
   margin: 0;
+  flex: 1;
 }
 
-.pg-library-heading .toolbar {
+.pg-library-collapse-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.16s ease;
 }
 
-#mainLayout.pg-library-collapsed {
-  grid-template-columns: minmax(0, 1fr) auto;
+#libraryPanel {
+  transition: width 0.16s ease, min-width 0.16s ease;
+}
+
+/* Collapsed: the column itself shrinks to a slim strip, not just its content.
+   Selector includes .pg-wide-main-layout so its specificity (2 classes + 1 id)
+   beats the later duplicate "#mainLayout.pg-wide-main-layout" rule further down
+   this file — otherwise that later rule wins the cascade tie and silently pins
+   the grid back to 380px, which is why the editor panel wasn't widening even
+   though the library panel itself visibly shrank down to a strip. */
+#mainLayout.pg-wide-main-layout.pg-library-collapsed {
+  grid-template-columns: minmax(0, 1fr) 46px;
 }
 
 #libraryPanel.pg-library-collapsed {
-  width: auto;
-  min-width: 0;
+  width: 46px;
+  min-width: 46px;
   max-height: none;
-  overflow: visible;
+  overflow: hidden;
+  padding: 10px 8px;
 }
 
+#libraryPanel.pg-library-collapsed .pg-library-heading {
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+#libraryPanel.pg-library-collapsed .pg-library-heading h2,
+#libraryPanel.pg-library-collapsed .pg-library-heading .btn-orange,
 #libraryPanel.pg-library-collapsed #libraryPanelBody {
   display: none;
+}
+
+#libraryPanel.pg-library-collapsed .pg-library-collapse-btn {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 1200px) {
+  #libraryPanel.pg-library-collapsed {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #mainLayout.pg-library-collapsed {
+    grid-template-columns: 1fr;
+  }
 }
 
 #results {
@@ -290,13 +337,28 @@
   font-weight: 900;
 }
 
-.pg-sidebar-vehicle-card {
+.pg-sidebar-vehicle-grid {
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  gap: 9px;
+  grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
+  gap: 8px;
   padding: 9px;
-  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.pg-sidebar-vehicle-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 8px;
+  background: rgba(255,255,255,.02);
   cursor: grab;
+  min-width: 0;
+}
+
+.pg-sidebar-vehicle-card:hover {
+  border-color: rgba(255,255,255,.16);
+  background: rgba(255,255,255,.05);
 }
 
 .pg-sidebar-vehicle-card:active {
@@ -304,34 +366,49 @@
 }
 
 .pg-sidebar-vehicle-img {
-  width: 112px;
-  height: 78px;
-  border-radius: 7px;
+  width: 100%;
+  height: 62px;
+  border-radius: 6px;
   object-fit: cover;
   background: rgba(255,255,255,.06);
   display: grid;
   place-items: center;
   color: rgba(234,242,255,.55);
-  font-size: .74rem;
+  font-size: .62rem;
+  text-align: center;
+}
+
+.pg-sidebar-vehicle-body {
+  min-width: 0;
 }
 
 .pg-sidebar-vehicle-body h4 {
-  margin: 0 0 3px;
+  margin: 5px 0 1px;
   color: #fff;
-  font-size: .84rem;
+  font-size: .7rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pg-sidebar-vehicle-body p {
-  margin: 0 0 2px;
+  margin: 0;
   color: rgba(234,242,255,.68);
-  font-size: .7rem;
+  font-size: .6rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-sidebar-vehicle-body p:last-of-type {
+  display: none;
 }
 
 .pg-sidebar-vehicle-body a {
   display: inline-flex;
-  margin-top: 5px;
+  margin-top: 3px;
   color: #79c8ff;
-  font-size: .7rem;
+  font-size: .6rem;
   font-weight: 900;
   text-decoration: none;
 }

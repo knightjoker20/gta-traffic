@@ -539,12 +539,12 @@
           .join("");
 
         return `
-          <details class="pg-sidebar-category" open>
+          <details class="pg-sidebar-category">
             <summary>
               <strong>${escapeHtml(category)}</strong>
               <span>${items.length}</span>
             </summary>
-            ${cards}
+            <div class="pg-sidebar-vehicle-grid">${cards}</div>
           </details>
         `;
       })
@@ -557,9 +557,21 @@
     document.querySelectorAll(".pg-sidebar-vehicle-card").forEach((card) => {
       card.addEventListener("dragstart", (event) => {
         const model = card.dataset.model || "";
+
+        // popgroups.js's dropCard() reads the module-level `draggedItem`
+        // global (declared in state.js), not dataTransfer — dragStartFromLibrary()
+        // is the function it expects every library drag to go through.
+        if (typeof window.dragStartFromLibrary === "function") {
+          window.dragStartFromLibrary(event, model);
+        } else {
+          try {
+            draggedItem = { source: "library", section: "vehicles", modelName: model };
+          } catch {}
+          event.dataTransfer.effectAllowed = "copy";
+        }
+
         event.dataTransfer.setData("text/plain", model);
         event.dataTransfer.setData("modelName", model);
-        event.dataTransfer.effectAllowed = "copy";
       });
     });
   }
@@ -686,8 +698,8 @@
     layout?.classList.toggle("pg-library-collapsed", collapsed);
 
     if (toggle) {
-      toggle.textContent = collapsed ? "Show Library" : "Hide Library";
       toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.title = collapsed ? "Expand vehicle library" : "Collapse vehicle library";
     }
   }
 

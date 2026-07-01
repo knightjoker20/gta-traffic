@@ -46,6 +46,7 @@
           </div>
           <div class="vd-image-actions">
             <button id="vdChooseImage" type="button">Add / Change Image</button>
+            <button id="vdFindImage" class="secondary" type="button">Search Image Online</button>
             <button id="vdRemoveImage" class="secondary" type="button">Remove Image</button>
             <input id="vdImagePicker" class="vl-hidden" type="file" accept="image/png,image/jpeg,image/webp">
           </div>
@@ -70,9 +71,10 @@
         <div class="vd-main-column">
           <section class="panel">
             <div class="vd-section-heading">
-              <div><h2>Vehicle.meta Details</h2><p>Parsed from the most recently imported vehicles.meta entry.</p></div>
+              <div><h2>Vehicle.meta Details</h2><p>Parsed from the most recently imported vehicles.meta entry. Editable fields save as your own personal customization &mdash; the shared vanilla data is never changed.</p></div>
             </div>
             <div id="vdVehicleMetaDetails" class="vd-detail-grid"></div>
+            <p id="vdVehicleMetaHint" class="vd-meta-hint" hidden></p>
           </section>
 
           <section class="panel">

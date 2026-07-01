@@ -34,7 +34,7 @@ body.gta-auth-register {
 }
 
 body.gta-auth-login {
-  --gta-page-art: url("/assets/hero/gta-traffic-muscle-cars-city.png");
+  --gta-page-art: url("/assets/hero/gta-traffic-city-sunset.png");
 }
 
 body.gta-theme .dashboard-panel,

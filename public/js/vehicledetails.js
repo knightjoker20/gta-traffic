@@ -39,8 +39,83 @@ const state = {
   saveTimer: null,
   source: "local",
   appearanceMetadata: null,
-  appearanceMetadataError: ""
+  appearanceMetadataError: "",
+  fieldEdits: {},
+  fieldEditsLoggedIn: false,
+  fieldCatalogs: null,
+  handlingFieldEdits: {},
+  handlingFieldEditsLoggedIn: false
 };
+
+// Fields with a matching column in the shared `vehicles` table — these are
+// the only ones the server accepts personal overrides for (see
+// EDITABLE_VEHICLE_FIELDS in src/index.js). Keep this list in sync with
+// that whitelist.
+const VEHICLE_META_FIELDS = [
+  { key: "gameName", label: "gameName", type: "text" },
+  { key: "vehicleMakeName", label: "vehicleMakeName", type: "text" },
+  { key: "vehicleClass", label: "vehicleClass", type: "select", catalog: "vehicleClass" },
+  { key: "vehicleType", label: "vehicleType", type: "select", catalog: "vehicleType" },
+  { key: "handlingId", label: "handlingId", type: "text" },
+  { key: "audioNameHash", label: "audioNameHash", type: "vehicle-select" },
+  { key: "layout", label: "layout", type: "select", catalog: "layout" },
+  { key: "frequency", label: "frequency", type: "number" },
+  { key: "maxNum", label: "maxNum", type: "number" },
+  { key: "maxNumOfSameColor", label: "maxNumOfSameColor", type: "number" },
+  { key: "identicalModelSpawnDistance", label: "identicalModelSpawnDistance", type: "number" },
+  { key: "swankness", label: "swankness", type: "select", catalog: "swankness" }
+];
+
+// Fields catalogued into dropdowns of every distinct value already in use
+// across the loaded Vehicle Library, so choices always reflect real data
+// instead of a hand-maintained list. Built once the full vehicle list loads
+// (see buildFieldCatalogs()). audioNameHash is special-cased: instead of a
+// list of distinct hash strings, it lists vehicles by name so picking one
+// borrows that vehicle's sound.
+const VEHICLE_META_CATALOG_FIELDS = ["vehicleClass", "vehicleType", "layout", "swankness"];
+
+// Handling fields that can carry a personal edit (see EDITABLE_HANDLING_FIELDS
+// in src/index.js — keep in sync). handling.meta profiles are shared by
+// handling_name across many vehicles, so an edit here isn't scoped to just
+// this vehicle — it applies everywhere this handling profile is used, same
+// as it would if you edited the real handling.meta file.
+const HANDLING_EDITABLE_FIELD_TYPES = {
+  AIHandling: "text",
+  fDriveBiasFront: "number",
+  nInitialDriveGears: "number",
+  fMass: "number",
+  fInitialDriveForce: "number",
+  fDriveInertia: "number",
+  fInitialDriveMaxFlatVel: "number",
+  fInitialDragCoeff: "number",
+  fBrakeForce: "number",
+  fBrakeBiasFront: "number",
+  fHandBrakeForce: "number",
+  fSteeringLock: "number",
+  fClutchChangeRateScaleUpShift: "number",
+  fClutchChangeRateScaleDownShift: "number",
+  fTractionCurveMax: "number",
+  fTractionCurveMin: "number",
+  fTractionCurveLateral: "number",
+  fTractionBiasFront: "number",
+  fLowSpeedTractionLossMult: "number",
+  fTractionLossMult: "number",
+  fSuspensionForce: "number",
+  fSuspensionCompDamp: "number",
+  fSuspensionReboundDamp: "number",
+  fSuspensionRaise: "number",
+  fAntiRollBarForce: "number",
+  fRollCentreHeightFront: "number",
+  fRollCentreHeightRear: "number",
+  fCollisionDamageMult: "number",
+  fWeaponDamageMult: "number",
+  fDeformationDamageMult: "number",
+  fEngineDamageMult: "number"
+};
+
+// Fields shown read-only because there's no dedicated column to save them
+// against yet (they only live inside raw_record_json today).
+const VEHICLE_META_READONLY_FIELDS = ["txdName", "plateType", "wheelType"];
 
 const el = id => document.getElementById(id);
   function escapeHTML(value) {
@@ -189,27 +264,269 @@ const el = id => document.getElementById(id);
     renderImage();
   }
 
+  function editableFieldControl(fieldDef, currentValue, disabledAttr) {
+    if (fieldDef.type === "select") {
+      const options = (state.fieldCatalogs?.[fieldDef.catalog] || []).slice();
+      if (currentValue && !options.includes(currentValue)) {
+        options.unshift(currentValue);
+      }
+
+      return `
+        <select class="vd-detail-input" data-field="${escapeHTML(fieldDef.key)}" ${disabledAttr}>
+          <option value=""${currentValue ? "" : " selected"}>—</option>
+          ${options
+            .map(
+              option =>
+                `<option value="${escapeHTML(option)}"${option === currentValue ? " selected" : ""}>${escapeHTML(option)}</option>`
+            )
+            .join("")}
+        </select>
+      `;
+    }
+
+    if (fieldDef.type === "vehicle-select") {
+      const audioVehicles = state.fieldCatalogs?.audioVehicles || [];
+      const matchedByValue = audioVehicles.some(vehicle => vehicle.audioNameHash === currentValue);
+
+      return `
+        <select class="vd-detail-input" data-field="${escapeHTML(fieldDef.key)}" ${disabledAttr}>
+          <option value=""${currentValue ? "" : " selected"}>—</option>
+          ${
+            currentValue && !matchedByValue
+              ? `<option value="${escapeHTML(currentValue)}" selected>${escapeHTML(currentValue)} (current)</option>`
+              : ""
+          }
+          ${audioVehicles
+            .map(
+              vehicle =>
+                `<option value="${escapeHTML(vehicle.audioNameHash)}"${vehicle.audioNameHash === currentValue ? " selected" : ""}>${escapeHTML(vehicle.displayName)} — ${escapeHTML(vehicle.audioNameHash)}</option>`
+            )
+            .join("")}
+        </select>
+      `;
+    }
+
+    return `
+      <input
+        type="${fieldDef.type}"
+        class="vd-detail-input"
+        data-field="${escapeHTML(fieldDef.key)}"
+        value="${escapeHTML(currentValue)}"
+        ${disabledAttr}
+      >
+    `;
+  }
+
+  function editableFieldRow(fieldDef) {
+    const meta = state.vehicle.vehiclesMeta || {};
+    const override = state.fieldEdits[fieldDef.key];
+    const vanillaValue = meta[fieldDef.key];
+    const currentValue = override ? override.editedValue : formatValue(vanillaValue, "");
+    const isCustomized = Boolean(override);
+    const disabledAttr = state.fieldEditsLoggedIn ? "" : ' disabled title="Log in to customize this field"';
+
+    return `
+      <div class="vd-detail-item vd-detail-item-editable${isCustomized ? " vd-detail-item-customized" : ""}">
+        <span>${escapeHTML(fieldDef.label)}${isCustomized ? '<em class="vd-customized-badge">customized</em>' : ""}</span>
+        <div class="vd-detail-edit-row">
+          ${editableFieldControl(fieldDef, currentValue, disabledAttr)}${isCustomized ? `<button type="button" class="vd-restore-btn" data-restore-field="${escapeHTML(fieldDef.key)}" title="Restore to vanilla value: ${escapeHTML(formatValue(vanillaValue))}">&#8635;</button>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
   function renderVehicleMeta() {
     const meta = state.vehicle.vehiclesMeta || {};
-    const fields = [
-      ["modelName", state.vehicle.modelName],
-      ["gameName", meta.gameName],
-      ["vehicleMakeName", meta.vehicleMakeName],
-      ["vehicleClass", meta.vehicleClass],
-      ["vehicleType", meta.vehicleType],
-      ["handlingId", meta.handlingId],
-      ["txdName", meta.txdName],
-      ["audioNameHash", meta.audioNameHash],
-      ["layout", meta.layout],
-      ["plateType", meta.plateType],
-      ["wheelType", meta.wheelType],
-      ["frequency", meta.frequency],
-      ["maxNum", meta.maxNum],
-      ["maxNumOfSameColor", meta.maxNumOfSameColor],
-      ["identicalModelSpawnDistance", meta.identicalModelSpawnDistance],
-      ["swankness", meta.swankness]
-    ];
-    el("vdVehicleMetaDetails").innerHTML = fields.map(([label, value]) => detailItem(label, value)).join("");
+
+    const readonlyItems = [
+      detailItem("modelName", state.vehicle.modelName),
+      ...VEHICLE_META_READONLY_FIELDS.map(key => detailItem(key, meta[key]))
+    ].join("");
+
+    const editableItems = VEHICLE_META_FIELDS.map(editableFieldRow).join("");
+
+    el("vdVehicleMetaDetails").innerHTML = readonlyItems + editableItems;
+
+    if (!state.fieldEditsLoggedIn) {
+      setSaveHint(
+        "Log in to save your own personal edits to these fields — the vanilla data stays untouched for everyone else."
+      );
+    } else {
+      setSaveHint("");
+    }
+  }
+
+  function setSaveHint(message) {
+    const host = el("vdVehicleMetaHint");
+    if (!host) return;
+    host.textContent = message;
+    host.hidden = !message;
+  }
+
+  async function saveMetaFieldEdit(field, value) {
+    if (!window.vehicleCloud?.saveVehicleFieldEdit) return;
+
+    try {
+      const result = await window.vehicleCloud.saveVehicleFieldEdit(
+        state.vehicle.modelName,
+        field,
+        value
+      );
+
+      if (result.restored) {
+        delete state.fieldEdits[field];
+        setStatus(`${field} matches vanilla — no personal edit saved.`, "good");
+      } else {
+        state.fieldEdits[field] = {
+          vanillaValue: result.vanillaValue,
+          editedValue: result.editedValue
+        };
+        setStatus(`Saved your personal edit for ${field}.`, "good");
+      }
+
+      renderVehicleMeta();
+    } catch (error) {
+      console.error(error);
+      setStatus(error.message || `${field} could not be saved.`, "bad");
+    }
+  }
+
+  async function restoreMetaField(field) {
+    if (!window.vehicleCloud?.restoreVehicleField) return;
+
+    try {
+      await window.vehicleCloud.restoreVehicleField(state.vehicle.modelName, field);
+      delete state.fieldEdits[field];
+      renderVehicleMeta();
+      setStatus(`Restored ${field} to the vanilla value.`, "good");
+    } catch (error) {
+      console.error(error);
+      setStatus(error.message || `${field} could not be restored.`, "bad");
+    }
+  }
+
+  function bindVehicleMetaEditHandlers() {
+    const host = el("vdVehicleMetaDetails");
+    if (!host) return;
+
+    host.addEventListener("change", event => {
+      const input = event.target.closest(".vd-detail-input");
+      if (!input) return;
+      saveMetaFieldEdit(input.dataset.field, input.value);
+    });
+
+    host.addEventListener("click", event => {
+      const button = event.target.closest(".vd-restore-btn");
+      if (!button) return;
+      restoreMetaField(button.dataset.restoreField);
+    });
+  }
+
+  async function loadHandlingFieldEdits(handlingName) {
+    state.handlingFieldEdits = {};
+    state.handlingFieldEditsLoggedIn = false;
+
+    if (!handlingName || !window.vehicleCloud?.getHandlingFieldEdits) {
+      return;
+    }
+
+    try {
+      const result = await window.vehicleCloud.getHandlingFieldEdits(handlingName);
+      state.handlingFieldEdits = result.edits || {};
+      state.handlingFieldEditsLoggedIn = Boolean(result.loggedIn);
+    } catch (error) {
+      console.warn("Personal handling edits could not be loaded.", error);
+    }
+  }
+
+  async function saveHandlingFieldEditValue(field, value) {
+    if (!window.vehicleCloud?.saveHandlingFieldEdit) return;
+    const handlingName = state.handling?.handlingName;
+    if (!handlingName) return;
+
+    try {
+      const result = await window.vehicleCloud.saveHandlingFieldEdit(handlingName, field, value);
+
+      if (result.restored) {
+        delete state.handlingFieldEdits[field];
+        setStatus(`${field} matches vanilla — no personal handling edit saved.`, "good");
+      } else {
+        state.handlingFieldEdits[field] = {
+          vanillaValue: result.vanillaValue,
+          editedValue: result.editedValue
+        };
+        setStatus(`Saved your personal handling edit for ${field}.`, "good");
+      }
+
+      renderHandling();
+    } catch (error) {
+      console.error(error);
+      setStatus(error.message || `${field} could not be saved.`, "bad");
+    }
+  }
+
+  async function restoreHandlingFieldValue(field) {
+    if (!window.vehicleCloud?.restoreHandlingField) return;
+    const handlingName = state.handling?.handlingName;
+    if (!handlingName) return;
+
+    try {
+      await window.vehicleCloud.restoreHandlingField(handlingName, field);
+      delete state.handlingFieldEdits[field];
+      renderHandling();
+      setStatus(`Restored ${field} to the vanilla handling value.`, "good");
+    } catch (error) {
+      console.error(error);
+      setStatus(error.message || `${field} could not be restored.`, "bad");
+    }
+  }
+
+  function bindHandlingEditHandlers() {
+    const host = el("vdHandlingSummary");
+    if (!host) return;
+
+    host.addEventListener("change", event => {
+      const input = event.target.closest("[data-handling-field]");
+      if (!input) return;
+      saveHandlingFieldEditValue(input.dataset.handlingField, input.value);
+    });
+
+    host.addEventListener("click", event => {
+      const button = event.target.closest("[data-restore-handling-field]");
+      if (!button) return;
+      restoreHandlingFieldValue(button.dataset.restoreHandlingField);
+    });
+  }
+
+  function effectiveHandlingValue(field) {
+    const override = state.handlingFieldEdits[field];
+    return override ? override.editedValue : state.handling?.[field];
+  }
+
+  function handlingEditableRow(field, label) {
+    const handling = state.handling;
+    const override = state.handlingFieldEdits[field];
+    const vanillaValue = handling[field];
+    const currentValue = override ? override.editedValue : formatValue(vanillaValue, "");
+    const isCustomized = Boolean(override);
+    const disabledAttr = state.handlingFieldEditsLoggedIn ? "" : ' disabled title="Log in to customize this field"';
+    const inputType = HANDLING_EDITABLE_FIELD_TYPES[field] === "text" ? "text" : "number";
+    const stepAttr = inputType === "number" ? ' step="any"' : "";
+
+    return `
+      <div class="vd-handling-row-editable${isCustomized ? " vd-handling-row-customized" : ""}">
+        <span>${escapeHTML(label)}${isCustomized ? '<em class="vd-customized-badge">customized</em>' : ""}</span>
+        <div class="vd-detail-edit-row">
+          <input
+            type="${inputType}"${stepAttr}
+            class="vd-detail-input"
+            data-handling-field="${escapeHTML(field)}"
+            value="${escapeHTML(currentValue)}"
+            ${disabledAttr}
+          >${isCustomized ? `<button type="button" class="vd-restore-btn" data-restore-handling-field="${escapeHTML(field)}" title="Restore to vanilla value: ${escapeHTML(formatValue(vanillaValue))}">&#8635;</button>` : ""}
+        </div>
+      </div>
+    `;
   }
 
   function renderHandling() {
@@ -222,55 +539,60 @@ const el = id => document.getElementById(id);
 
     const groups = [
       ["Identity & Drivetrain", [
-        ["handlingName", handling.handlingName],
-        ["AIHandling", handling.AIHandling],
-        ["Drive type", driveType(handling.fDriveBiasFront)],
-        ["Drive bias front", handling.fDriveBiasFront],
-        ["Forward gears", handling.nInitialDriveGears],
-        ["Subhandling", (handling.subHandlingTypes || []).join(", ")]
+        handlingRow("handlingName", handling.handlingName),
+        handlingEditableRow("AIHandling", "AIHandling"),
+        handlingRow("Drive type", driveType(effectiveHandlingValue("fDriveBiasFront"))),
+        handlingEditableRow("fDriveBiasFront", "Drive bias front"),
+        handlingEditableRow("nInitialDriveGears", "Forward gears"),
+        handlingRow("Subhandling", (handling.subHandlingTypes || []).join(", "))
       ]],
       ["Power & Speed", [
-        ["Mass (kg)", handling.fMass],
-        ["Drive force", handling.fInitialDriveForce],
-        ["Drive inertia", handling.fDriveInertia],
-        ["Top-gear redline value", handling.fInitialDriveMaxFlatVel],
-        ["Estimated speed", `${estimatedSpeed(handling.fInitialDriveMaxFlatVel, "mph")} / ${estimatedSpeed(handling.fInitialDriveMaxFlatVel, "kph")}`],
-        ["Initial drag", handling.fInitialDragCoeff]
+        handlingEditableRow("fMass", "Mass (kg)"),
+        handlingEditableRow("fInitialDriveForce", "Drive force"),
+        handlingEditableRow("fDriveInertia", "Drive inertia"),
+        handlingEditableRow("fInitialDriveMaxFlatVel", "Top-gear redline value"),
+        handlingRow("Estimated speed", `${estimatedSpeed(effectiveHandlingValue("fInitialDriveMaxFlatVel"), "mph")} / ${estimatedSpeed(effectiveHandlingValue("fInitialDriveMaxFlatVel"), "kph")}`),
+        handlingEditableRow("fInitialDragCoeff", "Initial drag")
       ]],
       ["Braking & Steering", [
-        ["Brake force", handling.fBrakeForce],
-        ["Brake bias front", handling.fBrakeBiasFront],
-        ["Handbrake force", handling.fHandBrakeForce],
-        ["Steering lock", handling.fSteeringLock],
-        ["Up-shift rate", handling.fClutchChangeRateScaleUpShift],
-        ["Down-shift rate", handling.fClutchChangeRateScaleDownShift]
+        handlingEditableRow("fBrakeForce", "Brake force"),
+        handlingEditableRow("fBrakeBiasFront", "Brake bias front"),
+        handlingEditableRow("fHandBrakeForce", "Handbrake force"),
+        handlingEditableRow("fSteeringLock", "Steering lock"),
+        handlingEditableRow("fClutchChangeRateScaleUpShift", "Up-shift rate"),
+        handlingEditableRow("fClutchChangeRateScaleDownShift", "Down-shift rate")
       ]],
       ["Traction", [
-        ["Traction curve max", handling.fTractionCurveMax],
-        ["Traction curve min", handling.fTractionCurveMin],
-        ["Lateral curve", handling.fTractionCurveLateral],
-        ["Traction bias front", handling.fTractionBiasFront],
-        ["Low-speed loss", handling.fLowSpeedTractionLossMult],
-        ["Surface loss multiplier", handling.fTractionLossMult]
+        handlingEditableRow("fTractionCurveMax", "Traction curve max"),
+        handlingEditableRow("fTractionCurveMin", "Traction curve min"),
+        handlingEditableRow("fTractionCurveLateral", "Lateral curve"),
+        handlingEditableRow("fTractionBiasFront", "Traction bias front"),
+        handlingEditableRow("fLowSpeedTractionLossMult", "Low-speed loss"),
+        handlingEditableRow("fTractionLossMult", "Surface loss multiplier")
       ]],
       ["Suspension & Roll", [
-        ["Suspension force", handling.fSuspensionForce],
-        ["Compression damping", handling.fSuspensionCompDamp],
-        ["Rebound damping", handling.fSuspensionReboundDamp],
-        ["Suspension raise", handling.fSuspensionRaise],
-        ["Anti-roll force", handling.fAntiRollBarForce],
-        ["Roll center front/rear", `${formatValue(handling.fRollCentreHeightFront, "—")} / ${formatValue(handling.fRollCentreHeightRear, "—")}`]
+        handlingEditableRow("fSuspensionForce", "Suspension force"),
+        handlingEditableRow("fSuspensionCompDamp", "Compression damping"),
+        handlingEditableRow("fSuspensionReboundDamp", "Rebound damping"),
+        handlingEditableRow("fSuspensionRaise", "Suspension raise"),
+        handlingEditableRow("fAntiRollBarForce", "Anti-roll force"),
+        handlingEditableRow("fRollCentreHeightFront", "Roll center front"),
+        handlingEditableRow("fRollCentreHeightRear", "Roll center rear")
       ]],
       ["Damage", [
-        ["Collision multiplier", handling.fCollisionDamageMult],
-        ["Weapon multiplier", handling.fWeaponDamageMult],
-        ["Deformation multiplier", handling.fDeformationDamageMult],
-        ["Engine multiplier", handling.fEngineDamageMult]
+        handlingEditableRow("fCollisionDamageMult", "Collision multiplier"),
+        handlingEditableRow("fWeaponDamageMult", "Weapon multiplier"),
+        handlingEditableRow("fDeformationDamageMult", "Deformation multiplier"),
+        handlingEditableRow("fEngineDamageMult", "Engine multiplier")
       ]]
     ];
 
-    el("vdHandlingSummary").innerHTML = `<div class="vd-handling-groups">${groups.map(([title, rows]) => `
-      <div class="vd-handling-group"><h3>${escapeHTML(title)}</h3><div class="vd-handling-list">${rows.map(([label, value]) => handlingRow(label, value)).join("")}</div></div>
+    const hint = state.handlingFieldEditsLoggedIn
+      ? `<p class="vd-meta-hint">Editing values here creates your personal override for the <strong>${escapeHTML(handling.handlingName)}</strong> handling profile — it applies to every vehicle that shares this handling.meta entry, just like in-game.</p>`
+      : `<p class="vd-meta-hint">Log in to save your own personal handling overrides. Edits apply to every vehicle sharing this handling profile, and the vanilla data stays untouched for everyone else.</p>`;
+
+    el("vdHandlingSummary").innerHTML = `${hint}<div class="vd-handling-groups">${groups.map(([title, rows]) => `
+      <div class="vd-handling-group"><h3>${escapeHTML(title)}</h3><div class="vd-handling-list">${rows.join("")}</div></div>
     `).join("")}</div>`;
   }
 
@@ -317,6 +639,23 @@ const el = id => document.getElementById(id);
       state.appearanceMetadataError =
         error.message ||
         "Vehicle appearance metadata could not be loaded.";
+    }
+  }
+
+  async function loadFieldEdits(modelName) {
+    state.fieldEdits = {};
+    state.fieldEditsLoggedIn = false;
+
+    if (!window.vehicleCloud?.getVehicleFieldEdits) {
+      return;
+    }
+
+    try {
+      const result = await window.vehicleCloud.getVehicleFieldEdits(modelName);
+      state.fieldEdits = result.edits || {};
+      state.fieldEditsLoggedIn = Boolean(result.loggedIn);
+    } catch (error) {
+      console.warn("Personal vehicle edits could not be loaded.", error);
     }
   }
 
@@ -861,6 +1200,48 @@ const el = id => document.getElementById(id);
     return canvas.toDataURL("image/jpeg", 0.86);
   }
 
+  function buildFieldCatalogs() {
+    const distinctValues = {
+      vehicleClass: new Set(),
+      vehicleType: new Set(),
+      layout: new Set(),
+      swankness: new Set()
+    };
+
+    const audioVehicles = [];
+
+    state.vehicles.forEach(vehicle => {
+      const meta = vehicle.vehiclesMeta || {};
+
+      VEHICLE_META_CATALOG_FIELDS.forEach(key => {
+        const value = String(meta[key] ?? "").trim();
+        if (value) distinctValues[key].add(value);
+      });
+
+      const audioValue = String(meta.audioNameHash ?? "").trim();
+      if (audioValue) {
+        audioVehicles.push({
+          modelName: vehicle.modelName,
+          displayName: displayTitle(vehicle),
+          audioNameHash: audioValue
+        });
+      }
+    });
+
+    const sortValues = values =>
+      Array.from(values).sort((a, b) => a.localeCompare(b));
+
+    state.fieldCatalogs = {
+      vehicleClass: sortValues(distinctValues.vehicleClass),
+      vehicleType: sortValues(distinctValues.vehicleType),
+      layout: sortValues(distinctValues.layout),
+      swankness: sortValues(distinctValues.swankness),
+      audioVehicles: audioVehicles.sort((a, b) =>
+        a.displayName.localeCompare(b.displayName)
+      )
+    };
+  }
+
   function populateVehicleSelector() {
     const select = el("vdVehicleSelect");
     select.innerHTML = state.vehicles.map(vehicle => `<option value="${escapeHTML(vehicle.modelName)}">${escapeHTML(displayTitle(vehicle))} (${escapeHTML(vehicle.modelName)})</option>`).join("");
@@ -906,6 +1287,8 @@ async function loadVehicle(modelName) {
 
   await loadPackMemberships(vehicle.modelName);
   await loadAppearanceMetadata(vehicle.modelName);
+  await loadFieldEdits(vehicle.modelName);
+  await loadHandlingFieldEdits(state.handling?.handlingName || "");
 
   el("vdPage").hidden = false;
 
@@ -932,6 +1315,9 @@ async function loadVehicle(modelName) {
 }
 
   function bindEvents() {
+    bindVehicleMetaEditHandlers();
+    bindHandlingEditHandlers();
+
     el("vdVehicleSelect").addEventListener("change", event => {
       if (event.target.value) location.href = `vehicle-details.html?model=${encodeURIComponent(event.target.value)}`;
     });
@@ -1051,6 +1437,28 @@ el("vdInstallButton").addEventListener(
   el("vdChooseImage").addEventListener(
   "click",
   () => el("vdImagePicker").click()
+);
+
+el("vdFindImage").addEventListener(
+  "click",
+  () => {
+    const vehicle = state.vehicle;
+    const title = displayTitle(vehicle);
+    const model = vehicle?.modelName || "";
+
+    const queryParts = [title, model, "gta 5"].filter(
+      (part, index, all) =>
+        part && all.indexOf(part) === index
+    );
+
+    const query = encodeURIComponent(queryParts.join(" "));
+
+    window.open(
+      `https://www.google.com/search?tbm=isch&q=${query}`,
+      "_blank",
+      "noopener"
+    );
+  }
 );
 
 el("vdImagePicker").addEventListener(
@@ -1275,6 +1683,8 @@ async function initialize() {
           displayTitle(b)
         )
     );
+
+    buildFieldCatalogs();
 
     if (!state.vehicles.length) {
       setStatus(

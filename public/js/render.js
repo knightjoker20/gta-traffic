@@ -203,6 +203,15 @@ function clearVehicleCardDragging(event) {
   setTimeout(() => { card.dataset.dragging = "false"; }, 0);
 }
 
+function toggleVehicleCardDetails(event) {
+  event.stopPropagation();
+  const btn = event.currentTarget;
+  const card = btn?.closest?.(".vehicle-card");
+  if (!card) return;
+  const expanded = card.classList.toggle("vehicle-card-open");
+  btn.setAttribute("aria-expanded", expanded ? "true" : "false");
+}
+
 // =====================================================
 // [MODULE: VEHICLE_CARD_RENDERING]
 // Renders full image cards and text-only cards inside
@@ -224,6 +233,9 @@ function renderVehicleCards(
 
           const pack =
             getPackForModel(model);
+
+          const category =
+            meta?.vehicleClass || meta?.vehicleType || "";
 
           return `
             <div
@@ -249,67 +261,78 @@ function renderVehicleCards(
               </div>
 
               ${
-                duplicates.includes(model)
-                  ? '<div class="warning">duplicate</div>'
+                category
+                  ? `<div class="vehicle-category">${escapeHTML(category)}</div>`
                   : ""
               }
 
-              ${
-                pack
-                  ? renderPackBox(pack)
-                  : '<div class="meta-missing">No pack assigned</div>'
-              }
+              <button
+                type="button"
+                class="vehicle-card-toggle"
+                onclick="toggleVehicleCardDetails(event)"
+                aria-expanded="false"
+              >
+                <span class="vehicle-card-toggle-arrow">&#9662;</span> Details
+              </button>
 
-              ${
-                meta
-                  ? renderMetaBox(meta, group.name)
-                  : '<div class="meta-missing">No vehicles.meta match</div>'
-              }
+              <div class="vehicle-card-details">
+                ${
+                  pack
+                    ? renderPackBox(pack)
+                    : '<div class="meta-missing">No pack assigned</div>'
+                }
 
-              ${
-                meta
-                  ? renderVehicleTrafficValues(meta)
-                  : ""
-              }
+                ${
+                  meta
+                    ? renderMetaBox(meta, group.name)
+                    : '<div class="meta-missing">No vehicles.meta match</div>'
+                }
 
-              ${renderLodBox(model)}
+                ${
+                  meta
+                    ? renderVehicleTrafficValues(meta)
+                    : ""
+                }
 
-              <div class="vehicle-actions">
-                <button
-                  onclick="assignVehicleToActivePack(
-                    '${escapeAttribute(model)}'
-                  )"
-                >
-                  Assign Active Pack
-                </button>
+                ${renderLodBox(model)}
 
-                <button
-                  class="secondary"
-                  onclick="unassignVehiclePack(
-                    '${escapeAttribute(model)}'
-                  )"
-                >
-                  Clear Pack
-                </button>
+                <div class="vehicle-actions">
+                  <button
+                    onclick="assignVehicleToActivePack(
+                      '${escapeAttribute(model)}'
+                    )"
+                  >
+                    Assign Active Pack
+                  </button>
 
-                <button
-                  onclick="openImageSearch(
-                    '${escapeAttribute(model)}'
-                  )"
-                >
-                  Find Image
-                </button>
+                  <button
+                    class="secondary"
+                    onclick="unassignVehiclePack(
+                      '${escapeAttribute(model)}'
+                    )"
+                  >
+                    Clear Pack
+                  </button>
 
-                <button
-                  class="danger"
-                  onclick="removeEntry(
-                    '${section}',
-                    ${groupIndex},
-                    ${modelIndex}
-                  )"
-                >
-                  Remove
-                </button>
+                  <button
+                    onclick="openImageSearch(
+                      '${escapeAttribute(model)}'
+                    )"
+                  >
+                    Find Image
+                  </button>
+
+                  <button
+                    class="danger"
+                    onclick="removeEntry(
+                      '${section}',
+                      ${groupIndex},
+                      ${modelIndex}
+                    )"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             </div>
           `;
@@ -335,6 +358,9 @@ function renderTextCards(
           const pack =
             getPackForModel(model);
 
+          const category =
+            meta?.vehicleClass || meta?.vehicleType || "";
+
           return `
             <div
               class="vehicle-card"
@@ -354,71 +380,82 @@ function renderTextCards(
               </div>
 
               ${
-                duplicates.includes(model)
-                  ? '<div class="warning">duplicate</div>'
+                category
+                  ? `<div class="vehicle-category">${escapeHTML(category)}</div>`
                   : ""
               }
 
-              ${
-                pack
-                  ? renderPackBox(pack)
-                  : ""
-              }
+              <button
+                type="button"
+                class="vehicle-card-toggle"
+                onclick="toggleVehicleCardDetails(event)"
+                aria-expanded="false"
+              >
+                <span class="vehicle-card-toggle-arrow">&#9662;</span> Details
+              </button>
 
-              ${
-                section === "vehicles" && meta
-                  ? renderMetaBox(meta, group.name)
-                  : ""
-              }
+              <div class="vehicle-card-details">
+                ${
+                  pack
+                    ? renderPackBox(pack)
+                    : ""
+                }
 
-              ${
-                section === "vehicles" && meta
-                  ? renderVehicleTrafficValues(meta)
-                  : ""
-              }
+                ${
+                  section === "vehicles" && meta
+                    ? renderMetaBox(meta, group.name)
+                    : ""
+                }
 
-              ${
-                section === "vehicles"
-                  ? renderLodBox(model)
-                  : ""
-              }
+                ${
+                  section === "vehicles" && meta
+                    ? renderVehicleTrafficValues(meta)
+                    : ""
+                }
 
-              <div class="vehicle-actions">
-                <button
-                  onclick="assignVehicleToActivePack(
-                    '${escapeAttribute(model)}'
-                  )"
-                >
-                  Assign Active Pack
-                </button>
+                ${
+                  section === "vehicles"
+                    ? renderLodBox(model)
+                    : ""
+                }
 
-                <button
-                  class="secondary"
-                  onclick="unassignVehiclePack(
-                    '${escapeAttribute(model)}'
-                  )"
-                >
-                  Clear Pack
-                </button>
+                <div class="vehicle-actions">
+                  <button
+                    onclick="assignVehicleToActivePack(
+                      '${escapeAttribute(model)}'
+                    )"
+                  >
+                    Assign Active Pack
+                  </button>
 
-                <button
-                  onclick="openImageSearch(
-                    '${escapeAttribute(model)}'
-                  )"
-                >
-                  Find Image
-                </button>
+                  <button
+                    class="secondary"
+                    onclick="unassignVehiclePack(
+                      '${escapeAttribute(model)}'
+                    )"
+                  >
+                    Clear Pack
+                  </button>
 
-                <button
-                  class="danger"
-                  onclick="removeEntry(
-                    '${section}',
-                    ${groupIndex},
-                    ${modelIndex}
-                  )"
-                >
-                  Remove
-                </button>
+                  <button
+                    onclick="openImageSearch(
+                      '${escapeAttribute(model)}'
+                    )"
+                  >
+                    Find Image
+                  </button>
+
+                  <button
+                    class="danger"
+                    onclick="removeEntry(
+                      '${section}',
+                      ${groupIndex},
+                      ${modelIndex}
+                    )"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             </div>
           `;
@@ -661,7 +698,7 @@ function renderVehicleLibrary() {
       return `
         <section class="library-category-group">
           <button class="library-category-header" type="button">
-            <span>${escapeHtml(category)}</span>
+            <span>${escapeHTML(category)}</span>
             <strong>${items.length}</strong>
           </button>
           <div class="library-category-cards">

@@ -858,6 +858,117 @@ function clearImageUploadToken() {
     IMAGE_UPLOAD_TOKEN_KEY
   );
 }
+
+// ── Per-user vehicle field edits ──────────────────────────────────
+// Session-cookie auth (same-origin), not the library write token — this is
+// a regular logged-in-user feature, not an admin/library-wide edit.
+
+async function readVehicleEditResponse(response) {
+  let result;
+
+  try {
+    result = await response.json();
+  } catch {
+    result = { ok: false, error: "The response was not valid JSON." };
+  }
+
+  if (!response.ok || result.ok === false) {
+    throw new Error(
+      result.error ||
+      `Vehicle edit request failed with status ${response.status}.`
+    );
+  }
+
+  return result;
+}
+
+async function getVehicleFieldEdits(modelName) {
+  const response = await fetch(
+    `/api/vehicle-edits/${encodeURIComponent(modelName)}`,
+    { credentials: "same-origin" }
+  );
+
+  return readVehicleEditResponse(response);
+}
+
+async function saveVehicleFieldEdit(modelName, field, value) {
+  const response = await fetch(
+    `/api/vehicle-edits/${encodeURIComponent(modelName)}`,
+    {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ field, value })
+    }
+  );
+
+  return readVehicleEditResponse(response);
+}
+
+async function restoreVehicleField(modelName, field) {
+  const response = await fetch(
+    `/api/vehicle-edits/${encodeURIComponent(modelName)}/${encodeURIComponent(field)}`,
+    { method: "DELETE", credentials: "same-origin" }
+  );
+
+  return readVehicleEditResponse(response);
+}
+
+async function restoreAllVehicleFieldEdits(modelName) {
+  const response = await fetch(
+    `/api/vehicle-edits/${encodeURIComponent(modelName)}`,
+    { method: "DELETE", credentials: "same-origin" }
+  );
+
+  return readVehicleEditResponse(response);
+}
+
+// ── Per-user handling.meta field edits ─────────────────────────────
+// handling.meta profiles are shared by handling_name across many vehicles,
+// so these edits are keyed by handling name rather than model name — same
+// vanilla+delta pattern and auth as the vehicle field edits above.
+
+async function getHandlingFieldEdits(handlingName) {
+  const response = await fetch(
+    `/api/handling-edits/${encodeURIComponent(handlingName)}`,
+    { credentials: "same-origin" }
+  );
+
+  return readVehicleEditResponse(response);
+}
+
+async function saveHandlingFieldEdit(handlingName, field, value) {
+  const response = await fetch(
+    `/api/handling-edits/${encodeURIComponent(handlingName)}`,
+    {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ field, value })
+    }
+  );
+
+  return readVehicleEditResponse(response);
+}
+
+async function restoreHandlingField(handlingName, field) {
+  const response = await fetch(
+    `/api/handling-edits/${encodeURIComponent(handlingName)}/${encodeURIComponent(field)}`,
+    { method: "DELETE", credentials: "same-origin" }
+  );
+
+  return readVehicleEditResponse(response);
+}
+
+async function restoreAllHandlingFieldEdits(handlingName) {
+  const response = await fetch(
+    `/api/handling-edits/${encodeURIComponent(handlingName)}`,
+    { method: "DELETE", credentials: "same-origin" }
+  );
+
+  return readVehicleEditResponse(response);
+}
+
 window.vehicleCloud = {
    getVehicles,
   getHandlingProfiles,
@@ -875,6 +986,14 @@ window.vehicleCloud = {
   uploadVehicleImage,
   deleteVehicleImage,
   clearImageUploadToken,
-  getSourceHistory
+  getSourceHistory,
+  getVehicleFieldEdits,
+  saveVehicleFieldEdit,
+  restoreVehicleField,
+  restoreAllVehicleFieldEdits,
+  getHandlingFieldEdits,
+  saveHandlingFieldEdit,
+  restoreHandlingField,
+  restoreAllHandlingFieldEdits
 };
 })();

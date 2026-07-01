@@ -3105,6 +3105,347 @@ async function handleVehiclePatch(
     vehicle: normalizeVehicle(savedVehicle)
   });
 }
+// ── Per-user vehicle field edits ──────────────────────────────────
+// Lets a logged-in visitor customize individual vehicles.meta fields on a
+// vehicle without touching the shared vanilla row in `vehicles`. Only
+// fields that differ from vanilla get a row in vehicle_field_edits — this
+// merges at read time and never overwrites the shared library data.
+
+const EDITABLE_VEHICLE_FIELDS = {
+  gameName: "game_name",
+  vehicleMakeName: "make_name",
+  vehicleClass: "vehicle_class",
+  vehicleType: "vehicle_type",
+  handlingId: "handling_id",
+  audioNameHash: "audio_name",
+  layout: "layout_name",
+  frequency: "frequency",
+  maxNum: "max_num",
+  maxNumOfSameColor: "max_num_of_same_color",
+  identicalModelSpawnDistance: "identical_model_spawn_distance",
+  swankness: "swankness"
+};
+
+function normalizeEditValue(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+async function handleVehicleFieldEditsGet(request, env, modelName) {
+  const auth = await getCurrentAuthSession(request, env);
+
+  if (!auth) {
+    return jsonResponse({
+      ok: true,
+      loggedIn: false,
+      modelName,
+      edits: {}
+    });
+  }
+
+  const { results } = await env.DB.prepare(`
+    SELECT field_name, vanilla_value, edited_value, updated_at
+    FROM vehicle_field_edits
+    WHERE user_id = ? AND model_name = ? COLLATE NOCASE
+  `).bind(auth.user.id, modelName).all();
+
+  const edits = {};
+  for (const row of results || []) {
+    edits[row.field_name] = {
+      vanillaValue: row.vanilla_value,
+      editedValue: row.edited_value,
+      updatedAt: row.updated_at
+    };
+  }
+
+  return jsonResponse({
+    ok: true,
+    loggedIn: true,
+    modelName,
+    edits
+  });
+}
+
+async function handleVehicleFieldEditSave(request, env, modelName) {
+  const auth = await getCurrentAuthSession(request, env);
+
+  if (!auth) {
+    return jsonResponse({ ok: false, error: "Log in to save personal edits" }, 401);
+  }
+
+  const parsed = await readJsonRequest(request);
+  if (parsed.error) return parsed.error;
+
+  const field = optionalText(parsed.body?.field);
+  const rawValue = parsed.body?.value;
+
+  if (!field || !EDITABLE_VEHICLE_FIELDS[field]) {
+    return jsonResponse({ ok: false, error: "Unknown or unsupported field" }, 400);
+  }
+
+  const column = EDITABLE_VEHICLE_FIELDS[field];
+
+  const vehicleRow = await env.DB.prepare(`
+    SELECT ${column} AS vanilla_value
+    FROM vehicles
+    WHERE model_name = ? COLLATE NOCASE
+    LIMIT 1
+  `).bind(modelName).first();
+
+  if (!vehicleRow) {
+    return jsonResponse({ ok: false, error: "Vehicle not found" }, 404);
+  }
+
+  const vanillaValue = normalizeEditValue(vehicleRow.vanilla_value);
+  const editedValue = normalizeEditValue(rawValue);
+
+  // Setting it back to vanilla is the same as restoring — don't store a no-op edit.
+  if (editedValue === vanillaValue) {
+    await env.DB.prepare(`
+      DELETE FROM vehicle_field_edits
+      WHERE user_id = ? AND model_name = ? COLLATE NOCASE AND field_name = ?
+    `).bind(auth.user.id, modelName, field).run();
+
+    return jsonResponse({
+      ok: true,
+      restored: true,
+      modelName,
+      field,
+      vanillaValue
+    });
+  }
+
+  const id = crypto.randomUUID();
+
+  await env.DB.prepare(`
+    INSERT INTO vehicle_field_edits (
+      id, user_id, model_name, field_name, vanilla_value, edited_value, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id, model_name, field_name) DO UPDATE SET
+      vanilla_value = excluded.vanilla_value,
+      edited_value = excluded.edited_value,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(id, auth.user.id, modelName, field, vanillaValue, editedValue).run();
+
+  return jsonResponse({
+    ok: true,
+    restored: false,
+    modelName,
+    field,
+    vanillaValue,
+    editedValue
+  });
+}
+
+async function handleVehicleFieldEditRestore(request, env, modelName, field) {
+  const auth = await getCurrentAuthSession(request, env);
+
+  if (!auth) {
+    return jsonResponse({ ok: false, error: "Log in to manage personal edits" }, 401);
+  }
+
+  if (field) {
+    await env.DB.prepare(`
+      DELETE FROM vehicle_field_edits
+      WHERE user_id = ? AND model_name = ? COLLATE NOCASE AND field_name = ?
+    `).bind(auth.user.id, modelName, field).run();
+  } else {
+    await env.DB.prepare(`
+      DELETE FROM vehicle_field_edits
+      WHERE user_id = ? AND model_name = ? COLLATE NOCASE
+    `).bind(auth.user.id, modelName).run();
+  }
+
+  return jsonResponse({ ok: true, modelName, field: field || null, restoredAll: !field });
+}
+
+// ── Per-user handling.meta field edits ────────────────────────────
+// handling_profiles is keyed by handling_name and stores the full profile
+// as a JSON blob (handling_data_json), not individual columns — many
+// vehicles share the same handling_name, so a personal edit here is scoped
+// to the handling profile itself and applies to every vehicle that
+// references it, matching how handling.meta actually behaves in-game.
+// Vanilla handling_profiles rows are never modified.
+
+const EDITABLE_HANDLING_FIELDS = new Set([
+  "AIHandling",
+  "fDriveBiasFront",
+  "nInitialDriveGears",
+  "fMass",
+  "fInitialDriveForce",
+  "fDriveInertia",
+  "fInitialDriveMaxFlatVel",
+  "fInitialDragCoeff",
+  "fBrakeForce",
+  "fBrakeBiasFront",
+  "fHandBrakeForce",
+  "fSteeringLock",
+  "fClutchChangeRateScaleUpShift",
+  "fClutchChangeRateScaleDownShift",
+  "fTractionCurveMax",
+  "fTractionCurveMin",
+  "fTractionCurveLateral",
+  "fTractionBiasFront",
+  "fLowSpeedTractionLossMult",
+  "fTractionLossMult",
+  "fSuspensionForce",
+  "fSuspensionCompDamp",
+  "fSuspensionReboundDamp",
+  "fSuspensionRaise",
+  "fAntiRollBarForce",
+  "fRollCentreHeightFront",
+  "fRollCentreHeightRear",
+  "fCollisionDamageMult",
+  "fWeaponDamageMult",
+  "fDeformationDamageMult",
+  "fEngineDamageMult"
+]);
+
+async function getHandlingVanillaValue(env, handlingName, field) {
+  const row = await env.DB.prepare(`
+    SELECT handling_data_json
+    FROM handling_profiles
+    WHERE handling_name = ? COLLATE NOCASE
+    LIMIT 1
+  `).bind(handlingName).first();
+
+  if (!row) {
+    return { found: false, value: null };
+  }
+
+  let parsed = {};
+  try {
+    parsed = JSON.parse(row.handling_data_json || "{}");
+  } catch {
+    parsed = {};
+  }
+
+  return { found: true, value: parsed[field] };
+}
+
+async function handleHandlingFieldEditsGet(request, env, handlingName) {
+  const auth = await getCurrentAuthSession(request, env);
+
+  if (!auth) {
+    return jsonResponse({
+      ok: true,
+      loggedIn: false,
+      handlingName,
+      edits: {}
+    });
+  }
+
+  const { results } = await env.DB.prepare(`
+    SELECT field_name, vanilla_value, edited_value, updated_at
+    FROM handling_field_edits
+    WHERE user_id = ? AND handling_name = ? COLLATE NOCASE
+  `).bind(auth.user.id, handlingName).all();
+
+  const edits = {};
+  for (const row of results || []) {
+    edits[row.field_name] = {
+      vanillaValue: row.vanilla_value,
+      editedValue: row.edited_value,
+      updatedAt: row.updated_at
+    };
+  }
+
+  return jsonResponse({
+    ok: true,
+    loggedIn: true,
+    handlingName,
+    edits
+  });
+}
+
+async function handleHandlingFieldEditSave(request, env, handlingName) {
+  const auth = await getCurrentAuthSession(request, env);
+
+  if (!auth) {
+    return jsonResponse({ ok: false, error: "Log in to save personal edits" }, 401);
+  }
+
+  const parsed = await readJsonRequest(request);
+  if (parsed.error) return parsed.error;
+
+  const field = optionalText(parsed.body?.field);
+  const rawValue = parsed.body?.value;
+
+  if (!field || !EDITABLE_HANDLING_FIELDS.has(field)) {
+    return jsonResponse({ ok: false, error: "Unknown or unsupported handling field" }, 400);
+  }
+
+  const vanilla = await getHandlingVanillaValue(env, handlingName, field);
+
+  if (!vanilla.found) {
+    return jsonResponse({ ok: false, error: "Handling profile not found" }, 404);
+  }
+
+  const vanillaValue = normalizeEditValue(vanilla.value);
+  const editedValue = normalizeEditValue(rawValue);
+
+  // Setting it back to vanilla is the same as restoring — don't store a no-op edit.
+  if (editedValue === vanillaValue) {
+    await env.DB.prepare(`
+      DELETE FROM handling_field_edits
+      WHERE user_id = ? AND handling_name = ? COLLATE NOCASE AND field_name = ?
+    `).bind(auth.user.id, handlingName, field).run();
+
+    return jsonResponse({
+      ok: true,
+      restored: true,
+      handlingName,
+      field,
+      vanillaValue
+    });
+  }
+
+  const id = crypto.randomUUID();
+
+  await env.DB.prepare(`
+    INSERT INTO handling_field_edits (
+      id, user_id, handling_name, field_name, vanilla_value, edited_value, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id, handling_name, field_name) DO UPDATE SET
+      vanilla_value = excluded.vanilla_value,
+      edited_value = excluded.edited_value,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(id, auth.user.id, handlingName, field, vanillaValue, editedValue).run();
+
+  return jsonResponse({
+    ok: true,
+    restored: false,
+    handlingName,
+    field,
+    vanillaValue,
+    editedValue
+  });
+}
+
+async function handleHandlingFieldEditRestore(request, env, handlingName, field) {
+  const auth = await getCurrentAuthSession(request, env);
+
+  if (!auth) {
+    return jsonResponse({ ok: false, error: "Log in to manage personal edits" }, 401);
+  }
+
+  if (field) {
+    await env.DB.prepare(`
+      DELETE FROM handling_field_edits
+      WHERE user_id = ? AND handling_name = ? COLLATE NOCASE AND field_name = ?
+    `).bind(auth.user.id, handlingName, field).run();
+  } else {
+    await env.DB.prepare(`
+      DELETE FROM handling_field_edits
+      WHERE user_id = ? AND handling_name = ? COLLATE NOCASE
+    `).bind(auth.user.id, handlingName).run();
+  }
+
+  return jsonResponse({ ok: true, handlingName, field: field || null, restoredAll: !field });
+}
+
 async function countAdminTableRows(env, tableName) {
   try {
     const row =
@@ -4851,6 +5192,95 @@ if (
     vehiclePatchRoute[1]
   );
 }
+
+const vehicleFieldEditRoute =
+  url.pathname.match(
+    /^\/api\/vehicle-edits\/([a-zA-Z0-9_-]{1,100})$/
+  );
+
+if (vehicleFieldEditRoute && request.method === "GET") {
+  return await handleVehicleFieldEditsGet(
+    request,
+    env,
+    vehicleFieldEditRoute[1]
+  );
+}
+
+if (vehicleFieldEditRoute && request.method === "PUT") {
+  return await handleVehicleFieldEditSave(
+    request,
+    env,
+    vehicleFieldEditRoute[1]
+  );
+}
+
+if (vehicleFieldEditRoute && request.method === "DELETE") {
+  return await handleVehicleFieldEditRestore(
+    request,
+    env,
+    vehicleFieldEditRoute[1],
+    null
+  );
+}
+
+const vehicleFieldEditSingleRoute =
+  url.pathname.match(
+    /^\/api\/vehicle-edits\/([a-zA-Z0-9_-]{1,100})\/([a-zA-Z0-9_]{1,60})$/
+  );
+
+if (vehicleFieldEditSingleRoute && request.method === "DELETE") {
+  return await handleVehicleFieldEditRestore(
+    request,
+    env,
+    vehicleFieldEditSingleRoute[1],
+    vehicleFieldEditSingleRoute[2]
+  );
+}
+
+const handlingFieldEditRoute =
+  url.pathname.match(
+    /^\/api\/handling-edits\/([a-zA-Z0-9_-]{1,100})$/
+  );
+
+if (handlingFieldEditRoute && request.method === "GET") {
+  return await handleHandlingFieldEditsGet(
+    request,
+    env,
+    handlingFieldEditRoute[1]
+  );
+}
+
+if (handlingFieldEditRoute && request.method === "PUT") {
+  return await handleHandlingFieldEditSave(
+    request,
+    env,
+    handlingFieldEditRoute[1]
+  );
+}
+
+if (handlingFieldEditRoute && request.method === "DELETE") {
+  return await handleHandlingFieldEditRestore(
+    request,
+    env,
+    handlingFieldEditRoute[1],
+    null
+  );
+}
+
+const handlingFieldEditSingleRoute =
+  url.pathname.match(
+    /^\/api\/handling-edits\/([a-zA-Z0-9_-]{1,100})\/([a-zA-Z0-9_]{1,60})$/
+  );
+
+if (handlingFieldEditSingleRoute && request.method === "DELETE") {
+  return await handleHandlingFieldEditRestore(
+    request,
+    env,
+    handlingFieldEditSingleRoute[1],
+    handlingFieldEditSingleRoute[2]
+  );
+}
+
       if (url.pathname.startsWith("/api/")) {
       if (
         request.method === "GET" &&
