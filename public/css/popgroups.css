@@ -150,6 +150,26 @@
   margin: 0;
 }
 
+.pg-library-heading .toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+#mainLayout.pg-library-collapsed {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+#libraryPanel.pg-library-collapsed {
+  width: auto;
+  min-width: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+#libraryPanel.pg-library-collapsed #libraryPanelBody {
+  display: none;
+}
+
 #results {
   display: grid;
   gap: 14px;

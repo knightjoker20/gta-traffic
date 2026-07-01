@@ -7,6 +7,8 @@
 
   <link rel="stylesheet" href="css/design-tokens.css">
 <link rel="stylesheet" href="/css/site-shell.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
   <link rel="stylesheet" href="css/style.css?v=popgroups-legacy-clean-1">
   <link rel="stylesheet" href="css/popgroups.css?v=popgroups-legacy-clean-1">
 </head>
@@ -165,14 +167,19 @@ dlcpacks/mycar/dlc.rpf/.../vehicles.rpf/2018zl1.yft
     <section id="libraryPanel" class="panel">
       <div class="pg-library-heading">
         <h2>Vehicle Library</h2>
-        <button class="btn-orange" type="button" onclick="location.href='vehicle-library.html'">Open Full Library</button>
+        <div class="toolbar">
+          <button id="libraryCollapseToggle" class="secondary" type="button" aria-expanded="false" aria-controls="libraryPanelBody">Show Library</button>
+          <button class="btn-orange" type="button" onclick="location.href='vehicle-library.html'">Open Full Library</button>
+        </div>
       </div>
 
-      <div class="search-wrap">
-        <input id="librarySearchBox" placeholder="Search library vehicle, class, make, handling, pack...">
-      </div>
+      <div id="libraryPanelBody">
+        <div class="search-wrap">
+          <input id="librarySearchBox" placeholder="Search library vehicle, class, make, handling, pack...">
+        </div>
 
-      <div id="vehicleLibrary"></div>
+        <div id="vehicleLibrary"></div>
+      </div>
     </section>
   </div>
 

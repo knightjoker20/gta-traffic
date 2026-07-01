@@ -5702,7 +5702,10 @@ function xmlAttr(block, tag, attr = 'value') {
   return m ? m[1].trim() : null;
 }
 
-/** Split outer XML into all top-level <tag>…</tag> blocks (non-greedy, handles nesting naively) */
+/** Split outer XML into all top-level <tag>…</tag> blocks, depth-aware so a
+ *  block containing nested tags of the SAME name (e.g. a Popgroups <Item> that
+ *  itself contains <models><Item>...</Item></models>) is matched to its real
+ *  closing tag instead of the first nested closing tag found. */
 function xmlBlocks(xml, tag) {
   const results = [];
   const open = `<${tag}`;
@@ -5711,10 +5714,23 @@ function xmlBlocks(xml, tag) {
   while (pos < xml.length) {
     const start = xml.indexOf(open, pos);
     if (start === -1) break;
-    const end = xml.indexOf(close, start);
-    if (end === -1) break;
-    results.push(xml.slice(start, end + close.length));
-    pos = end + close.length;
+    let depth = 1;
+    let cursor = start + open.length;
+    while (depth > 0) {
+      const nextOpen = xml.indexOf(open, cursor);
+      const nextClose = xml.indexOf(close, cursor);
+      if (nextClose === -1) { depth = -1; break; } // unmatched, bail out
+      if (nextOpen !== -1 && nextOpen < nextClose) {
+        depth++;
+        cursor = nextOpen + open.length;
+      } else {
+        depth--;
+        cursor = nextClose + close.length;
+      }
+    }
+    if (depth === -1) break;
+    results.push(xml.slice(start, cursor));
+    pos = cursor;
   }
   return results;
 }

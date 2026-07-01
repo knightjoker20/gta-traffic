@@ -108,6 +108,10 @@
     const meta = record?.meta || {};
 
     return (
+      // Canonical field set by vehicleCloud's attachImagesToVehicles() /
+      // used everywhere else in the app (vehiclelibrary.js, vehicledetails.js).
+      custom.imageDataUrl ||
+      flat.imageDataUrl ||
       flat.imageUrl ||
       flat.image_url ||
       flat.thumbnailUrl ||
@@ -671,9 +675,41 @@
     });
   }
 
+  const LIBRARY_COLLAPSE_STORAGE_KEY = "pgLibraryPanelExpanded";
+
+  function setLibraryCollapsed(collapsed) {
+    const panel = document.getElementById("libraryPanel");
+    const layout = document.getElementById("mainLayout");
+    const toggle = document.getElementById("libraryCollapseToggle");
+
+    panel?.classList.toggle("pg-library-collapsed", collapsed);
+    layout?.classList.toggle("pg-library-collapsed", collapsed);
+
+    if (toggle) {
+      toggle.textContent = collapsed ? "Show Library" : "Hide Library";
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+    }
+  }
+
+  function initLibraryCollapse() {
+    const toggle = document.getElementById("libraryCollapseToggle");
+    if (!toggle) return;
+
+    // Collapsed by default; remembers the user's choice after that.
+    const savedExpanded = localStorage.getItem(LIBRARY_COLLAPSE_STORAGE_KEY);
+    setLibraryCollapsed(savedExpanded !== "true");
+
+    toggle.addEventListener("click", () => {
+      const isCollapsed = document.getElementById("libraryPanel")?.classList.contains("pg-library-collapsed");
+      setLibraryCollapsed(!isCollapsed);
+      localStorage.setItem(LIBRARY_COLLAPSE_STORAGE_KEY, String(isCollapsed));
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("librarySearchBox")?.addEventListener("input", renderSidebar);
 
+    initLibraryCollapse();
     observeMainRender();
     loadCloudLibrary();
 
