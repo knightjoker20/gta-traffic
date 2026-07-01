@@ -222,3 +222,117 @@
 #mainLayout.pg-wide-main-layout {
   grid-template-columns: minmax(0, 1fr) 380px;
 }
+
+/* POPGROUPS_LEGACY_LIBRARY_BRIDGE_V2 */
+
+.pg-sidebar-category {
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 10px;
+  background: rgba(12,19,33,.94);
+  overflow: hidden;
+  margin-bottom: 9px;
+}
+
+.pg-sidebar-category summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 11px;
+  background: rgba(55,72,105,.72);
+}
+
+.pg-sidebar-category summary::-webkit-details-marker {
+  display: none;
+}
+
+.pg-sidebar-category summary::before {
+  content: "▾";
+  color: #ffb35a;
+}
+
+.pg-sidebar-category:not([open]) summary::before {
+  content: "▸";
+}
+
+.pg-sidebar-category summary strong {
+  flex: 1;
+  color: #fff;
+  font-size: .82rem;
+  text-transform: uppercase;
+}
+
+.pg-sidebar-category summary span {
+  color: #9dd7ff;
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.pg-sidebar-vehicle-card {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 9px;
+  padding: 9px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  cursor: grab;
+}
+
+.pg-sidebar-vehicle-card:active {
+  cursor: grabbing;
+}
+
+.pg-sidebar-vehicle-img {
+  width: 112px;
+  height: 78px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: rgba(255,255,255,.06);
+  display: grid;
+  place-items: center;
+  color: rgba(234,242,255,.55);
+  font-size: .74rem;
+}
+
+.pg-sidebar-vehicle-body h4 {
+  margin: 0 0 3px;
+  color: #fff;
+  font-size: .84rem;
+}
+
+.pg-sidebar-vehicle-body p {
+  margin: 0 0 2px;
+  color: rgba(234,242,255,.68);
+  font-size: .7rem;
+}
+
+.pg-sidebar-vehicle-body a {
+  display: inline-flex;
+  margin-top: 5px;
+  color: #79c8ff;
+  font-size: .7rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.has-cloud-image {
+  overflow: hidden;
+}
+
+.pg-quick-clear-group {
+  margin-left: 10px;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #c83e46, #7d252e);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.pg-quick-clear-group:hover {
+  filter: brightness(1.08);
+}
