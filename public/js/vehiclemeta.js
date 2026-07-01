@@ -262,6 +262,34 @@ function parseVehiclesMeta(
       `Cached ${Object.keys(vehicleMeta).length.toLocaleString()} vehicle metadata entries.`
     );
   }
+
+  // ── Parallel feed → vehicle_meta_entries (shared reference DB) ──
+  // Runs fire-and-forget alongside the vehicle library sync above.
+  // Uses the same activePackId so data is grouped by pack.
+  (async () => {
+    try {
+      const packId = (typeof activePackId !== "undefined" && activePackId)
+        ? activePackId
+        : "default";
+      const res = await fetch("/api/import/vehicles-meta", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ xml: text, packId, sourceFile: filename }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        console.log(
+          `[vehicledb] ${filename}: ${data.parsed} parsed, ` +
+          `${data.inserted} upserted into vehicle_meta_entries (pack: ${packId})`
+        );
+      } else {
+        console.warn(`[vehicledb] vehicle_meta_entries import returned HTTP ${res.status}`);
+      }
+    } catch (err) {
+      console.warn("[vehicledb] vehicle_meta_entries sync failed:", err);
+    }
+  })();
 }
 
 // =====================================================

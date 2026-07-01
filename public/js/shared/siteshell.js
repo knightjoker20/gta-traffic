@@ -6,8 +6,13 @@
 
 const SITE_TOOL_NAV_ITEMS = [
   {
+    label: "Home",
+    href: "/",
+    page: "home"
+  },
+  {
     label: "Popgroups",
-    href: "index.html",
+    href: "popgroups.html",
     page: "popgroups"
   },
   {
@@ -16,7 +21,7 @@ const SITE_TOOL_NAV_ITEMS = [
     page: "popcycle"
   },
   {
-    label: "Vehicle.meta",
+    label: "Vehicles.meta",
     href: "vehicle-meta.html",
     page: "vehicle-meta"
   },
@@ -30,16 +35,6 @@ const SITE_TOOL_NAV_ITEMS = [
     href: "vehicle-library.html",
     page: "library"
   },
-  {
-    label: "Pack Builder",
-    href: "index.html#packBuilderPanel",
-    page: "pack-builder"
-  },
-  {
-    label: "LOD Scanner",
-    href: "index.html#lodScannerPanel",
-    page: "lod-scanner"
-  }
 ];
 
 function renderSiteToolMenu() {

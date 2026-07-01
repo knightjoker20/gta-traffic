@@ -1,4 +1,4 @@
-﻿function jsonResponse(data, status = 200) {
+function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
     status,
     headers: {
@@ -3135,16 +3135,12 @@ async function handleAdminSummary(request, env) {
     users,
     workspaces,
     packs,
-    vehicleAssignments,
-    images,
-    importJobs
+    vehicleAssignments
   ] = await Promise.all([
     countAdminTableRows(env, "users"),
     countAdminTableRows(env, "workspaces"),
     countAdminTableRows(env, "pack_records"),
-    countAdminTableRows(env, "vehicle_pack_memberships"),
-    countAdminTableRows(env, "media_assets"),
-    countAdminTableRows(env, "import_jobs")
+    countAdminTableRows(env, "vehicle_pack_memberships")
   ]);
 
   return jsonResponse({
@@ -3154,8 +3150,6 @@ async function handleAdminSummary(request, env) {
       workspaces,
       packs,
       vehicleAssignments,
-      images,
-      importJobs,
       generatedAt: new Date().toISOString()
     }
   });
@@ -4455,6 +4449,193 @@ async function handleAuthLogout(request, env) {
 }
 
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Raw Meta File Cloud Storage  (vehicles.meta, handling.meta, etc. → R2)
+// Tables: raw_meta_files, meta_file_model_refs
+// R2 key pattern: meta-files/{fileType}/{packName}
+// ─────────────────────────────────────────────────────────────────────────────
+
+const VALID_META_FILE_TYPES = new Set([
+  "vehicles-meta",
+  "handling-meta",
+  "carcols-meta",
+  "carvariations-meta",
+  "popgroups"
+]);
+
+function sanitizeMetaPackName(value) {
+  return String(value || "")
+    .replace(/\.(meta|xml|txt)$/i, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    || "unnamed";
+}
+
+async function handleMetaFilePut(request, env, fileType, rawPackName) {
+  const authErr = checkLibraryWriteAuthorization(request, env);
+  if (authErr) return authErr;
+
+  if (!VALID_META_FILE_TYPES.has(fileType)) {
+    return jsonResponse({ ok: false, error: "Invalid file type" }, 400);
+  }
+
+  const packName = sanitizeMetaPackName(rawPackName);
+  if (!packName || packName === "unnamed") {
+    return jsonResponse({ ok: false, error: "Invalid pack name" }, 400);
+  }
+
+  const rawXml = await request.text();
+  if (!rawXml || rawXml.length < 10) {
+    return jsonResponse({ ok: false, error: "Empty or missing XML body" }, 400);
+  }
+
+  const originalFilename = (request.headers.get("x-original-filename") || "").slice(0, 128);
+  let entryNames = [];
+  try {
+    const raw = request.headers.get("x-entry-names") || "[]";
+    entryNames = JSON.parse(raw);
+    if (!Array.isArray(entryNames)) entryNames = [];
+  } catch (_) { entryNames = []; }
+
+  const r2Key = `meta-files/${fileType}/${packName}`;
+  await env.VEHICLE_IMAGES.put(r2Key, rawXml, {
+    httpMetadata: { contentType: "application/xml; charset=utf-8" },
+    customMetadata: {
+      packName,
+      fileType,
+      originalFilename,
+      entryCount: String(entryNames.length),
+      updatedAt: new Date().toISOString()
+    }
+  });
+
+  const now = new Date().toISOString();
+  await env.DB.prepare(`
+    INSERT INTO raw_meta_files (file_type, pack_name, r2_key, original_filename, entry_count, entry_names_json, uploaded_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(file_type, pack_name) DO UPDATE SET
+      r2_key = excluded.r2_key,
+      original_filename = excluded.original_filename,
+      entry_count = excluded.entry_count,
+      entry_names_json = excluded.entry_names_json,
+      updated_at = excluded.updated_at
+  `).bind(fileType, packName, r2Key, originalFilename, entryNames.length, JSON.stringify(entryNames), now, now).run();
+
+  // Batch upsert model→pack refs (100 per batch)
+  if (entryNames.length > 0) {
+    const BATCH = 100;
+    for (let i = 0; i < entryNames.length; i += BATCH) {
+      const chunk = entryNames.slice(i, i + BATCH);
+      const stmts = chunk.map(name =>
+        env.DB.prepare(`
+          INSERT INTO meta_file_model_refs (model_name, file_type, pack_name)
+          VALUES (?, ?, ?)
+          ON CONFLICT(model_name, file_type) DO UPDATE SET pack_name = excluded.pack_name
+        `).bind(String(name).toLowerCase(), fileType, packName)
+      );
+      await env.DB.batch(stmts);
+    }
+  }
+
+  return jsonResponse({ ok: true, packName, fileType, entryCount: entryNames.length }, 201);
+}
+
+async function handleMetaFileGet(request, env, fileType, packOrModel) {
+  if (!VALID_META_FILE_TYPES.has(fileType)) {
+    return jsonResponse({ ok: false, error: "Invalid file type" }, 400);
+  }
+
+  const sanitized = sanitizeMetaPackName(packOrModel);
+
+  // Try direct pack name lookup first
+  let row = await env.DB.prepare(`
+    SELECT * FROM raw_meta_files WHERE file_type = ? AND pack_name = ? LIMIT 1
+  `).bind(fileType, sanitized).first();
+
+  // Fall back to model→pack ref lookup
+  if (!row) {
+    const ref = await env.DB.prepare(`
+      SELECT pack_name FROM meta_file_model_refs WHERE file_type = ? AND model_name = ? LIMIT 1
+    `).bind(fileType, sanitized).first();
+    if (ref) {
+      row = await env.DB.prepare(`
+        SELECT * FROM raw_meta_files WHERE file_type = ? AND pack_name = ? LIMIT 1
+      `).bind(fileType, ref.pack_name).first();
+    }
+  }
+
+  if (!row) {
+    return jsonResponse({ ok: false, error: "Meta file not found" }, 404);
+  }
+
+  const obj = await env.VEHICLE_IMAGES.get(row.r2_key);
+  if (!obj) {
+    return jsonResponse({ ok: false, error: "R2 object missing" }, 404);
+  }
+
+  const xml = await obj.text();
+  let entryNames = [];
+  try { entryNames = JSON.parse(row.entry_names_json || "[]"); } catch (_) {}
+
+  return jsonResponse({
+    ok: true,
+    file: {
+      packName: row.pack_name,
+      fileType: row.file_type,
+      originalFilename: row.original_filename || "",
+      entryCount: row.entry_count || 0,
+      entryNames,
+      updatedAt: row.updated_at,
+      xml
+    }
+  });
+}
+
+async function handleMetaFileDelete(request, env, fileType, packName) {
+  const authErr = checkLibraryWriteAuthorization(request, env);
+  if (authErr) return authErr;
+
+  if (!VALID_META_FILE_TYPES.has(fileType)) {
+    return jsonResponse({ ok: false, error: "Invalid file type" }, 400);
+  }
+
+  const sanitized = sanitizeMetaPackName(packName);
+  const row = await env.DB.prepare(`
+    SELECT r2_key FROM raw_meta_files WHERE file_type = ? AND pack_name = ? LIMIT 1
+  `).bind(fileType, sanitized).first();
+
+  if (!row) return jsonResponse({ ok: false, error: "Not found" }, 404);
+
+  await env.VEHICLE_IMAGES.delete(row.r2_key);
+  await env.DB.prepare(`DELETE FROM raw_meta_files WHERE file_type = ? AND pack_name = ?`).bind(fileType, sanitized).run();
+  await env.DB.prepare(`DELETE FROM meta_file_model_refs WHERE file_type = ? AND pack_name = ?`).bind(fileType, sanitized).run();
+
+  return jsonResponse({ ok: true });
+}
+
+async function handleMetaFileList(request, env) {
+  const url = new URL(request.url);
+  const fileType = url.searchParams.get("fileType") || null;
+
+  let rows;
+  if (fileType && VALID_META_FILE_TYPES.has(fileType)) {
+    rows = await env.DB.prepare(`
+      SELECT file_type, pack_name, entry_count, original_filename, updated_at
+      FROM raw_meta_files WHERE file_type = ? ORDER BY updated_at DESC
+    `).bind(fileType).all();
+  } else {
+    rows = await env.DB.prepare(`
+      SELECT file_type, pack_name, entry_count, original_filename, updated_at
+      FROM raw_meta_files ORDER BY updated_at DESC
+    `).all();
+  }
+
+  return jsonResponse({ ok: true, files: rows.results || [] });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -5396,6 +5577,81 @@ async function handleProjectVersionCreate(request, env, projectId) {
         );
       }
 
+// ── Meta file routes ──────────────────────────────────────────────────────
+      // GET /api/meta-files  (list all)
+      if (request.method === "GET" && url.pathname === "/api/meta-files") {
+        return await handleMetaFileList(request, env);
+      }
+
+      // Match /api/meta-files/{fileType}/{packOrModel}
+      const metaFileRoute = url.pathname.match(
+        /^\/api\/meta-files\/([^\/]+)\/([^\/]+)$/
+      );
+      if (metaFileRoute) {
+        const fileType = decodeURIComponent(metaFileRoute[1]);
+        const packOrModel = decodeURIComponent(metaFileRoute[2]);
+        if (request.method === "GET") {
+          return await handleMetaFileGet(request, env, fileType, packOrModel);
+        }
+        if (request.method === "PUT") {
+          return await handleMetaFilePut(request, env, fileType, packOrModel);
+        }
+        if (request.method === "DELETE") {
+          return await handleMetaFileDelete(request, env, fileType, packOrModel);
+        }
+      }
+
+
+      // ── Import routes ──────────────────────────────────────────────
+      if (request.method === "POST" && url.pathname === "/api/import/vehicles-meta") {
+        return await handleImportVehiclesMeta(request, env);
+      }
+      if (request.method === "POST" && url.pathname === "/api/import/handling-meta") {
+        return await handleImportHandlingMeta(request, env);
+      }
+      if (request.method === "POST" && url.pathname === "/api/import/popgroups") {
+        return await handleImportPopgroups(request, env);
+      }
+      if (request.method === "POST" && url.pathname === "/api/import/popcycle") {
+        return await handleImportPopcycle(request, env);
+      }
+
+      // ── ModDB query routes — /api/moddb/* ─────────────────────────
+      if (request.method === "GET" && url.pathname === "/api/moddb/vehicles") {
+        return await handleModDbVehicleList(request, env);
+      }
+      const moddbVehicleRoute = url.pathname.match(/^\/api\/moddb\/vehicles\/([^/]+)$/);
+      if (moddbVehicleRoute && request.method === "GET") {
+        return await handleModDbVehicle(request, env, decodeURIComponent(moddbVehicleRoute[1]));
+      }
+      const moddbHandlingRoute = url.pathname.match(/^\/api\/moddb\/handling\/([^/]+)$/);
+      if (moddbHandlingRoute && request.method === "GET") {
+        return await handleModDbHandling(request, env, decodeURIComponent(moddbHandlingRoute[1]));
+      }
+      if (request.method === "GET" && url.pathname === "/api/moddb/popgroups") {
+        return await handleModDbPopgroupList(request, env);
+      }
+      if (request.method === "GET" && url.pathname === "/api/moddb/popgroups/zones") {
+        return await handleModDbPopcycleZones(request, env);
+      }
+      const moddbPopgroupByModel = url.pathname.match(/^\/api\/moddb\/popgroups\/by-model\/([^/]+)$/);
+      if (moddbPopgroupByModel && request.method === "GET") {
+        return await handleModDbPopgroupByModel(request, env, decodeURIComponent(moddbPopgroupByModel[1]));
+      }
+      const moddbPopgroupRoute = url.pathname.match(/^\/api\/moddb\/popgroups\/([^/]+)$/);
+      if (moddbPopgroupRoute && request.method === "GET") {
+        return await handleModDbPopgroup(request, env, decodeURIComponent(moddbPopgroupRoute[1]));
+      }
+      if (request.method === "GET" && url.pathname === "/api/moddb/popcycle/zones") {
+        return await handleModDbPopcycleZones(request, env);
+      }
+      if (request.method === "GET" && url.pathname === "/api/moddb/popcycle/resolve") {
+        return await handleModDbPopcycleResolve(request, env);
+      }
+      if (request.method === "GET" && url.pathname === "/api/moddb/popcycle") {
+        return await handleModDbPopcycle(request, env);
+      }
+
 return jsonResponse(
           {
             ok: false,
@@ -5425,4 +5681,482 @@ return jsonResponse(
 };
 
 
+
+
+// ================================================================
+//  MOD FILE DATABASE — parsers, importers, and query handlers
+//  Migration: 010_mod_file_tables.sql
+// ================================================================
+
+// ── Tiny XML helpers (no DOM required in Workers) ──────────────────
+
+/** Extract first text value between <tag>…</tag> */
+function xmlText(block, tag) {
+  const m = block.match(new RegExp(`<${tag}>(.*?)</${tag}>`, 's'));
+  return m ? m[1].trim() : null;
+}
+
+/** Extract first value="…" attribute from <tag value="…"/> or <tag value="…"> */
+function xmlAttr(block, tag, attr = 'value') {
+  const m = block.match(new RegExp(`<${tag}[^>]*\\s${attr}="([^"]*)"`, 's'));
+  return m ? m[1].trim() : null;
+}
+
+/** Split outer XML into all top-level <tag>…</tag> blocks (non-greedy, handles nesting naively) */
+function xmlBlocks(xml, tag) {
+  const results = [];
+  const open = `<${tag}`;
+  const close = `</${tag}>`;
+  let pos = 0;
+  while (pos < xml.length) {
+    const start = xml.indexOf(open, pos);
+    if (start === -1) break;
+    const end = xml.indexOf(close, start);
+    if (end === -1) break;
+    results.push(xml.slice(start, end + close.length));
+    pos = end + close.length;
+  }
+  return results;
+}
+
+/** Extract text from the section between <outerTag>…</outerTag> */
+function xmlSection(xml, outerTag) {
+  const open = `<${outerTag}>`;
+  const close = `</${outerTag}>`;
+  const s = xml.indexOf(open);
+  const e = xml.indexOf(close);
+  if (s === -1 || e === -1) return '';
+  return xml.slice(s + open.length, e);
+}
+
+// ── vehicles.meta parser ──────────────────────────────────────────
+
+function parseVehiclesMeta(xmlText) {
+  // Get <InitDatas> section first
+  const initSection = xmlSection(xmlText, 'InitDatas') || xmlText;
+  const itemBlocks = xmlBlocks(initSection, 'Item');
+  const results = [];
+
+  for (const block of itemBlocks) {
+    const modelName = xmlText_(block, 'modelName');
+    if (!modelName) continue;
+    results.push({
+      model_name:                  modelName,
+      handling_id:                 xmlText_(block, 'handlingId'),
+      game_name:                   xmlText_(block, 'gameName'),
+      make_name:                   xmlText_(block, 'vehicleMakeName'),
+      audio_name_hash:             xmlText_(block, 'audioNameHash'),
+      layout:                      xmlText_(block, 'layout'),
+      vehicle_type:                xmlText_(block, 'type'),
+      vehicle_class:               xmlText_(block, 'vehicleClass'),
+      wheel_type:                  xmlText_(block, 'wheelType'),
+      frequency:                   toInt(xmlAttr(block, 'frequency')),
+      max_num:                     toInt(xmlAttr(block, 'maxNum')),
+      flags:                       xmlText_(block, 'flags'),
+      swankness:                   xmlText_(block, 'swankness'),
+      max_num_same_color:          toInt(xmlAttr(block, 'maxNumOfSameColor')),
+      identical_model_spawn_dist:  toFloat(xmlAttr(block, 'identicalModelSpawnDistance')),
+      default_body_health:         toFloat(xmlAttr(block, 'defaultBodyHealth')),
+      raw_xml:                     block,
+    });
+  }
+  return results;
+}
+
+// shadow helper — xmlText is already taken as a param name in this scope, alias:
+function xmlText_(block, tag) { return xmlText(block, tag); }
+function toInt(v) { const n = parseInt(v, 10); return isNaN(n) ? null : n; }
+function toFloat(v) { const n = parseFloat(v); return isNaN(n) ? null : n; }
+
+// ── handling.meta parser ──────────────────────────────────────────
+
+function parseHandlingMeta(xmlText) {
+  const handlingSection = xmlSection(xmlText, 'HandlingData') || xmlText;
+  // Items have type attribute: <Item type="CHandlingData">
+  const results = [];
+  const itemRe = /<Item\s+type="CHandlingData">([\s\S]*?)<\/Item>/g;
+  let m;
+  while ((m = itemRe.exec(handlingSection)) !== null) {
+    const block = m[1];
+    const handlingName = xmlText_(block, 'handlingName');
+    if (!handlingName) continue;
+    results.push({
+      handling_name:               handlingName,
+      mass:                        toFloat(xmlAttr(block, 'fMass')),
+      initial_drag_coeff:          toFloat(xmlAttr(block, 'fInitialDragCoeff')),
+      percent_submerged:           toFloat(xmlAttr(block, 'fPercentSubmerged')),
+      drive_bias_front:            toFloat(xmlAttr(block, 'fDriveBiasFront')),
+      initial_drive_gears:         toInt(xmlAttr(block, 'nInitialDriveGears')),
+      initial_drive_force:         toFloat(xmlAttr(block, 'fInitialDriveForce')),
+      drive_inertia:               toFloat(xmlAttr(block, 'fDriveInertia')),
+      initial_drive_max_flat_vel:  toFloat(xmlAttr(block, 'fInitialDriveMaxFlatVel')),
+      brake_force:                 toFloat(xmlAttr(block, 'fBrakeForce')),
+      brake_bias_front:            toFloat(xmlAttr(block, 'fBrakeBiasFront')),
+      hand_brake_force:            toFloat(xmlAttr(block, 'fHandBrakeForce')),
+      steering_lock:               toFloat(xmlAttr(block, 'fSteeringLock')),
+      traction_curve_max:          toFloat(xmlAttr(block, 'fTractionCurveMax')),
+      traction_curve_min:          toFloat(xmlAttr(block, 'fTractionCurveMin')),
+      traction_curve_lateral:      toFloat(xmlAttr(block, 'fTractionCurveLateral')),
+      traction_bias_front:         toFloat(xmlAttr(block, 'fTractionBiasFront')),
+      traction_loss_mult:          toFloat(xmlAttr(block, 'fTractionLossMult')),
+      suspension_force:            toFloat(xmlAttr(block, 'fSuspensionForce')),
+      suspension_comp_damp:        toFloat(xmlAttr(block, 'fSuspensionCompDamp')),
+      suspension_rebound_damp:     toFloat(xmlAttr(block, 'fSuspensionReboundDamp')),
+      suspension_upper_limit:      toFloat(xmlAttr(block, 'fSuspensionUpperLimit')),
+      suspension_lower_limit:      toFloat(xmlAttr(block, 'fSuspensionLowerLimit')),
+      suspension_raise:            toFloat(xmlAttr(block, 'fSuspensionRaise')),
+      suspension_bias_front:       toFloat(xmlAttr(block, 'fSuspensionBiasFront')),
+      anti_roll_bar_force:         toFloat(xmlAttr(block, 'fAntiRollBarForce')),
+      collision_damage_mult:       toFloat(xmlAttr(block, 'fCollisionDamageMult')),
+      weapon_damage_mult:          toFloat(xmlAttr(block, 'fWeaponDamageMult')),
+      deformation_damage_mult:     toFloat(xmlAttr(block, 'fDeformationDamageMult')),
+      engine_damage_mult:          toFloat(xmlAttr(block, 'fEngineDamageMult')),
+      petrol_tank_volume:          toFloat(xmlAttr(block, 'fPetrolTankVolume')),
+      monetary_value:              toInt(xmlAttr(block, 'nMonetaryValue')),
+      model_flags:                 xmlText_(block, 'strModelFlags'),
+      handling_flags:              xmlText_(block, 'strHandlingFlags'),
+      damage_flags:                xmlText_(block, 'strDamageFlags'),
+      ai_handling:                 xmlText_(block, 'AIHandling'),
+      raw_xml:                     m[0],
+    });
+  }
+  return results;
+}
+
+// ── popgroups.ymt.xml parser ──────────────────────────────────────
+
+function parsePopgroups(xmlText) {
+  const pedSection = xmlSection(xmlText, 'pedGroups');
+  const vehSection = xmlSection(xmlText, 'vehGroups');
+
+  function parseSection(section, groupType) {
+    const rows = [];
+    const groupBlocks = xmlBlocks(section, 'Item');
+    for (const groupBlock of groupBlocks) {
+      const groupName = xmlText_(groupBlock, 'Name');
+      if (!groupName) continue;
+      const flags = xmlText_(groupBlock, 'flags') || '';
+      const modelsSection = xmlSection(groupBlock, 'models');
+      // Within models, each <Item> has a <Name>
+      const modelBlocks = xmlBlocks(modelsSection, 'Item');
+      modelBlocks.forEach((mb, idx) => {
+        const modelName = xmlText_(mb, 'Name');
+        if (modelName) {
+          rows.push({ group_type: groupType, group_name: groupName, model_name: modelName, sort_order: idx, flags });
+        }
+      });
+    }
+    return rows;
+  }
+
+  return [
+    ...parseSection(pedSection, 'ped'),
+    ...parseSection(vehSection, 'veh'),
+  ];
+}
+
+// ── popcycle.dat parser ───────────────────────────────────────────
+
+function parsePopcycle(text) {
+  const rows = [];
+  // Split into POP_SCHEDULE blocks
+  const blocks = text.split(/POP_SCHEDULE:\s*/);
+  for (const block of blocks) {
+    if (!block.trim()) continue;
+    // First non-blank line is the zone name
+    const lines = block.split(/\r?\n/).filter(l => !l.match(/^\s*(\/\/|$)/));
+    if (lines.length < 1) continue;
+    const zone = lines[0].trim();
+    if (!zone) continue;
+    // Collect data lines (non-comment, non-empty, before END_POP_SCHEDULE)
+    const dataLines = [];
+    let ended = false;
+    for (let i = 1; i < lines.length; i++) {
+      if (lines[i].match(/END_POP_SCHEDULE/)) { ended = true; break; }
+      if (lines[i].trim()) dataLines.push(lines[i]);
+    }
+    // First 12 = weekday, next 12 = weekend
+    for (let pass = 0; pass < 2; pass++) {
+      const dayType = pass === 0 ? 'weekday' : 'weekend';
+      for (let slot = 0; slot < 12; slot++) {
+        const line = dataLines[pass * 12 + slot];
+        if (!line) continue;
+        const row = parsePopcycleLine(zone, dayType, slot, line);
+        if (row) rows.push(row);
+      }
+    }
+  }
+  return rows;
+}
+
+function parsePopcycleLine(zone, dayType, hourSlot, line) {
+  // The line has 10 leading numbers then "peds ... cars ..."
+  const tokens = line.trim().split(/\s+/);
+  let idx = 0;
+  const nums = [];
+  // Consume numeric tokens until we hit 'peds' or 'cars'
+  while (idx < tokens.length && !isNaN(Number(tokens[idx]))) {
+    nums.push(Number(tokens[idx++]));
+  }
+  if (nums.length < 3) return null; // Not a valid data line
+  const pedGroups = [];
+  const vehGroups = [];
+  let mode = null;
+  while (idx < tokens.length) {
+    const t = tokens[idx++];
+    if (t === 'peds') { mode = 'peds'; continue; }
+    if (t === 'cars') { mode = 'veh'; continue; }
+    // t is group name, next token is weight
+    if (mode && idx < tokens.length && !isNaN(Number(tokens[idx]))) {
+      const weight = Number(tokens[idx++]);
+      if (mode === 'peds') pedGroups.push({ group: t, weight });
+      else                 vehGroups.push({ group: t, weight });
+    }
+  }
+  return {
+    zone,
+    day_type:                  dayType,
+    hour_slot:                 hourSlot,
+    max_peds:                  nums[0]  ?? null,
+    max_scenario_peds:         nums[1]  ?? null,
+    max_cars:                  nums[2]  ?? null,
+    max_parked_cars:           nums[3]  ?? null,
+    max_low_parked_cars:       nums[4]  ?? null,
+    pct_cop_cars:              nums[5]  ?? null,
+    pct_cop_peds:              nums[6]  ?? null,
+    max_scen_ped_models:       nums[7]  ?? null,
+    max_scen_veh_models:       nums[8]  ?? null,
+    max_pre_assigned_parked:   nums[9]  ?? null,
+    ped_groups:                JSON.stringify(pedGroups),
+    veh_groups:                JSON.stringify(vehGroups),
+  };
+}
+
+// ── D1 batch insert helper ────────────────────────────────────────
+
+async function batchInsert(db, table, rows, conflictCols = []) {
+  if (!rows.length) return { inserted: 0, updated: 0 };
+  const cols = Object.keys(rows[0]);
+  const CHUNK = 50; // D1 batch limit per statement is generous but keep chunks manageable
+  let inserted = 0;
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const stmts = chunk.map(row => {
+      const values = cols.map(c => row[c] ?? null);
+      const placeholders = cols.map(() => '?').join(', ');
+      const setCols = cols.filter(c => !conflictCols.includes(c));
+      const setClause = setCols.map(c => `${c} = excluded.${c}`).join(', ');
+      const sql = conflictCols.length
+        ? `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders})
+           ON CONFLICT(${conflictCols.join(', ')}) DO UPDATE SET ${setClause}`
+        : `INSERT OR IGNORE INTO ${table} (${cols.join(', ')}) VALUES (${placeholders})`;
+      return db.prepare(sql).bind(...values);
+    });
+    const results = await db.batch(stmts);
+    inserted += results.reduce((s, r) => s + (r.meta?.changes ?? 0), 0);
+  }
+  return { inserted };
+}
+
+// ── Import handlers ───────────────────────────────────────────────
+
+async function handleImportVehiclesMeta(request, env) {
+  const { xml, packId = 'default', sourceFile = '' } = await request.json();
+  if (!xml) return jsonResponse({ ok: false, error: 'Missing xml field' }, 400);
+  const parsed = parseVehiclesMeta(xml);
+  if (!parsed.length) return jsonResponse({ ok: false, error: 'No <Item> entries found in XML' }, 400);
+  const rows = parsed.map(r => ({ pack_id: packId, source_file: sourceFile, ...r }));
+  const { inserted } = await batchInsert(
+    env.DB, 'vehicle_meta_entries', rows,
+    ['pack_id', 'model_name']
+  );
+  return jsonResponse({ ok: true, parsed: parsed.length, inserted });
+}
+
+async function handleImportHandlingMeta(request, env) {
+  const { xml, packId = 'default', sourceFile = '' } = await request.json();
+  if (!xml) return jsonResponse({ ok: false, error: 'Missing xml field' }, 400);
+  const parsed = parseHandlingMeta(xml);
+  if (!parsed.length) return jsonResponse({ ok: false, error: 'No handling entries found in XML' }, 400);
+  const rows = parsed.map(r => ({ pack_id: packId, source_file: sourceFile, ...r }));
+  const { inserted } = await batchInsert(
+    env.DB, 'handling_meta_entries', rows,
+    ['pack_id', 'handling_name']
+  );
+  return jsonResponse({ ok: true, parsed: parsed.length, inserted });
+}
+
+async function handleImportPopgroups(request, env) {
+  const { xml, packId = 'default', sourceFile = '' } = await request.json();
+  if (!xml) return jsonResponse({ ok: false, error: 'Missing xml field' }, 400);
+  // Delete existing for this pack, then re-insert (replace-all semantics)
+  await env.DB.prepare('DELETE FROM popgroup_members WHERE pack_id = ?').bind(packId).run();
+  const parsed = parsePopgroups(xml);
+  if (!parsed.length) return jsonResponse({ ok: false, error: 'No popgroup members found in XML' }, 400);
+  const rows = parsed.map(r => ({ pack_id: packId, source_file: sourceFile, ...r }));
+  const { inserted } = await batchInsert(env.DB, 'popgroup_members', rows);
+  return jsonResponse({ ok: true, parsed: parsed.length, inserted });
+}
+
+async function handleImportPopcycle(request, env) {
+  const { text, packId = 'default', sourceFile = '' } = await request.json();
+  if (!text) return jsonResponse({ ok: false, error: 'Missing text field' }, 400);
+  const parsed = parsePopcycle(text);
+  if (!parsed.length) return jsonResponse({ ok: false, error: 'No popcycle entries parsed' }, 400);
+  const rows = parsed.map(r => ({ pack_id: packId, source_file: sourceFile, ...r }));
+  const { inserted } = await batchInsert(
+    env.DB, 'popcycle_slots', rows,
+    ['pack_id', 'zone', 'day_type', 'hour_slot']
+  );
+  return jsonResponse({ ok: true, parsed: parsed.length, inserted });
+}
+
+// ── Query handlers — /api/moddb/* ────────────────────────────────
+
+async function handleModDbVehicleList(request, env) {
+  const url = new URL(request.url);
+  const packId = url.searchParams.get('pack') || 'default';
+  const cls    = url.searchParams.get('class');
+  const q      = url.searchParams.get('q');
+  const limit  = Math.min(parseInt(url.searchParams.get('limit') || '100', 10), 500);
+  const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+  let sql = 'SELECT * FROM vehicle_meta_entries WHERE pack_id = ?';
+  const params = [packId];
+  if (cls) { sql += ' AND vehicle_class = ?'; params.push(cls); }
+  if (q)   { sql += ' AND (model_name LIKE ? OR make_name LIKE ?)'; params.push(`%${q}%`, `%${q}%`); }
+  sql += ' ORDER BY model_name LIMIT ? OFFSET ?';
+  params.push(limit, offset);
+  const { results } = await env.DB.prepare(sql).bind(...params).all();
+  return jsonResponse({ ok: true, vehicles: results, count: results.length });
+}
+
+async function handleModDbVehicle(request, env, modelName) {
+  const url = new URL(request.url);
+  const packId = url.searchParams.get('pack') || 'default';
+  const row = await env.DB.prepare(
+    'SELECT * FROM vehicle_meta_entries WHERE pack_id = ? AND model_name = ?'
+  ).bind(packId, modelName).first();
+  if (!row) return jsonResponse({ ok: false, error: 'Vehicle not found' }, 404);
+  return jsonResponse({ ok: true, vehicle: row });
+}
+
+async function handleModDbHandling(request, env, handlingName) {
+  const url = new URL(request.url);
+  const packId = url.searchParams.get('pack') || 'default';
+  const row = await env.DB.prepare(
+    'SELECT * FROM handling_meta_entries WHERE pack_id = ? AND handling_name = ?'
+  ).bind(packId, handlingName).first();
+  if (!row) return jsonResponse({ ok: false, error: 'Handling entry not found' }, 404);
+  return jsonResponse({ ok: true, handling: row });
+}
+
+async function handleModDbPopgroupList(request, env) {
+  const url = new URL(request.url);
+  const packId    = url.searchParams.get('pack') || 'default';
+  const groupType = url.searchParams.get('type') || 'veh';
+  const { results } = await env.DB.prepare(
+    'SELECT DISTINCT group_name, flags FROM popgroup_members WHERE pack_id = ? AND group_type = ? ORDER BY group_name'
+  ).bind(packId, groupType).all();
+  return jsonResponse({ ok: true, groups: results });
+}
+
+async function handleModDbPopgroup(request, env, groupName) {
+  const url = new URL(request.url);
+  const packId    = url.searchParams.get('pack') || 'default';
+  const groupType = url.searchParams.get('type') || 'veh';
+  const { results } = await env.DB.prepare(
+    'SELECT * FROM popgroup_members WHERE pack_id = ? AND group_type = ? AND group_name = ? ORDER BY sort_order'
+  ).bind(packId, groupType, groupName).all();
+  return jsonResponse({ ok: true, groupName, groupType, members: results });
+}
+
+async function handleModDbPopgroupByModel(request, env, modelName) {
+  const url = new URL(request.url);
+  const packId = url.searchParams.get('pack') || 'default';
+  const { results } = await env.DB.prepare(
+    'SELECT DISTINCT group_type, group_name, flags FROM popgroup_members WHERE pack_id = ? AND model_name = ?'
+  ).bind(packId, modelName).all();
+  return jsonResponse({ ok: true, modelName, groups: results });
+}
+
+async function handleModDbPopcycleZones(request, env) {
+  const url = new URL(request.url);
+  const packId = url.searchParams.get('pack') || 'default';
+  const { results } = await env.DB.prepare(
+    'SELECT DISTINCT zone FROM popcycle_slots WHERE pack_id = ? ORDER BY zone'
+  ).bind(packId).all();
+  return jsonResponse({ ok: true, zones: results.map(r => r.zone) });
+}
+
+async function handleModDbPopcycle(request, env) {
+  const url = new URL(request.url);
+  const packId  = url.searchParams.get('pack') || 'default';
+  const zone    = url.searchParams.get('zone');
+  const dayType = url.searchParams.get('day');
+  if (!zone) return jsonResponse({ ok: false, error: 'Missing ?zone=' }, 400);
+  let sql = 'SELECT * FROM popcycle_slots WHERE pack_id = ? AND zone = ?';
+  const params = [packId, zone];
+  if (dayType) { sql += ' AND day_type = ?'; params.push(dayType); }
+  sql += ' ORDER BY day_type, hour_slot';
+  const { results } = await env.DB.prepare(sql).bind(...params).all();
+  return jsonResponse({ ok: true, zone, slots: results.map(r => ({
+    ...r,
+    ped_groups: safeParseJson(r.ped_groups),
+    veh_groups: safeParseJson(r.veh_groups),
+  })) });
+}
+
+function safeParseJson(v) {
+  try { return JSON.parse(v || '[]'); } catch { return []; }
+}
+
+/**
+ * Resolve: zone + hour slot → vehGroups → vehicle entries
+ * Returns assembled traffic picture for that zone/time.
+ */
+async function handleModDbPopcycleResolve(request, env) {
+  const url     = new URL(request.url);
+  const packId  = url.searchParams.get('pack')  || 'default';
+  const zone    = url.searchParams.get('zone');
+  const dayType = url.searchParams.get('day')   || 'weekday';
+  const hourSlot = parseInt(url.searchParams.get('hour') || '6', 10);
+  if (!zone) return jsonResponse({ ok: false, error: 'Missing ?zone=' }, 400);
+
+  const slot = await env.DB.prepare(
+    'SELECT * FROM popcycle_slots WHERE pack_id = ? AND zone = ? AND day_type = ? AND hour_slot = ?'
+  ).bind(packId, zone, dayType, hourSlot).first();
+
+  if (!slot) return jsonResponse({ ok: false, error: 'Slot not found' }, 404);
+
+  const vehGroupList = safeParseJson(slot.veh_groups);
+  const resolvedGroups = [];
+
+  for (const { group, weight } of vehGroupList) {
+    const { results: members } = await env.DB.prepare(
+      'SELECT model_name, sort_order FROM popgroup_members WHERE pack_id = ? AND group_type = ? AND group_name = ? ORDER BY sort_order'
+    ).bind(packId, 'veh', group).all();
+
+    const vehicleRows = [];
+    for (const { model_name } of members) {
+      const veh = await env.DB.prepare(
+        'SELECT model_name, handling_id, vehicle_class, vehicle_type, frequency, make_name FROM vehicle_meta_entries WHERE pack_id = ? AND model_name = ?'
+      ).bind(packId, model_name).first();
+      vehicleRows.push(veh || { model_name, _missing: true });
+    }
+    resolvedGroups.push({ group, weight, vehicles: vehicleRows });
+  }
+
+  return jsonResponse({
+    ok: true,
+    zone,
+    dayType,
+    hourSlot,
+    hourLabel: `${(hourSlot * 2).toString().padStart(2,'0')}:00`,
+    maxCars: slot.max_cars,
+    maxPeds: slot.max_peds,
+    maxParkedCars: slot.max_parked_cars,
+    pctCopCars: slot.pct_cop_cars,
+    groups: resolvedGroups,
+  });
+}
 

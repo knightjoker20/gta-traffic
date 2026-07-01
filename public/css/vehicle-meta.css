@@ -351,14 +351,20 @@
 }
 
 .vm-tab-button {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(31, 72, 164, 0.86);
-  color: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(8, 12, 24, 0.72);
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.vm-tab-button:hover:not(.active) {
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #f1f5f9;
 }
 
 .vm-tab-button.active {
-  background: linear-gradient(180deg, #a94f1d, #7e3515);
-  border-color: rgba(255, 167, 92, 0.55);
+  background: linear-gradient(180deg, #c97b1a, #92510d);
+  border-color: rgba(245, 158, 11, 0.55);
+  color: #fff;
   box-shadow: 0 0 0 1px rgba(255, 149, 0, 0.12) inset;
 }
 

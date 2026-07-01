@@ -1,8 +1,37 @@
-/* =====================================================
-   GTA TRAFFIC SHARED SITE SHELL
-   Centralized real-logo header used across site pages.
-   ===================================================== */
+/* =============================================================
+   GTA-Traffic.com — Site Shell  V2.0
+   Authoritative shared layout: body + background, header,
+   nav bar, panels, headings, footer.
+   Loaded on EVERY page. Uses design-tokens.css vars only.
+   Do NOT add page-specific styles here.
+   ============================================================= */
 
+/* ── Body & background ───────────────────────────────────────── */
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(
+      rgba(3, 6, 13, 0.48) 0%,
+      rgba(3, 6, 13, 0.68) 35%,
+      rgba(3, 6, 13, 0.82) 100%
+    ),
+    url("../assets/hero/gta-traffic-city-sunset.png");
+  background-size: cover;
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* No grid overlay — the flat illustration provides its own visual texture */
+
+/* ── App header ──────────────────────────────────────────────── */
 .app-header {
   width: 100%;
   min-height: 132px;
@@ -12,7 +41,11 @@
   padding: 22px 24px 14px;
   box-sizing: border-box;
   position: relative;
-  z-index: 20;
+  z-index: var(--z-sticky);
+  background:
+    radial-gradient(circle at 30% 0%,  rgba(249, 115,  22, .22), transparent 48%),
+    radial-gradient(circle at 80% 0%,  rgba(147,  51, 234, .16), transparent 40%),
+    linear-gradient(180deg, rgba(2, 6, 10, .82), rgba(2, 6, 10, .28), transparent);
 }
 
 .app-header .brand-left {
@@ -39,24 +72,185 @@
 }
 
 .app-header .brand-title {
-  color: #fff;
-  font-size: 24px;
-  font-weight: 900;
+  color: var(--color-text-primary);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
 }
 
 .app-header .tagline {
-  color: #cbd5e1;
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semi);
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
-body.gta-theme .app-header {
+/* ── Site tool nav ───────────────────────────────────────────── */
+.site-tool-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  padding: 0 20px;
+  background: rgba(5, 9, 18, 0.82);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-tool-nav a,
+.site-tool-nav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-semi);
+  text-decoration: none;
+  letter-spacing: .03em;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.site-tool-nav a:hover,
+.site-tool-nav button:hover {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-brand);
+  filter: none;
+}
+
+.site-tool-nav a.active,
+.site-tool-nav button.active {
+  color: var(--color-brand-light);
+  border-bottom-color: var(--color-brand);
+}
+
+/* ── Main content wrapper ────────────────────────────────────── */
+main {
+  padding: 20px 24px 40px;
+}
+
+/* ── Panels ──────────────────────────────────────────────────── */
+.panel {
+  /* Transparent enough to let the illustration breathe through,
+     dark enough that text stays fully readable */
+  background: linear-gradient(160deg, rgba(10,15,28,.70), rgba(4,7,16,.78));
+  border: 1px solid rgba(245, 158, 11, 0.18);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+/* ── Headings ────────────────────────────────────────────────── */
+h1, h2, h3, h4 {
+  margin-top: 0;
+  color: var(--color-text-primary);
+}
+h1 { font-size: var(--text-2xl); }
+h2 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+h3 { font-size: var(--text-md); }
+
+/* ── Hero banner (shared pattern) ───────────────────────────── */
+.hero-banner {
+  position: relative;
+  width: 100%;
+  min-height: 260px;
+  overflow: hidden;
+  /* Sunset tri-tone: orange left, purple right, pink warmth underneath —
+     echoing the GTA Traffic illustration color palette */
   background:
-    radial-gradient(circle at 50% 0%, rgba(255, 207, 47, .13), transparent 42%),
-    linear-gradient(180deg, rgba(2, 6, 10, .86), rgba(2, 6, 10, .32), transparent);
+    radial-gradient(circle at 15% 60%,  rgba(249, 115,  22, .32), transparent 48%),
+    radial-gradient(circle at 88% 10%,  rgba(147,  51, 234, .26), transparent 42%),
+    radial-gradient(circle at 50% 120%, rgba(236,  72, 153, .18), transparent 48%),
+    #04070d;
 }
 
+.hero-shade {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: linear-gradient(180deg, rgba(3,6,13,.3), rgba(3,6,13,.68));
+}
+
+.hero-content {
+  width: 100%;
+  max-width: 800px;
+  text-align: center;
+}
+
+.hero-kicker {
+  display: inline-block;
+  margin-bottom: var(--space-3);
+  padding: var(--space-1) var(--space-4);
+  background: var(--color-brand-subtle);
+  border: 1px solid var(--color-brand-border);
+  border-radius: var(--radius-full);
+  color: var(--color-brand-light);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.hero-content h1 {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  color: #fff;
+  margin-bottom: var(--space-4);
+}
+
+.hero-content p {
+  color: var(--color-text-secondary);
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* ── Account nav bar ─────────────────────────────────────────── */
+.account-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-6);
+  background: rgba(3,7,18,.65);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.app-footer {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-5) var(--space-8);
+  border-top: 1px solid var(--color-border);
+  background: rgba(3,7,18,.85);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.app-footer strong { color: var(--color-brand); }
+
+/* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .app-header {
     min-height: 104px;
@@ -66,6 +260,9 @@ body.gta-theme .app-header {
   .app-header .site-logo {
     width: clamp(220px, 58vw, 320px);
   }
+
+  main { padding: 14px 14px 28px; }
+  .panel { padding: var(--space-4); }
 }
 
 @media (max-width: 560px) {
@@ -78,5 +275,16 @@ body.gta-theme .app-header {
 
   .app-header .site-logo {
     width: min(250px, 68vw);
+  }
+
+  .site-tool-nav {
+    padding: 0 10px;
+    gap: 0;
+  }
+
+  .site-tool-nav a,
+  .site-tool-nav button {
+    padding: 8px 10px;
+    font-size: var(--text-xs);
   }
 }

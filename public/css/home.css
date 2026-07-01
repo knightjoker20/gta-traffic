@@ -43,15 +43,17 @@ body[data-page="home"] .home-landing-main {
 body[data-page="home"] .home-section {
   margin-bottom: 28px;
   padding: 22px;
-  border: 1px solid rgba(251, 191, 36, .2);
+  border: 1px solid rgba(245, 158, 11, .20);
   border-radius: 24px;
   background:
-    radial-gradient(circle at top left, rgba(236, 72, 153, .13), transparent 34%),
-    radial-gradient(circle at top right, rgba(251, 146, 60, .13), transparent 30%),
-    rgba(15, 23, 42, .76);
+    radial-gradient(circle at top left,  rgba(236,  72, 153, .10), transparent 34%),
+    radial-gradient(circle at top right, rgba(249, 115,  22, .10), transparent 30%),
+    rgba(6, 9, 18, .68);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   box-shadow:
-    0 24px 70px rgba(0, 0, 0, .32),
-    inset 0 1px 0 rgba(255, 255, 255, .05);
+    0 24px 70px rgba(0, 0, 0, .28),
+    inset 0 1px 0 rgba(255, 255, 255, .04);
 }
 
 body[data-page="home"] .home-section-heading {
@@ -104,36 +106,40 @@ body[data-page="home"] .home-news-card {
   gap: 9px;
   min-height: 165px;
   padding: 17px;
-  border: 1px solid rgba(148, 163, 184, .22);
+  border: 1px solid rgba(148, 163, 184, .20);
   border-radius: 18px;
-  background:
-    linear-gradient(145deg, rgba(30, 41, 59, .88), rgba(15, 23, 42, .74));
+  /* Semi-transparent so the retro illustration shows through */
+  background: linear-gradient(145deg, rgba(8, 12, 24, .76), rgba(4, 7, 16, .82));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: inherit;
   text-decoration: none;
   transition:
     transform .16s ease,
     border-color .16s ease,
-    box-shadow .16s ease,
-    background .16s ease;
+    box-shadow .16s ease;
 }
 
 body[data-page="home"] .home-tool-card:hover,
 body[data-page="home"] .home-workflow-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(251, 191, 36, .52);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, .34);
+  border-color: rgba(245, 158, 11, .55);
+  box-shadow:
+    0 12px 36px rgba(249, 115, 22, .16),
+    0 18px 42px rgba(0, 0, 0, .32);
 }
 
+/* Featured cards get a warm orange glow + purple depth */
 body[data-page="home"] .home-tool-card.featured {
-  border-color: rgba(251, 146, 60, .52);
+  border-color: rgba(249, 115, 22, .45);
   background:
-    radial-gradient(circle at top right, rgba(251, 146, 60, .2), transparent 42%),
-    linear-gradient(145deg, rgba(88, 28, 135, .46), rgba(15, 23, 42, .84));
+    radial-gradient(circle at top right, rgba(249, 115, 22, .18), transparent 42%),
+    linear-gradient(145deg, rgba(88, 28, 135, .36), rgba(4, 7, 16, .82));
 }
 
 body[data-page="home"] .home-tool-card.coming-soon {
   border-style: dashed;
-  opacity: .84;
+  opacity: .72;
 }
 
 body[data-page="home"] .home-tool-card span,
