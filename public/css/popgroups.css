@@ -179,3 +179,46 @@
     max-height: none;
   }
 }
+
+/* POPGROUPS_CARD_IMAGE_BUTTON_CLEANUP_V1 */
+
+.vehicle-card .vehicle-actions,
+.pg-work-vehicle-actions {
+  gap: 8px;
+}
+
+.vehicle-card button,
+.vehicle-card a,
+.pg-work-vehicle-card button,
+.pg-work-vehicle-card a {
+  position: relative;
+}
+
+.has-cloud-image {
+  overflow: hidden;
+  border-style: solid !important;
+  border-color: rgba(121, 200, 255, 0.24) !important;
+}
+
+.vehicle-card img,
+.library-card img,
+.vehicle-library-card img,
+.pg-work-vehicle-card img,
+.pg-vehicle-card img {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+}
+
+#libraryPanel {
+  width: 380px;
+  min-width: 380px;
+}
+
+#editorPanel {
+  min-width: 0;
+}
+
+#mainLayout.pg-wide-main-layout {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
