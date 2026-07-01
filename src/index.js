@@ -2839,6 +2839,462 @@ async function handleVehicleImageList(env) {
     images
   });
 }
+
+// =====================================================
+// BULK VEHICLE PHOTO IMPORT (.zip)
+// Pure-JS zip reader — no npm dependency, matches this
+// worker's zero-dependency build. Supports the two zip
+// compression methods every normal zip tool uses:
+// 0 = stored, 8 = deflate (via native DecompressionStream).
+// =====================================================
+
+const MAX_BULK_ZIP_BYTES = 90 * 1024 * 1024; // stays under Cloudflare's 100MB Free/Pro request body limit
+const ZIP_CENTRAL_DIR_SIGNATURE = 0x02014b50;
+const ZIP_LOCAL_FILE_SIGNATURE = 0x04034b50;
+
+function findZipEndOfCentralDirectory(bytes) {
+  const maxCommentLength = 65535;
+  const minOffset = Math.max(0, bytes.length - 22 - maxCommentLength);
+
+  for (let offset = bytes.length - 22; offset >= minOffset; offset--) {
+    if (
+      bytes[offset] === 0x50 &&
+      bytes[offset + 1] === 0x4b &&
+      bytes[offset + 2] === 0x05 &&
+      bytes[offset + 3] === 0x06
+    ) {
+      return offset;
+    }
+  }
+
+  return -1;
+}
+
+function parseZipEntries(bytes) {
+  const view = new DataView(
+    bytes.buffer,
+    bytes.byteOffset,
+    bytes.byteLength
+  );
+
+  const eocdOffset = findZipEndOfCentralDirectory(bytes);
+
+  if (eocdOffset < 0) {
+    throw new Error(
+      "This does not look like a valid .zip file."
+    );
+  }
+
+  const entryCount = view.getUint16(eocdOffset + 10, true);
+  let centralDirOffset = view.getUint32(eocdOffset + 16, true);
+
+  const entries = [];
+  const textDecoder = new TextDecoder("utf-8");
+
+  for (let i = 0; i < entryCount; i++) {
+    if (
+      centralDirOffset + 46 > bytes.length ||
+      view.getUint32(centralDirOffset, true) !==
+        ZIP_CENTRAL_DIR_SIGNATURE
+    ) {
+      break;
+    }
+
+    const compressionMethod = view.getUint16(
+      centralDirOffset + 10,
+      true
+    );
+    const compressedSize = view.getUint32(
+      centralDirOffset + 20,
+      true
+    );
+    const uncompressedSize = view.getUint32(
+      centralDirOffset + 24,
+      true
+    );
+    const fileNameLength = view.getUint16(
+      centralDirOffset + 28,
+      true
+    );
+    const extraLength = view.getUint16(
+      centralDirOffset + 30,
+      true
+    );
+    const commentLength = view.getUint16(
+      centralDirOffset + 32,
+      true
+    );
+    const localHeaderOffset = view.getUint32(
+      centralDirOffset + 42,
+      true
+    );
+
+    const nameStart = centralDirOffset + 46;
+    const nameBytes = bytes.subarray(
+      nameStart,
+      nameStart + fileNameLength
+    );
+    const fileName = textDecoder.decode(nameBytes);
+
+    entries.push({
+      fileName,
+      compressionMethod,
+      compressedSize,
+      uncompressedSize,
+      localHeaderOffset
+    });
+
+    centralDirOffset =
+      nameStart + fileNameLength + extraLength + commentLength;
+  }
+
+  return entries;
+}
+
+async function extractZipEntryBytes(bytes, entry) {
+  const view = new DataView(
+    bytes.buffer,
+    bytes.byteOffset,
+    bytes.byteLength
+  );
+
+  const offset = entry.localHeaderOffset;
+
+  if (
+    view.getUint32(offset, true) !== ZIP_LOCAL_FILE_SIGNATURE
+  ) {
+    throw new Error(
+      "Local file header did not match — the zip may be corrupt."
+    );
+  }
+
+  const nameLength = view.getUint16(offset + 26, true);
+  const extraLength = view.getUint16(offset + 28, true);
+  const dataStart = offset + 30 + nameLength + extraLength;
+
+  const compressedBytes = bytes.subarray(
+    dataStart,
+    dataStart + entry.compressedSize
+  );
+
+  if (entry.compressionMethod === 0) {
+    return compressedBytes;
+  }
+
+  if (entry.compressionMethod === 8) {
+    const stream = new Response(compressedBytes).body.pipeThrough(
+      new DecompressionStream("deflate-raw")
+    );
+
+    const arrayBuffer = await new Response(stream).arrayBuffer();
+    return new Uint8Array(arrayBuffer);
+  }
+
+  throw new Error(
+    `Unsupported zip compression method (${entry.compressionMethod}). ` +
+    `Re-save this file using "Store" or standard "Deflate" compression.`
+  );
+}
+
+function isZipDirectoryOrJunkEntry(fileName) {
+  if (!fileName || fileName.endsWith("/")) {
+    return true;
+  }
+
+  if (fileName.startsWith("__MACOSX/")) {
+    return true;
+  }
+
+  const baseName = fileName.split("/").pop() || "";
+
+  if (baseName.startsWith("._")) {
+    return true;
+  }
+
+  if (baseName.toLowerCase() === ".ds_store") {
+    return true;
+  }
+
+  return false;
+}
+
+function vehicleImageTypeForFileName(fileName) {
+  const lower = fileName.toLowerCase();
+  const dotIndex = lower.lastIndexOf(".");
+
+  if (dotIndex < 0) {
+    return null;
+  }
+
+  const extension = lower.slice(dotIndex);
+  const contentType = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp"
+  }[extension];
+
+  return contentType ? { extension, contentType } : null;
+}
+
+function requestedModelNameFromFileName(fileName) {
+  const baseName = fileName.split("/").pop() || "";
+  const dotIndex = baseName.lastIndexOf(".");
+
+  return (
+    dotIndex > 0 ? baseName.slice(0, dotIndex) : baseName
+  ).trim();
+}
+
+async function loadVehicleModelNameLookup(env) {
+  const result = await env.DB.prepare(
+    `SELECT model_name FROM vehicles`
+  ).all();
+
+  const lookup = new Map();
+
+  (result.results || []).forEach(row => {
+    const modelName = String(row.model_name || "").trim();
+
+    if (modelName) {
+      lookup.set(modelName.toLowerCase(), modelName);
+    }
+  });
+
+  return lookup;
+}
+
+async function loadExistingVehicleImageModelNames(env) {
+  const existing = new Set();
+  let cursor;
+
+  do {
+    const result = await env.VEHICLE_IMAGES.list({
+      prefix: VEHICLE_IMAGE_PREFIX,
+      limit: 1000,
+      cursor
+    });
+
+    result.objects.forEach(object => {
+      const modelName = modelNameFromVehicleImageKey(object.key);
+
+      if (modelName) {
+        existing.add(modelName.toLowerCase());
+      }
+    });
+
+    cursor = result.truncated ? result.cursor : undefined;
+  } while (cursor);
+
+  return existing;
+}
+
+async function handleVehicleImageBulkImport(request, env) {
+  const authorizationError =
+    checkImageUploadAuthorization(request, env);
+
+  if (authorizationError) {
+    return authorizationError;
+  }
+
+  const contentLength = Number(
+    request.headers.get("content-length") || 0
+  );
+
+  if (contentLength > MAX_BULK_ZIP_BYTES) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          `The zip file is too large. The limit is ` +
+          `${Math.floor(MAX_BULK_ZIP_BYTES / (1024 * 1024))} MB per upload.`
+      },
+      413
+    );
+  }
+
+  const url = new URL(request.url);
+  const skipExisting =
+    url.searchParams.get("skipExisting") === "true";
+
+  const zipBuffer = await request.arrayBuffer();
+
+  if (zipBuffer.byteLength === 0) {
+    return jsonResponse(
+      { ok: false, error: "The uploaded zip file is empty." },
+      400
+    );
+  }
+
+  if (zipBuffer.byteLength > MAX_BULK_ZIP_BYTES) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          `The zip file is too large. The limit is ` +
+          `${Math.floor(MAX_BULK_ZIP_BYTES / (1024 * 1024))} MB per upload.`
+      },
+      413
+    );
+  }
+
+  const zipBytes = new Uint8Array(zipBuffer);
+  let entries;
+
+  try {
+    entries = parseZipEntries(zipBytes);
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: error.message || "Could not read the zip file."
+      },
+      400
+    );
+  }
+
+  const vehicleLookup = await loadVehicleModelNameLookup(env);
+
+  const existingImages = skipExisting
+    ? await loadExistingVehicleImageModelNames(env)
+    : new Set();
+
+  const results = [];
+
+  for (const entry of entries) {
+    if (isZipDirectoryOrJunkEntry(entry.fileName)) {
+      continue;
+    }
+
+    const fileBaseName = entry.fileName.split("/").pop();
+    const imageType = vehicleImageTypeForFileName(entry.fileName);
+
+    if (!imageType) {
+      results.push({
+        status: "skipped",
+        fileName: fileBaseName,
+        modelName: "",
+        message:
+          "Not a supported image type (.jpg, .jpeg, .png, .webp)."
+      });
+      continue;
+    }
+
+    const requestedModelName =
+      requestedModelNameFromFileName(entry.fileName);
+    const lookupKey = requestedModelName.toLowerCase();
+
+    if (!vehicleLookup.has(lookupKey)) {
+      results.push({
+        status: "unmatched",
+        fileName: fileBaseName,
+        modelName: requestedModelName,
+        message: "No matching vehicle model in the database."
+      });
+      continue;
+    }
+
+    const canonicalModelName = vehicleLookup.get(lookupKey);
+
+    if (
+      skipExisting &&
+      existingImages.has(canonicalModelName.toLowerCase())
+    ) {
+      results.push({
+        status: "skippedExisting",
+        fileName: fileBaseName,
+        modelName: canonicalModelName,
+        message: "An image already exists and skip-existing was on."
+      });
+      continue;
+    }
+
+    if (entry.uncompressedSize > MAX_VEHICLE_IMAGE_BYTES) {
+      results.push({
+        status: "tooLarge",
+        fileName: fileBaseName,
+        modelName: canonicalModelName,
+        message: "Image is larger than 10 MB."
+      });
+      continue;
+    }
+
+    try {
+      const imageBytes = await extractZipEntryBytes(zipBytes, entry);
+
+      if (imageBytes.byteLength === 0) {
+        results.push({
+          status: "failed",
+          fileName: fileBaseName,
+          modelName: canonicalModelName,
+          message: "Extracted file was empty."
+        });
+        continue;
+      }
+
+      const key = vehicleImageKey(canonicalModelName);
+
+      const storedObject = await env.VEHICLE_IMAGES.put(
+        key,
+        imageBytes,
+        {
+          httpMetadata: {
+            contentType: imageType.contentType,
+            cacheControl:
+              "public, max-age=31536000, immutable"
+          },
+          customMetadata: {
+            modelName: canonicalModelName,
+            imageType: "primary"
+          }
+        }
+      );
+
+      results.push({
+        status: "uploaded",
+        fileName: fileBaseName,
+        modelName: canonicalModelName,
+        size: imageBytes.byteLength,
+        etag: storedObject?.etag || "",
+        message: "Vehicle image uploaded."
+      });
+    } catch (error) {
+      results.push({
+        status: "failed",
+        fileName: fileBaseName,
+        modelName: canonicalModelName,
+        message: error.message || "Upload failed."
+      });
+    }
+  }
+
+  const summary = results.reduce((counts, result) => {
+    counts[result.status] = (counts[result.status] || 0) + 1;
+    return counts;
+  }, {});
+
+  const auth = await getCurrentAuthSession(request, env);
+
+  await writeAdminAuditLog(env, {
+    actorUserId: auth?.user?.id || null,
+    actorLabel: auth?.user?.email || "admin-token",
+    action: "admin.vehicle_images.bulk_import",
+    entityType: "vehicle_image",
+    details: {
+      summary,
+      totalZipEntries: entries.length,
+      skipExisting
+    }
+  });
+
+  return jsonResponse({
+    ok: true,
+    message: "Bulk photo import finished.",
+    summary,
+    results
+  });
+}
+
 function checkLibraryWriteAuthorization(request, env) {
   if (!env.LIBRARY_WRITE_TOKEN) {
     return jsonResponse(
@@ -5123,6 +5579,16 @@ if (
     request,
     env,
     vehicleImageRoute[1]
+  );
+}
+
+if (
+  request.method === "POST" &&
+  url.pathname === "/api/vehicle-images/import-bulk"
+) {
+  return await handleVehicleImageBulkImport(
+    request,
+    env
   );
 }
       if (
