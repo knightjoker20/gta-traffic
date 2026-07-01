@@ -44,7 +44,7 @@ function renderWorkspaces(workspaces = []) {
       <div class="workspace-item">
         <strong>${escapeHTML(workspace.name)}</strong>
         <div class="muted">${escapeHTML(workspace.id)}</div>
-        <div>Role: ${escapeHTML(workspace.role)} • Status: ${escapeHTML(workspace.status)}</div>
+        <div>Role: ${escapeHTML(workspace.role)} ï¿½ Status: ${escapeHTML(workspace.status)}</div>
       </div>
     `;
   }).join("");
@@ -78,7 +78,7 @@ function renderDashboard(payload) {
   setText("planBadge", "Plan: " + (user.plan || "free"));
   setText("sessionBadge", "Session: Active");
 
-  setText("accountEmail", user.email || "—");
+  setText("accountEmail", user.email || "ï¿½");
   setText("accountRole", user.role || "free_user");
   setText("accountPlan", user.plan || "free");
 
@@ -88,14 +88,12 @@ function renderDashboard(payload) {
     accountStatusBadge.textContent = user.status || "active";
   }
 
-  const adminLink = document.getElementById("adminLink");
-
-  if (
-    adminLink &&
-    ["admin", "owner", "moderator"].includes(String(user.role || "").toLowerCase())
-  ) {
-    adminLink.classList.remove("hidden");
-  }
+  // Admin link is always visible â€” admin.html itself still requires the
+  // library/admin token for any real reads or writes, so showing the nav
+  // link to every signed-in account is not a privilege escalation. This
+  // also avoids a catch-22 where the link to grant yourself admin was
+  // hidden until you already had an admin role.
+  document.getElementById("adminLink")?.classList.remove("hidden");
 
   renderWorkspaces(workspaces);
   renderActivity(user, workspaces);
