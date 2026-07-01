@@ -1,15 +1,15 @@
 // =====================================================
-// BULK VEHICLE PHOTO IMPORTER (Dashboard, admin only)
+// BULK VEHICLE PHOTO IMPORTER (Admin dashboard)
 // Lets the site admin upload a .zip of vehicle screenshots
-// and overwrite vehicle images in bulk. Visibility is gated
-// to admin/owner accounts; the actual write is protected
-// server-side by the existing IMAGE_UPLOAD_TOKEN, same as
-// the single-image upload endpoint and bulk-upload-vehicle-images.ps1.
+// and overwrite vehicle images in bulk. Like the rest of
+// admin.html, the page itself isn't role-gated — the write
+// is protected server-side by the existing IMAGE_UPLOAD_TOKEN,
+// same as the single-image upload endpoint and
+// bulk-upload-vehicle-images.ps1.
 // =====================================================
 
 (function () {
   const UPLOAD_TOKEN_KEY = "gtaTrafficImageUploadToken";
-  const ADMIN_ROLES = new Set(["admin", "owner"]);
   const MAX_ZIP_BYTES = 90 * 1024 * 1024;
 
   const STATUS_LABELS = {
@@ -91,22 +91,19 @@
   }
 
   function buildSection() {
-    const existing = document.querySelector("[data-bulk-photo-importer]");
+    const container = document.getElementById("adminBulkPhotoPanel");
 
-    if (existing) {
-      return existing;
+    if (!container || container.dataset.built === "true") {
+      return container;
     }
 
-    const section = document.createElement("section");
-    section.className = "dashboard-panel bulk-photo-panel";
-    section.setAttribute("data-bulk-photo-importer", "");
+    container.dataset.built = "true";
 
-    section.innerHTML = `
+    container.innerHTML = `
       <div class="section-heading bulk-photo-heading">
         <div>
-          <p class="section-kicker">Admin Only</p>
           <h2>Bulk Vehicle Photo Importer</h2>
-          <p class="muted">
+          <p>
             Upload a .zip of vehicle screenshots to overwrite photos in the vehicle image library.
             Name each file exactly like the vehicle's model name (for example
             <code>zentorno.png</code>) — subfolders inside the zip are fine, and matching is
@@ -115,10 +112,10 @@
         </div>
       </div>
 
-      <div class="bulk-photo-token-row">
+      <div class="token-row">
         <input id="bulkPhotoTokenInput" type="password" placeholder="Image upload token" autocomplete="off">
-        <button type="button" class="button ghost" id="bulkPhotoSaveTokenBtn">Save Token</button>
-        <button type="button" class="button ghost" id="bulkPhotoClearTokenBtn">Clear</button>
+        <button type="button" id="bulkPhotoSaveTokenBtn">Save Token</button>
+        <button type="button" class="secondary" id="bulkPhotoClearTokenBtn">Clear</button>
       </div>
 
       <label class="bulk-photo-checkbox-row">
@@ -128,12 +125,12 @@
 
       <div class="bulk-photo-dropzone" id="bulkPhotoDropZone" tabindex="0" role="button" aria-label="Choose a zip file">
         <strong id="bulkPhotoDropTitle">Drop a .zip file here, or click to browse</strong>
-        <span class="muted">Images up to 10 MB each &middot; .zip up to 90 MB total &middot; JPG, PNG, WebP supported</span>
+        <span>Images up to 10 MB each &middot; .zip up to 90 MB total &middot; JPG, PNG, WebP supported</span>
       </div>
       <input type="file" id="bulkPhotoFileInput" accept=".zip" class="hidden">
 
       <div class="bulk-photo-actions">
-        <button type="button" class="button" id="bulkPhotoUploadBtn" disabled>Upload &amp; Overwrite Photos</button>
+        <button type="button" id="bulkPhotoUploadBtn" disabled>Upload &amp; Overwrite Photos</button>
         <span class="inline-status" id="bulkPhotoStatus">Choose a zip file to begin.</span>
       </div>
 
@@ -141,14 +138,7 @@
       <div class="bulk-photo-results-wrap" id="bulkPhotoResultsWrap"></div>
     `;
 
-    const dashboardMain =
-      document.querySelector(".dashboard-main") ||
-      document.querySelector("main") ||
-      document.body;
-
-    dashboardMain.appendChild(section);
-
-    return section;
+    return container;
   }
 
   function updateUploadButtonState() {
@@ -407,29 +397,17 @@
     uploadBtn?.addEventListener("click", uploadZip);
   }
 
-  async function initBulkPhotoImporter() {
-    try {
-      const response = await fetch("/api/auth/me", {
-        credentials: "same-origin"
-      });
+  function initBulkPhotoImporter() {
+    const section = buildSection();
 
-      if (!response.ok) {
-        return;
-      }
-
-      const payload = await response.json().catch(() => ({}));
-      const role = String(payload?.user?.role || "").toLowerCase();
-
-      if (!ADMIN_ROLES.has(role)) {
-        return;
-      }
-
-      const section = buildSection();
+    if (section) {
       wireSection(section);
-    } catch (error) {
-      console.warn("Bulk photo importer setup skipped.", error);
     }
   }
 
-  document.addEventListener("DOMContentLoaded", initBulkPhotoImporter);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initBulkPhotoImporter);
+  } else {
+    initBulkPhotoImporter();
+  }
 })();

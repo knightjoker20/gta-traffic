@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/design-tokens.css">
 <link rel="stylesheet" href="css/admin.css">
   <link rel="stylesheet" href="/css/site-shell.css">
+  <link rel="stylesheet" href="/css/bulk-photo-importer.css">
 </head>
 <body>
   <header class="admin-header">
@@ -199,6 +200,10 @@
       </div>
     </section>
 
+    <section id="adminBulkPhotoPanel" class="admin-panel bulk-photo-panel" data-bulk-photo-importer>
+      <!-- Populated by /js/bulk-photo-importer.js -->
+    </section>
+
     <section class="admin-grid">
       <article class="admin-card">
         <h3>User Management</h3>
@@ -252,12 +257,12 @@
         <h3>Image / Photo Packs</h3>
         <p>Upload screenshots and assign images to vehicle model names.</p>
         <ul>
-          <li>Upload image pack</li>
+          <li>Bulk zip upload</li>
           <li>Assign model name</li>
-          <li>Set primary image</li>
-          <li>Review unmapped images</li>
+          <li>Overwrite existing photos</li>
+          <li>Review unmatched images</li>
         </ul>
-        <button disabled>Coming next</button>
+        <a class="public-link" href="#adminBulkPhotoPanel">Open Bulk Photo Importer</a>
       </article>
 
       <article class="admin-card">
@@ -299,6 +304,7 @@
   </main>
 
   <script src="js/admin.js"></script>
+  <script src="/js/bulk-photo-importer.js"></script>
   <script src="/js/shared/siteheader.js"></script>
 </body>
 </html>

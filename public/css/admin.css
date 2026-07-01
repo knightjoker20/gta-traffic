@@ -200,6 +200,12 @@ button:disabled {
   padding: 20px;
 }
 
+.admin-card .public-link {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
 .admin-card ul {
   padding-left: 18px;
   margin-bottom: 18px;
