@@ -257,6 +257,29 @@
     </section>
   </main>
 
+  <div id="vlCompareTray" class="vl-compare-tray vl-hidden">
+    <div class="vl-compare-tray-inner">
+      <div id="vlCompareChips" class="vl-compare-chips"></div>
+      <div class="vl-compare-tray-actions">
+        <button id="vlCompareClear" type="button" class="vl-compare-clear">Clear</button>
+        <button id="vlCompareOpen" type="button" class="vl-compare-open" disabled>Compare</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="vlCompareModalOverlay" class="vl-compare-modal-overlay vl-hidden">
+    <div class="vl-compare-modal" role="dialog" aria-modal="true" aria-label="Compare vehicles">
+      <div class="vl-compare-modal-header">
+        <div>
+          <p class="vl-compare-modal-kicker">Vehicle Library</p>
+          <h2>Compare Vehicles</h2>
+        </div>
+        <button id="vlCompareModalClose" type="button" class="vl-compare-modal-close" aria-label="Close compare">&times;</button>
+      </div>
+      <div id="vlCompareModalBody" class="vl-compare-modal-body"></div>
+    </div>
+  </div>
+
   <script src="/js/shared/siteheader.js"></script>
 <script src="js/shared/siteshell.js"></script>
   <script src="js/vehiclelibrarystore.js"></script>

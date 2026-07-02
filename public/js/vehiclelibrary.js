@@ -11,6 +11,7 @@
  const PAGE_SIZE_STORAGE_KEY = "gtaTraffic.vehicleLibrary.pageSize";
  const DEFAULT_PAGE_SIZE = 50;
  const PAGE_SIZE_OPTIONS = new Set([25, 50, 100]);
+ const MAX_COMPARE = 3;
 
 function getSavedPageSize() {
   try {
@@ -34,6 +35,7 @@ function savePageSize(value) {
     handlingMap: new Map(),
 	sourceHistory: [],
     category: "ALL",
+    compare: [],
     page: 1,
 	pageSize: getSavedPageSize(),
     view: "grid",
@@ -1413,11 +1415,212 @@ function cardHtml(vehicle) {
 
         <div class="vl-card-actions">
           <a href="${escapeHTML(detailsUrl)}">Open Vehicle Details</a>
+          <button
+            type="button"
+            class="vl-compare-toggle ${isComparing(vehicle.modelName) ? "active" : ""}"
+            data-compare-toggle="${escapeHTML(vehicle.modelName)}"
+          >${isComparing(vehicle.modelName) ? "Remove Compare" : "Compare"}</button>
         </div>
       </div>
     </article>
   `;
 }
+
+  // ── Compare Vehicles ──────────────────────────────────────────────
+
+  function isComparing(modelName) {
+    return state.compare.includes(store.normalizeId(modelName));
+  }
+
+  function toggleCompare(modelName) {
+    const id = store.normalizeId(modelName);
+    const index = state.compare.indexOf(id);
+
+    if (index >= 0) {
+      state.compare.splice(index, 1);
+    } else {
+      if (state.compare.length >= MAX_COMPARE) {
+        setStatus(`You can compare up to ${MAX_COMPARE} vehicles at a time. Remove one first.`, "warn");
+        return;
+      }
+      state.compare.push(id);
+    }
+
+    renderGrid();
+  }
+
+  function getCompareVehicles() {
+    return state.compare
+      .map(id => state.vehicles.find(vehicle => store.normalizeId(vehicle.modelName) === id))
+      .filter(Boolean);
+  }
+
+  function compareThumbHtml(vehicle) {
+    const image = vehicle.custom?.imageDataUrl;
+    const title = displayTitle(vehicle);
+    if (image) {
+      return `<img src="${escapeHTML(image)}" alt="${escapeHTML(title)}">`;
+    }
+    return `<img data-vl-static-model="${escapeHTML(vehicle.modelName.toLowerCase())}" data-vl-initials="${escapeHTML(initials(title))}" src="images/${encodeURIComponent(vehicle.modelName.toLowerCase())}.jpg" alt="${escapeHTML(title)}">`;
+  }
+
+  function renderCompareTray() {
+    const tray = el("vlCompareTray");
+    const chips = el("vlCompareChips");
+    const openButton = el("vlCompareOpen");
+    const vehicles = getCompareVehicles();
+
+    if (!vehicles.length) {
+      tray.classList.add("vl-hidden");
+      return;
+    }
+
+    tray.classList.remove("vl-hidden");
+
+    chips.innerHTML = vehicles.map(vehicle => `
+      <span class="vl-compare-chip">
+        ${escapeHTML(displayTitle(vehicle))}
+        <button type="button" data-compare-remove="${escapeHTML(vehicle.modelName)}" aria-label="Remove ${escapeHTML(displayTitle(vehicle))} from compare">&times;</button>
+      </span>
+    `).join("") + (vehicles.length < MAX_COMPARE
+      ? `<span class="vl-compare-chip-empty">${MAX_COMPARE - vehicles.length} slot${MAX_COMPARE - vehicles.length === 1 ? "" : "s"} open</span>`
+      : "");
+
+    chips.querySelectorAll("[data-compare-remove]").forEach(button => {
+      button.addEventListener("click", () => toggleCompare(button.dataset.compareRemove));
+    });
+
+    openButton.textContent = `Compare (${vehicles.length})`;
+    openButton.disabled = vehicles.length < 2;
+  }
+
+  function numericHandlingValue(handling, field) {
+    if (!handling) return null;
+    const raw = Number.parseFloat(handling[field]);
+    return Number.isFinite(raw) ? raw : null;
+  }
+
+  function compareStatRow(label, vehicles, getValue, { bar = false, decimals = 0 } = {}) {
+    const values = vehicles.map(getValue);
+    const numeric = values.filter(value => value !== null && value !== undefined && !Number.isNaN(value));
+    const max = numeric.length ? Math.max(...numeric) : 0;
+
+    const cells = values.map(value => {
+      if (value === null || value === undefined || Number.isNaN(value)) {
+        return `<td>—</td>`;
+      }
+
+      const isBest = numeric.length > 1 && value === max;
+      const formatted = decimals ? value.toFixed(decimals) : Math.round(value).toLocaleString();
+
+      if (!bar) {
+        return `<td><span class="vl-compare-stat-value ${isBest ? "best" : ""}">${escapeHTML(formatted)}</span></td>`;
+      }
+
+      const width = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
+
+      return `
+        <td>
+          <div class="vl-compare-stat-cell">
+            <div class="vl-compare-bar-track"><div class="vl-compare-bar-fill" style="width:${width}%"></div></div>
+            <span class="vl-compare-stat-value ${isBest ? "best" : ""}">${escapeHTML(formatted)}</span>
+          </div>
+        </td>
+      `;
+    });
+
+    return `<tr><th>${escapeHTML(label)}</th>${cells.join("")}</tr>`;
+  }
+
+  function compareTextRow(label, vehicles, getValue) {
+    const cells = vehicles.map(vehicle => `<td>${escapeHTML(getValue(vehicle) || "—")}</td>`);
+    return `<tr><th>${escapeHTML(label)}</th>${cells.join("")}</tr>`;
+  }
+
+  function renderCompareModalBody() {
+    const body = el("vlCompareModalBody");
+    const vehicles = getCompareVehicles();
+
+    if (vehicles.length < 2) {
+      body.innerHTML = `<div class="vl-empty-state"><strong>Pick at least two vehicles.</strong><span>Use the Compare button on any vehicle card in the library.</span></div>`;
+      return;
+    }
+
+    const slots = vehicles.map(vehicle => {
+      const classLabel = cleanClassName(vehicle.vehiclesMeta?.vehicleClass);
+      return `
+        <div class="vl-compare-slot">
+          <div class="vl-compare-slot-image">${compareThumbHtml(vehicle)}</div>
+          <button type="button" class="vl-compare-slot-remove" data-compare-remove="${escapeHTML(vehicle.modelName)}" aria-label="Remove ${escapeHTML(displayTitle(vehicle))}">&times;</button>
+          <div class="vl-compare-slot-body">
+            <p class="vl-compare-slot-title">${escapeHTML(displayTitle(vehicle))}</p>
+            <p class="vl-compare-slot-model">${escapeHTML(vehicle.modelName)}</p>
+            <span class="vl-badge">${escapeHTML(classLabel)}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    for (let i = vehicles.length; i < MAX_COMPARE; i++) {
+      slots.push(`
+        <div class="vl-compare-slot empty">
+          <span class="vl-compare-slot-empty-text">Add another vehicle from the library grid</span>
+        </div>
+      `);
+    }
+
+    const rows = [
+      compareTextRow("Class", vehicles, v => cleanClassName(v.vehiclesMeta?.vehicleClass)),
+      compareTextRow("Make", vehicles, v => v.vehiclesMeta?.vehicleMakeName),
+      compareTextRow("Handling profile", vehicles, v => linkedHandling(v)?.handlingName || v.vehiclesMeta?.handlingId),
+      compareTextRow("AI handling", vehicles, v => linkedHandling(v)?.AIHandling),
+      compareStatRow("Top speed (flat vel)", vehicles, v => numericHandlingValue(linkedHandling(v), "fInitialDriveMaxFlatVel"), { bar: true, decimals: 1 }),
+      compareStatRow("Drive force (accel)", vehicles, v => numericHandlingValue(linkedHandling(v), "fInitialDriveForce"), { bar: true, decimals: 2 }),
+      compareStatRow("Brake force", vehicles, v => numericHandlingValue(linkedHandling(v), "fBrakeForce"), { bar: true, decimals: 1 }),
+      compareStatRow("Traction (max)", vehicles, v => numericHandlingValue(linkedHandling(v), "fTractionCurveMax"), { bar: true, decimals: 2 }),
+      compareTextRow("Popgroup membership", vehicles, v => [...new Set((v.popgroups || []).map(group => group.groupName))].join(", ")),
+      compareTextRow("Install status", vehicles, v => v.custom?.installed === true ? "Installed" : "Not installed"),
+      compareTextRow("Install type", vehicles, v => inferInstallType(v)),
+      compareTextRow("Tags", vehicles, v => v.custom?.tags)
+    ];
+
+    body.innerHTML = `
+      <div class="vl-compare-slots">${slots.join("")}</div>
+      <div class="vl-compare-table-wrap">
+        <table class="vl-compare-table">
+          <thead>
+            <tr>
+              <th>Stat</th>
+              ${vehicles.map(vehicle => `<th>${escapeHTML(displayTitle(vehicle))}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>${rows.join("")}</tbody>
+        </table>
+      </div>
+    `;
+
+    setupStaticImageFallbacks(body);
+
+    body.querySelectorAll("[data-compare-remove]").forEach(button => {
+      button.addEventListener("click", () => {
+        toggleCompare(button.dataset.compareRemove);
+        renderCompareModalBody();
+      });
+    });
+  }
+
+  function openCompareModal() {
+    if (getCompareVehicles().length < 2) {
+      setStatus("Pick at least two vehicles to compare.", "warn");
+      return;
+    }
+    renderCompareModalBody();
+    el("vlCompareModalOverlay").classList.remove("vl-hidden");
+  }
+
+  function closeCompareModal() {
+    el("vlCompareModalOverlay").classList.add("vl-hidden");
+  }
 
   function renderGrid() {
     const filtered = getFilteredVehicles();
@@ -1567,7 +1770,18 @@ grid.querySelectorAll(
   );
 });
 
+grid.querySelectorAll(
+  "[data-compare-toggle]"
+).forEach(button => {
+  button.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleCompare(button.dataset.compareToggle);
+  });
+});
+
     renderPagination(totalPages);
+    renderCompareTray();
   }
 
   function renderPagination(totalPages) {
@@ -1752,6 +1966,22 @@ if (pageSizeSelect) {
       await store.clearAll();
       await reloadData();
       setStatus("The Vehicle Library database has been cleared.", "warn");
+    });
+
+    el("vlCompareClear").addEventListener("click", () => {
+      state.compare = [];
+      renderGrid();
+      closeCompareModal();
+    });
+    el("vlCompareOpen").addEventListener("click", openCompareModal);
+    el("vlCompareModalClose").addEventListener("click", closeCompareModal);
+    el("vlCompareModalOverlay").addEventListener("click", event => {
+      if (event.target === el("vlCompareModalOverlay")) closeCompareModal();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !el("vlCompareModalOverlay").classList.contains("vl-hidden")) {
+        closeCompareModal();
+      }
     });
   }
 
