@@ -1468,6 +1468,11 @@ function cardHtml(vehicle) {
     const tray = el("vlCompareTray");
     const chips = el("vlCompareChips");
     const openButton = el("vlCompareOpen");
+
+    if (!tray || !chips || !openButton) {
+      return;
+    }
+
     const vehicles = getCompareVehicles();
 
     if (!vehicles.length) {
@@ -1539,6 +1544,11 @@ function cardHtml(vehicle) {
 
   function renderCompareModalBody() {
     const body = el("vlCompareModalBody");
+
+    if (!body) {
+      return;
+    }
+
     const vehicles = getCompareVehicles();
 
     if (vehicles.length < 2) {
@@ -1615,11 +1625,11 @@ function cardHtml(vehicle) {
       return;
     }
     renderCompareModalBody();
-    el("vlCompareModalOverlay").classList.remove("vl-hidden");
+    el("vlCompareModalOverlay")?.classList.remove("vl-hidden");
   }
 
   function closeCompareModal() {
-    el("vlCompareModalOverlay").classList.add("vl-hidden");
+    el("vlCompareModalOverlay")?.classList.add("vl-hidden");
   }
 
   function renderGrid() {
@@ -1968,26 +1978,26 @@ if (pageSizeSelect) {
       setStatus("The Vehicle Library database has been cleared.", "warn");
     });
 
-    el("vlCompareClear").addEventListener("click", () => {
+    el("vlCompareClear")?.addEventListener("click", () => {
       state.compare = [];
       renderGrid();
       closeCompareModal();
     });
-    el("vlCompareOpen").addEventListener("click", openCompareModal);
-    el("vlCompareModalClose").addEventListener("click", closeCompareModal);
-    el("vlCompareModalOverlay").addEventListener("click", event => {
+    el("vlCompareOpen")?.addEventListener("click", openCompareModal);
+    el("vlCompareModalClose")?.addEventListener("click", closeCompareModal);
+    el("vlCompareModalOverlay")?.addEventListener("click", event => {
       if (event.target === el("vlCompareModalOverlay")) closeCompareModal();
     });
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape" && !el("vlCompareModalOverlay").classList.contains("vl-hidden")) {
+      if (event.key === "Escape" && !el("vlCompareModalOverlay")?.classList.contains("vl-hidden")) {
         closeCompareModal();
       }
     });
   }
 
   async function initialize() {
-    bindEvents();
     try {
+      bindEvents();
       await store.openDatabase();
       if (navigator.storage?.persist) navigator.storage.persist().catch(() => false);
       await reloadData();
