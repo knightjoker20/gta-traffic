@@ -1,5 +1,5 @@
 // =====================================================
-// GTA Traffic Vehicle Library V1.3
+// GTA Traffic Vehicle Library V1.3.1
 // Imports and merges Popgroups, vehicles.meta, and
 // handling.meta into the shared local vehicle database.
 // =====================================================
