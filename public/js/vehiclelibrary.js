@@ -41,6 +41,7 @@ function savePageSize(value) {
     view: "grid",
     filters: {
       search: "",
+      make: "",
       type: "",
       ai: "",
       install: "",
@@ -1021,6 +1022,43 @@ const importSource =
     }
   }
 
+  async function handleDroppedFiles(fileList, importer) {
+    const files = [...fileList];
+    if (!files.length) return;
+    setStatus(`Importing ${files.length} file${files.length === 1 ? "" : "s"}...`, "warn");
+    try {
+      await importer(files);
+      await reloadData();
+    } catch (error) {
+      console.error(error);
+      setStatus(error.message || "The files could not be imported.", "bad");
+    }
+  }
+
+  function bindImportDropZone(zoneId, importer) {
+    const zone = el(zoneId);
+    if (!zone) return;
+
+    ["dragenter", "dragover"].forEach(name => zone.addEventListener(name, event => {
+      event.preventDefault();
+      zone.classList.add("drag-over");
+    }));
+
+    ["dragleave", "drop"].forEach(name => zone.addEventListener(name, event => {
+      event.preventDefault();
+      zone.classList.remove("drag-over");
+    }));
+
+    zone.addEventListener("drop", event => handleDroppedFiles(event.dataTransfer.files, importer));
+
+    zone.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        el(zone.dataset.pick)?.click();
+      }
+    });
+  }
+
  async function reloadData() {
   const [localVehicles, localHandlingProfiles] =
     await Promise.all([
@@ -1101,14 +1139,19 @@ const importSource =
   }
 
   function populateFilters() {
+    const makes = [...new Set(state.vehicles.map(v => v.vehiclesMeta?.vehicleMakeName).filter(Boolean))].sort();
     const types = [...new Set(state.vehicles.map(v => v.vehiclesMeta?.vehicleType).filter(Boolean))].sort();
     const aiValues = [...new Set(state.vehicles.map(v => linkedHandling(v)?.AIHandling).filter(Boolean))].sort();
+    const makeFilter = el("vlMakeFilter");
     const typeFilter = el("vlTypeFilter");
     const aiFilter = el("vlAiFilter");
+    const currentMake = makeFilter.value;
     const currentType = typeFilter.value;
     const currentAi = aiFilter.value;
+    makeFilter.innerHTML = `<option value="">All makes</option>${makes.map(value => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`).join("")}`;
     typeFilter.innerHTML = `<option value="">All types</option>${types.map(value => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`).join("")}`;
     aiFilter.innerHTML = `<option value="">All AI profiles</option>${aiValues.map(value => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`).join("")}`;
+    if (makes.includes(currentMake)) makeFilter.value = currentMake;
     if (types.includes(currentType)) typeFilter.value = currentType;
     if (aiValues.includes(currentAi)) aiFilter.value = currentAi;
   }
@@ -1223,6 +1266,7 @@ const importSource =
       const handling = linkedHandling(vehicle);
       if (state.category === "INSTALLED" && vehicle.custom?.installed !== true) return false;
       if (state.category !== "ALL" && state.category !== "INSTALLED" && (vehicle.vehiclesMeta?.vehicleClass || "UNKNOWN") !== state.category) return false;
+      if (state.filters.make && vehicle.vehiclesMeta?.vehicleMakeName !== state.filters.make) return false;
       if (state.filters.type && vehicle.vehiclesMeta?.vehicleType !== state.filters.type) return false;
       if (state.filters.ai && handling?.AIHandling !== state.filters.ai) return false;
       if (state.filters.install && inferInstallType(vehicle) !== state.filters.install) return false;
@@ -1896,6 +1940,9 @@ grid.querySelectorAll(
     el("vlPopgroupsPicker")?.addEventListener("change", event => handleImport(event.target, importPopgroupsFiles));
     el("vlVehiclesPicker")?.addEventListener("change", event => handleImport(event.target, importVehicleFiles));
     el("vlHandlingPicker")?.addEventListener("change", event => handleImport(event.target, importHandlingFiles));
+    bindImportDropZone("vlVehiclesDropZone", importVehicleFiles);
+    bindImportDropZone("vlHandlingDropZone", importHandlingFiles);
+    bindImportDropZone("vlPopgroupsDropZone", importPopgroupsFiles);
 	el("vlRefreshSourceHistory")?.addEventListener("click",() => refreshSourceHistory(true));
 
     const installDropZone = el("vlInstallDropZone");
@@ -1934,6 +1981,11 @@ grid.querySelectorAll(
 
     el("vlSearch").addEventListener("input", event => {
       state.filters.search = event.target.value;
+      state.page = 1;
+      renderGrid();
+    });
+    el("vlMakeFilter").addEventListener("change", event => {
+      state.filters.make = event.target.value;
       state.page = 1;
       renderGrid();
     });

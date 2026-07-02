@@ -58,6 +58,9 @@
         <section class="panel">
           <h2>Filters</h2>
           <div class="vl-filter-stack">
+            <label>Vehicle Make
+              <select id="vlMakeFilter"><option value="">All makes</option></select>
+            </label>
             <label>Vehicle Type
               <select id="vlTypeFilter"><option value="">All types</option></select>
             </label>
@@ -90,6 +93,25 @@
         </section>
 
         <section class="panel">
+          <h2>Installed Vehicle Scanner</h2>
+          <p class="small vl-muted">Detect which library vehicles you have installed and mark them automatically.</p>
+
+          <div id="vlInstallDropZone" class="vl-install-drop-zone" tabindex="0" role="button">
+            <strong>Drop .yft / .ytd files</strong>
+            <span>Or drag a folder of loose vehicle files here to toggle installed status by matching model name.</span>
+            <button id="vlInstallBrowse" class="secondary" type="button">Browse Files</button>
+          </div>
+          <input id="vlInstallFilesPicker" class="vl-hidden" type="file" accept=".yft,.ytd" multiple>
+
+          <div class="vl-install-rpf-scan">
+            <button id="vlRpfScanButton" class="btn-orange" type="button">Scan DLC Folder (.rpf)</button>
+            <p class="small vl-muted">Point this at your mods/DLC folder. It reads real dlc.rpf archives (including nested archives) and marks matching vehicles installed. Chrome or Edge required. Encrypted/official Rockstar archives are skipped — no game files are ever modified.</p>
+          </div>
+
+          <div id="vlInstallScanResult" class="vl-install-scan-result"></div>
+        </section>
+
+        <section class="panel">
           <h2>Database</h2>
           <div class="vl-db-actions">
             <button class="btn-green" id="vlExportDatabase" type="button">Export Library</button>
@@ -110,6 +132,24 @@
           <div class="vl-header-actions">
             <button id="vlRandomVehicle" class="btn-orange" type="button">Random Vehicle</button>
           </div>
+        </div>
+
+        <div class="vl-import-row">
+          <div id="vlVehiclesDropZone" class="vl-import-dropzone" data-pick="vlVehiclesPicker" tabindex="0" role="button">
+            <strong>Drop vehicles.meta</strong>
+            <span>Bulk import or update vehicle records</span>
+          </div>
+          <div id="vlHandlingDropZone" class="vl-import-dropzone" data-pick="vlHandlingPicker" tabindex="0" role="button">
+            <strong>Drop handling.meta</strong>
+            <span>Bulk import or update handling profiles</span>
+          </div>
+          <div id="vlPopgroupsDropZone" class="vl-import-dropzone" data-pick="vlPopgroupsPicker" tabindex="0" role="button">
+            <strong>Drop popgroups.xml</strong>
+            <span>Tag vehicles with their current popgroup</span>
+          </div>
+          <input id="vlVehiclesPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt" multiple>
+          <input id="vlHandlingPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt" multiple>
+          <input id="vlPopgroupsPicker" class="vl-hidden" type="file" accept=".xml,.ymt,.txt" multiple>
         </div>
 
         <div class="vl-search-row">
@@ -206,7 +246,9 @@
 <script src="js/shared/siteshell.js"></script>
   <script src="js/vehiclelibrarystore.js"></script>
   <script src="js/vehiclecloud.js"></script>
-  <script src="js/vehicleLibrary.js"></script>
+  <script src="js/vehiclelibrary.js"></script>
+  <script src="js/rpfscanner/rpf7parser.js"></script>
+  <script src="js/rpfscanner/rpfscannerapp.js"></script>
   <script defer src="/js/accountnav.js"></script>
 </body>
 </html>

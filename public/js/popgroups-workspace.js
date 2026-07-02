@@ -15,6 +15,71 @@
 
   const cloudVehicles = new Map();
   const imageMap = new Map();
+  const installedIds = new Set();
+
+  // "Installed" status lives in the browser's local Vehicle Library database
+  // (window.vehicleLibraryStore, IndexedDB) - the same place vehicle-library.html
+  // and vehicle-details.html read/write it. It is intentionally per-browser/per-PC,
+  // not part of the cloud vehicle records this sidebar otherwise renders from.
+  async function loadInstalledIds() {
+    const store = window.vehicleLibraryStore;
+    if (!store) return;
+
+    try {
+      const vehicles = await store.getVehicles();
+      installedIds.clear();
+      vehicles.forEach((vehicle) => {
+        if (vehicle?.custom?.installed === true) installedIds.add(vehicle.id);
+      });
+    } catch (error) {
+      console.warn("Could not load installed vehicle status from the local library.", error);
+    }
+  }
+
+  async function toggleInstalledFromSidebar(checkbox) {
+    const store = window.vehicleLibraryStore;
+    const model = checkbox.dataset.model || "";
+    if (!store || !model) return;
+
+    const id = store.normalizeId(model);
+    const wantInstalled = checkbox.checked;
+    checkbox.disabled = true;
+
+    try {
+      const vehicles = await store.getVehicles();
+      let vehicle = vehicles.find((item) => item.id === id);
+
+      if (!vehicle) {
+        // Not yet in the local Vehicle Library (it hasn't been imported there) -
+        // create a minimal local record so the installed toggle still works.
+        const cloudRecord = cloudVehicles.get(model) || {};
+        vehicle = {
+          id,
+          modelName: model,
+          gameName: cloudRecord.gameName || model,
+          custom: {},
+          createdAt: new Date().toISOString()
+        };
+      }
+
+      vehicle.custom = vehicle.custom || {};
+      vehicle.custom.installed = wantInstalled;
+      vehicle.custom.installDate = wantInstalled
+        ? (vehicle.custom.installDate || new Date().toISOString().slice(0, 10))
+        : "";
+      vehicle.updatedAt = new Date().toISOString();
+
+      await store.putVehicles([vehicle]);
+
+      if (wantInstalled) installedIds.add(id);
+      else installedIds.delete(id);
+    } catch (error) {
+      console.error("Could not update installed status.", error);
+      checkbox.checked = !wantInstalled;
+    } finally {
+      checkbox.disabled = false;
+    }
+  }
 
   const CATEGORY_ORDER = [
     "Super",
@@ -543,6 +608,10 @@
                   <h4>${escapeHtml(model)}</h4>
                   <p>${escapeHtml(getDisplayName(vehicle))}</p>
                   <p>${escapeHtml(getCategory(vehicle))}</p>
+                  <label class="pg-sidebar-installed-toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="pg-installed-checkbox" data-model="${escapeHtml(model)}" ${installedIds.has(model) ? "checked" : ""}>
+                    Installed
+                  </label>
                   <a href="vehicle-details.html?model=${encodeURIComponent(model)}">Details</a>
                 </div>
               </article>
@@ -585,6 +654,10 @@
         event.dataTransfer.setData("text/plain", model);
         event.dataTransfer.setData("modelName", model);
       });
+    });
+
+    document.querySelectorAll(".pg-installed-checkbox").forEach((checkbox) => {
+      checkbox.addEventListener("change", () => toggleInstalledFromSidebar(checkbox));
     });
   }
 
@@ -736,6 +809,7 @@
     initLibraryCollapse();
     observeMainRender();
     loadCloudLibrary();
+    loadInstalledIds().then(renderSidebar);
 
     setTimeout(refreshLegacyMainCards, 500);
     setTimeout(refreshLegacyMainCards, 1500);

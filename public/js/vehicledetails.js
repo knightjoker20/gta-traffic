@@ -44,7 +44,9 @@ const state = {
   fieldEditsLoggedIn: false,
   fieldCatalogs: null,
   handlingFieldEdits: {},
-  handlingFieldEditsLoggedIn: false
+  handlingFieldEditsLoggedIn: false,
+  metaEditMode: false,
+  handlingEditMode: false
 };
 
 // Fields with a matching column in the shared `vehicles` table — these are
@@ -222,10 +224,19 @@ const el = id => document.getElementById(id);
     const title = displayTitle(vehicle);
     document.title = `${title} - GTA Traffic Vehicle Library`;
     el("vdDisplayTitle").textContent = title;
+
+    const makeLine = el("vdMakeLine");
+    if (meta.vehicleMakeName) {
+      makeLine.textContent = meta.vehicleMakeName;
+      makeLine.hidden = false;
+    } else {
+      makeLine.textContent = "";
+      makeLine.hidden = true;
+    }
+
     el("vdModelName").textContent = `Model: ${vehicle.modelName}`;
 
     const badges = [
-      meta.vehicleMakeName ? `<span class="vd-badge orange">${escapeHTML(meta.vehicleMakeName)}</span>` : "",
       meta.vehicleClass ? `<span class="vd-badge">${escapeHTML(cleanClassName(meta.vehicleClass))}</span>` : "",
       meta.vehicleType ? `<span class="vd-badge">${escapeHTML(meta.vehicleType)}</span>` : "",
       handling?.AIHandling ? `<span class="vd-badge green">AI: ${escapeHTML(handling.AIHandling)}</span>` : "",
@@ -317,7 +328,26 @@ const el = id => document.getElementById(id);
     `;
   }
 
+  function staticFieldRow(fieldDef) {
+    const meta = state.vehicle.vehiclesMeta || {};
+    const override = state.fieldEdits[fieldDef.key];
+    const vanillaValue = meta[fieldDef.key];
+    const currentValue = override ? override.editedValue : formatValue(vanillaValue);
+    const isCustomized = Boolean(override);
+
+    return `
+      <div class="vd-detail-item${isCustomized ? " vd-detail-item-customized" : ""}">
+        <span>${escapeHTML(fieldDef.label)}${isCustomized ? '<em class="vd-customized-badge">customized</em>' : ""}</span>
+        <strong>${escapeHTML(currentValue)}</strong>
+      </div>
+    `;
+  }
+
   function editableFieldRow(fieldDef) {
+    if (!state.metaEditMode) {
+      return staticFieldRow(fieldDef);
+    }
+
     const meta = state.vehicle.vehiclesMeta || {};
     const override = state.fieldEdits[fieldDef.key];
     const vanillaValue = meta[fieldDef.key];
@@ -347,7 +377,13 @@ const el = id => document.getElementById(id);
 
     el("vdVehicleMetaDetails").innerHTML = readonlyItems + editableItems;
 
-    if (!state.fieldEditsLoggedIn) {
+    const toggle = el("vdMetaEditToggle");
+    if (toggle) {
+      toggle.textContent = state.metaEditMode ? "Done" : "Edit";
+      toggle.classList.toggle("active", state.metaEditMode);
+    }
+
+    if (state.metaEditMode && !state.fieldEditsLoggedIn) {
       setSaveHint(
         "Log in to save your own personal edits to these fields — the vanilla data stays untouched for everyone else."
       );
@@ -503,7 +539,26 @@ const el = id => document.getElementById(id);
     return override ? override.editedValue : state.handling?.[field];
   }
 
+  function staticHandlingRow(field, label) {
+    const handling = state.handling;
+    const override = state.handlingFieldEdits[field];
+    const vanillaValue = handling[field];
+    const currentValue = override ? override.editedValue : formatValue(vanillaValue);
+    const isCustomized = Boolean(override);
+
+    return `
+      <div class="vd-handling-row${isCustomized ? " vd-handling-row-customized-static" : ""}">
+        <span>${escapeHTML(label)}${isCustomized ? '<em class="vd-customized-badge">customized</em>' : ""}</span>
+        <strong>${escapeHTML(currentValue)}</strong>
+      </div>
+    `;
+  }
+
   function handlingEditableRow(field, label) {
+    if (!state.handlingEditMode) {
+      return staticHandlingRow(field, label);
+    }
+
     const handling = state.handling;
     const override = state.handlingFieldEdits[field];
     const vanillaValue = handling[field];
@@ -534,6 +589,14 @@ const el = id => document.getElementById(id);
     if (!handling) {
       const handlingId = state.vehicle.vehiclesMeta?.handlingId || "this vehicle";
       el("vdHandlingSummary").innerHTML = `<div class="vd-no-data">No imported handling.meta profile matches <strong>${escapeHTML(handlingId)}</strong>. Import the correct handling.meta file from the Vehicle Library page.</div>`;
+
+      const toggle = el("vdHandlingEditToggle");
+      if (toggle) {
+        toggle.disabled = true;
+        toggle.textContent = "Edit";
+        toggle.classList.remove("active");
+      }
+
       return;
     }
 
@@ -587,9 +650,18 @@ const el = id => document.getElementById(id);
       ]]
     ];
 
-    const hint = state.handlingFieldEditsLoggedIn
-      ? `<p class="vd-meta-hint">Editing values here creates your personal override for the <strong>${escapeHTML(handling.handlingName)}</strong> handling profile — it applies to every vehicle that shares this handling.meta entry, just like in-game.</p>`
-      : `<p class="vd-meta-hint">Log in to save your own personal handling overrides. Edits apply to every vehicle sharing this handling profile, and the vanilla data stays untouched for everyone else.</p>`;
+    const toggle = el("vdHandlingEditToggle");
+    if (toggle) {
+      toggle.disabled = false;
+      toggle.textContent = state.handlingEditMode ? "Done" : "Edit";
+      toggle.classList.toggle("active", state.handlingEditMode);
+    }
+
+    const hint = !state.handlingEditMode
+      ? ""
+      : state.handlingFieldEditsLoggedIn
+        ? `<p class="vd-meta-hint">Editing values here creates your personal override for the <strong>${escapeHTML(handling.handlingName)}</strong> handling profile — it applies to every vehicle that shares this handling.meta entry, just like in-game.</p>`
+        : `<p class="vd-meta-hint">Log in to save your own personal handling overrides. Edits apply to every vehicle sharing this handling profile, and the vanilla data stays untouched for everyone else.</p>`;
 
     el("vdHandlingSummary").innerHTML = `${hint}<div class="vd-handling-groups">${groups.map(([title, rows]) => `
       <div class="vd-handling-group"><h3>${escapeHTML(title)}</h3><div class="vd-handling-list">${rows.join("")}</div></div>
@@ -1328,6 +1400,16 @@ async function loadVehicle(modelName) {
   function bindEvents() {
     bindVehicleMetaEditHandlers();
     bindHandlingEditHandlers();
+
+    el("vdMetaEditToggle")?.addEventListener("click", () => {
+      state.metaEditMode = !state.metaEditMode;
+      renderVehicleMeta();
+    });
+
+    el("vdHandlingEditToggle")?.addEventListener("click", () => {
+      state.handlingEditMode = !state.handlingEditMode;
+      renderHandling();
+    });
 
     el("vdVehicleSelect").addEventListener("change", event => {
       if (event.target.value) location.href = `vehicle-details.html?model=${encodeURIComponent(event.target.value)}`;

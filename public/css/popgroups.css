@@ -286,7 +286,12 @@
   justify-content: space-between;
   gap: 8px;
   padding: 10px 11px;
-  background: rgba(55,72,105,.72);
+  background: linear-gradient(145deg, rgba(245,158,11,.16), rgba(26,33,51,.9));
+  border-bottom: 1px solid rgba(245,158,11,.22);
+}
+
+.pg-sidebar-category summary:hover {
+  background: linear-gradient(145deg, rgba(245,158,11,.24), rgba(26,33,51,.94));
 }
 
 .pg-sidebar-category summary::-webkit-details-marker {
@@ -310,7 +315,7 @@
 }
 
 .pg-sidebar-category summary span {
-  color: #9dd7ff;
+  color: #fbbf24;
   font-size: .75rem;
   font-weight: 900;
 }
@@ -389,6 +394,30 @@
   font-size: .6rem;
   font-weight: 900;
   text-decoration: none;
+}
+
+.pg-sidebar-installed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  color: rgba(234,242,255,.72);
+  font-size: .6rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pg-sidebar-installed-toggle input {
+  width: 11px;
+  height: 11px;
+  margin: 0;
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+.pg-sidebar-installed-toggle:has(input:checked) {
+  color: #fbbf24;
 }
 
 .has-cloud-image {

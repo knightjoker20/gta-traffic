@@ -634,6 +634,7 @@ body.vl-library-page {
 .vd-title-column { display: grid; align-content: center; }
 .vd-kicker { color: #ff9a31; font-weight: 900; text-transform: uppercase; letter-spacing: .12em; font-size: .72rem; }
 .vd-title-column h1 { margin: 8px 0 4px; font-size: clamp(2rem,4vw,4rem); line-height: 1; }
+.vd-make-line { margin: 0 0 6px; color: #ffc17f; font-weight: 800; font-size: .95rem; text-transform: uppercase; letter-spacing: .04em; }
 .vd-model-name { color: rgba(255,255,255,.48); font-family: Consolas,monospace; font-size: .9rem; }
 .vd-badge-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 18px 0 12px; }
 .vd-badge.orange { color: #ffc17f; background: rgba(249,115,22,.18); }
@@ -660,6 +661,9 @@ body.vl-library-page {
 .vd-detail-item strong { display: block; color: #fff; font-size: .84rem; overflow-wrap: anywhere; }
 
 .vd-detail-item-editable.vd-detail-item-customized { border-color: rgba(255,176,32,.4); background: rgba(255,176,32,.06); }
+.vd-edit-toggle { flex: 0 0 auto; }
+.vd-edit-toggle.active { color: #ff8a1f; border-color: rgba(249,115,22,.7); background: rgba(249,115,22,.12); }
+.vd-handling-row.vd-handling-row-customized-static { padding: 3px 5px; margin: -3px -5px; border-radius: 6px; background: rgba(255,176,32,.06); }
 .vd-customized-badge {
   display: inline-block;
   margin-left: 6px;
@@ -868,6 +872,40 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
 }
 
 
+/* Vehicle Library V1.3 header bulk import drop zones */
+.vl-import-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+.vl-import-dropzone {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  min-height: 74px;
+  padding: 12px;
+  border: 2px dashed rgba(245,158,11,.38);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(245,158,11,.07), rgba(255,255,255,.02));
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.vl-import-dropzone:hover,
+.vl-import-dropzone:focus-visible,
+.vl-import-dropzone.drag-over {
+  border-color: #f59e0b;
+  background: rgba(245,158,11,.14);
+  outline: none;
+}
+.vl-import-dropzone.drag-over { transform: translateY(-2px); }
+.vl-import-dropzone strong { color: #fff; font-size: .84rem; }
+.vl-import-dropzone span { color: rgba(255,255,255,.55); font-size: .68rem; line-height: 1.35; }
+@media (max-width: 900px) {
+  .vl-import-row { grid-template-columns: 1fr; }
+}
+
 /* Vehicle Library V1.3 installed-file batch scanner */
 .vl-install-drop-zone {
   display: grid;
@@ -895,6 +933,8 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
 .vl-install-drop-zone code { color: #ffc17f; }
 .vl-install-drop-zone button { margin-top: 5px; }
 .vl-install-scan-result { display: grid; gap: 8px; margin-top: 10px; }
+.vl-install-rpf-scan { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.08); display: grid; gap: 6px; }
+.vl-install-rpf-scan .btn-orange { width: 100%; }
 .vl-scan-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
 .vl-scan-summary div { padding: 9px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: rgba(255,255,255,.03); }
 .vl-scan-summary strong { display: block; color: #fff; font-size: 1rem; }
