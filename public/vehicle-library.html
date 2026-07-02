@@ -29,7 +29,7 @@
       <div class="hero-content">
         <div class="hero-kicker">Visual Vehicle Database</div>
         <h1>GTA Traffic Vehicle Library</h1>
-        <p>Build a searchable local database by combining Popgroups, vehicles.meta, and handling.meta data. Open any vehicle for a complete reference page and your own saved installation notes.</p>
+        <p>Browse the searchable vehicle database, synced from Popgroups, vehicles.meta, and handling.meta data. Open any vehicle for a complete reference page and your own saved installation notes.</p>
       </div>
     </div>
   </section>
@@ -37,90 +37,7 @@
   <main class="vehicle-library-main">
     <div class="vl-layout">
       <aside class="vl-sidebar">
-        <section class="panel vl-import-panel">
-          <h2>Import Sources</h2>
-          <p class="vl-muted vl-compact-copy">Import one or several files. Existing records are updated without erasing your images, paths, or notes.</p>
-<div class="vl-source-fields">
-  <label>
-    Source Label
-    <input
-      id="vlImportSourceLabel"
-      type="text"
-      placeholder="Example: Rockstar Summer 2026 DLC"
-      autocomplete="off"
-    >
-  </label>
-
-  <label>
-    DLC / Mod Folder
-    <input
-      id="vlImportDlcFolder"
-      type="text"
-      placeholder="Example: mp2026summer"
-      autocomplete="off"
-    >
-  </label>
-
-  <label>
-    Original Source Path
-    <input
-      id="vlImportSourcePath"
-      type="text"
-      placeholder="Example: update/x64/dlcpacks/mp2026summer/common/data"
-      autocomplete="off"
-    >
-  </label>
-
-  <p class="small vl-muted">
-    The selected filename is added automatically. These values identify
-    which Rockstar DLC or mod pack supplied the imported records.
-  </p>
-</div>
-          <button class="vl-import-button" type="button" data-pick="vlPopgroupsPicker">
-            <span>Popgroups</span><small>Groups and traffic membership</small>
-          </button>
-          <input id="vlPopgroupsPicker" class="vl-hidden" type="file" multiple accept=".ymt,.xml,.meta,.txt">
-
-          <button class="vl-import-button" type="button" data-pick="vlVehiclesPicker">
-            <span>vehicles.meta</span><small>Identity and spawn settings</small>
-          </button>
-          <input id="vlVehiclesPicker" class="vl-hidden" type="file" multiple accept=".meta,.xml,.txt">
-
-          <button class="vl-import-button" type="button" data-pick="vlHandlingPicker">
-            <span>handling.meta</span><small>Physics and AI profiles</small>
-          </button>
-          <input id="vlHandlingPicker" class="vl-hidden" type="file" multiple accept=".meta,.xml,.txt">
-          <button class="vl-import-button" type="button" data-pick="vlCarvariationsMetaInput">
-            <span>carvariations.meta</span><small>Appearance, colors, liveries, plates</small>
-          </button>
-          <input id="vlCarvariationsMetaInput" class="vl-hidden" type="file" multiple accept=".meta,.xml,.txt">
-
-          <button class="vl-import-button" type="button" data-pick="vlCarcolsMetaInput">
-            <span>carcols.meta</span><small>Mod kits, upgrades, lights</small>
-          </button>
-          <input id="vlCarcolsMetaInput" class="vl-hidden" type="file" multiple accept=".meta,.xml,.txt">
-
-          
-          <div id="vlAppearanceMetaPreview" class="vl-status" hidden>
-            Appearance metadata preview will appear here after selecting carvariations.meta or carcols.meta.
-          </div>
-          <button id="vlSaveAppearanceMetaCloud" class="vl-import-button" type="button">
-            <span>Save Appearance Metadata to Cloud</span>
-            <small>Saves parsed carvariations.meta and carcols.meta data</small>
-          </button><div id="vlStatus" class="vl-status warn">Opening the local vehicle database...</div>
-        </section>
-
-        <section class="panel vl-install-scan-panel">
-          <h2>Installed File Scanner</h2>
-          <p class="vl-muted vl-compact-copy">Drop vehicle <code>.yft</code> and <code>.ytd</code> files here. Matching model names are toggled once per vehicle: first drop marks installed, dropping them again marks uninstalled.</p>
-          <div id="vlInstallDropZone" class="vl-install-drop-zone" tabindex="0" role="button" aria-label="Drop YFT and YTD files or browse">
-            <strong>Drop YFT / YTD files</strong>
-            <span>Supports large batches and ignores duplicate <code>_hi.yft</code> entries.</span>
-            <button id="vlInstallBrowse" type="button">Browse Vehicle Files</button>
-          </div>
-          <input id="vlInstallFilesPicker" class="vl-hidden" type="file" multiple accept=".yft,.ytd">
-          <div id="vlInstallScanResult" class="vl-install-scan-result" aria-live="polite"></div>
-        </section>
+        <div id="vlStatus" class="vl-status warn">Opening the local vehicle database...</div>
 
         <section class="panel">
           <h2>Library Stats</h2>

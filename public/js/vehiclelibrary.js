@@ -1414,7 +1414,7 @@ function cardHtml(vehicle) {
         </div>
 
         <div class="vl-card-actions">
-          <a href="${escapeHTML(detailsUrl)}">Open Vehicle Details</a>
+          <a href="${escapeHTML(detailsUrl)}">Details</a>
           <button
             type="button"
             class="vl-compare-toggle ${isComparing(vehicle.modelName) ? "active" : ""}"
@@ -1556,28 +1556,28 @@ function cardHtml(vehicle) {
       return;
     }
 
-    const slots = vehicles.map(vehicle => {
+    const photoCells = vehicles.map(vehicle => `
+      <th class="vl-compare-photo-cell">
+        <div class="vl-compare-slot-image">${compareThumbHtml(vehicle)}</div>
+        <button type="button" class="vl-compare-slot-remove" data-compare-remove="${escapeHTML(vehicle.modelName)}" aria-label="Remove ${escapeHTML(displayTitle(vehicle))}">&times;</button>
+      </th>
+    `).join("");
+
+    const titleCells = vehicles.map(vehicle => {
       const classLabel = cleanClassName(vehicle.vehiclesMeta?.vehicleClass);
       return `
-        <div class="vl-compare-slot">
-          <div class="vl-compare-slot-image">${compareThumbHtml(vehicle)}</div>
-          <button type="button" class="vl-compare-slot-remove" data-compare-remove="${escapeHTML(vehicle.modelName)}" aria-label="Remove ${escapeHTML(displayTitle(vehicle))}">&times;</button>
-          <div class="vl-compare-slot-body">
-            <p class="vl-compare-slot-title">${escapeHTML(displayTitle(vehicle))}</p>
-            <p class="vl-compare-slot-model">${escapeHTML(vehicle.modelName)}</p>
-            <span class="vl-badge">${escapeHTML(classLabel)}</span>
-          </div>
-        </div>
+        <th class="vl-compare-title-cell">
+          <p class="vl-compare-slot-title">${escapeHTML(displayTitle(vehicle))}</p>
+          <p class="vl-compare-slot-model">${escapeHTML(vehicle.modelName)}</p>
+          <span class="vl-badge">${escapeHTML(classLabel)}</span>
+        </th>
       `;
-    });
+    }).join("");
 
-    for (let i = vehicles.length; i < MAX_COMPARE; i++) {
-      slots.push(`
-        <div class="vl-compare-slot empty">
-          <span class="vl-compare-slot-empty-text">Add another vehicle from the library grid</span>
-        </div>
-      `);
-    }
+    const remainingSlots = MAX_COMPARE - vehicles.length;
+    const addMoreHint = remainingSlots > 0
+      ? `<p class="vl-compare-add-more">Add ${remainingSlots} more vehicle${remainingSlots === 1 ? "" : "s"} from the library grid to compare up to ${MAX_COMPARE} at once.</p>`
+      : "";
 
     const rows = [
       compareTextRow("Class", vehicles, v => cleanClassName(v.vehiclesMeta?.vehicleClass)),
@@ -1595,18 +1595,22 @@ function cardHtml(vehicle) {
     ];
 
     body.innerHTML = `
-      <div class="vl-compare-slots">${slots.join("")}</div>
       <div class="vl-compare-table-wrap">
         <table class="vl-compare-table">
           <thead>
-            <tr>
-              <th>Stat</th>
-              ${vehicles.map(vehicle => `<th>${escapeHTML(displayTitle(vehicle))}</th>`).join("")}
+            <tr class="vl-compare-photo-row">
+              <th class="vl-compare-label-col"></th>
+              ${photoCells}
+            </tr>
+            <tr class="vl-compare-title-row">
+              <th class="vl-compare-label-col">Stat</th>
+              ${titleCells}
             </tr>
           </thead>
           <tbody>${rows.join("")}</tbody>
         </table>
       </div>
+      ${addMoreHint}
     `;
 
     setupStaticImageFallbacks(body);
@@ -1842,41 +1846,44 @@ grid.querySelectorAll(
     document.querySelectorAll("[data-pick]").forEach(button => {
       button.addEventListener("click", () => el(button.dataset.pick).click());
     });
-    el("vlPopgroupsPicker").addEventListener("change", event => handleImport(event.target, importPopgroupsFiles));
-    el("vlVehiclesPicker").addEventListener("change", event => handleImport(event.target, importVehicleFiles));
-    el("vlHandlingPicker").addEventListener("change", event => handleImport(event.target, importHandlingFiles));
-	el("vlRefreshSourceHistory").addEventListener("click",() => refreshSourceHistory(true));
-	
+    el("vlPopgroupsPicker")?.addEventListener("change", event => handleImport(event.target, importPopgroupsFiles));
+    el("vlVehiclesPicker")?.addEventListener("change", event => handleImport(event.target, importVehicleFiles));
+    el("vlHandlingPicker")?.addEventListener("change", event => handleImport(event.target, importHandlingFiles));
+	el("vlRefreshSourceHistory")?.addEventListener("click",() => refreshSourceHistory(true));
+
     const installDropZone = el("vlInstallDropZone");
     const installPicker = el("vlInstallFilesPicker");
-    el("vlInstallBrowse").addEventListener("click", event => {
-      event.stopPropagation();
-      installPicker.click();
-    });
-    installDropZone.addEventListener("click", event => {
-      if (event.target.closest("button")) return;
-      installPicker.click();
-    });
-    installDropZone.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
+    const installBrowseButton = el("vlInstallBrowse");
+    if (installDropZone && installPicker && installBrowseButton) {
+      installBrowseButton.addEventListener("click", event => {
+        event.stopPropagation();
         installPicker.click();
-      }
-    });
-    ["dragenter", "dragover"].forEach(name => installDropZone.addEventListener(name, event => {
-      event.preventDefault();
-      installDropZone.classList.add("drag-over");
-    }));
-    ["dragleave", "drop"].forEach(name => installDropZone.addEventListener(name, event => {
-      event.preventDefault();
-      installDropZone.classList.remove("drag-over");
-    }));
-    installDropZone.addEventListener("drop", event => toggleInstalledFromAssetFiles(event.dataTransfer.files));
-    installPicker.addEventListener("change", event => {
-      const files = event.target.files;
-      event.target.value = "";
-      toggleInstalledFromAssetFiles(files);
-    });
+      });
+      installDropZone.addEventListener("click", event => {
+        if (event.target.closest("button")) return;
+        installPicker.click();
+      });
+      installDropZone.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          installPicker.click();
+        }
+      });
+      ["dragenter", "dragover"].forEach(name => installDropZone.addEventListener(name, event => {
+        event.preventDefault();
+        installDropZone.classList.add("drag-over");
+      }));
+      ["dragleave", "drop"].forEach(name => installDropZone.addEventListener(name, event => {
+        event.preventDefault();
+        installDropZone.classList.remove("drag-over");
+      }));
+      installDropZone.addEventListener("drop", event => toggleInstalledFromAssetFiles(event.dataTransfer.files));
+      installPicker.addEventListener("change", event => {
+        const files = event.target.files;
+        event.target.value = "";
+        toggleInstalledFromAssetFiles(files);
+      });
+    }
 
     el("vlSearch").addEventListener("input", event => {
       state.filters.search = event.target.value;
