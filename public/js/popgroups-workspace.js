@@ -1,6 +1,18 @@
 ﻿/* POPGROUPS_LEGACY_LIBRARY_BRIDGE_V2 */
 
 (() => {
+  // Claim ownership of the #vehicleLibrary sidebar as soon as this script
+  // runs (synchronously, before DOMContentLoaded fires) so the legacy
+  // renderVehicleLibrary() in render.js -- which several other shared
+  // scripts still call (maincloudsync.js, workspacestorage.js, packdatabase.js,
+  // imagemanager.js, lodtracker.js, vehiclemeta.js, and app.js's library
+  // search box listener) -- never paints its flat/expanded vehicle-meta card
+  // layout into this container, even for a single frame. This is what used
+  // to cause the sidebar to flash the old ungrouped card view while the
+  // page/cloud vehicle list was loading before snapping to the collapsible
+  // category list rendered by renderSidebar() below.
+  document.getElementById("vehicleLibrary")?.setAttribute("data-library-owner", "cloud-workspace");
+
   const cloudVehicles = new Map();
   const imageMap = new Map();
 

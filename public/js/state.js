@@ -41,6 +41,22 @@ let openGroups = {
   peds: new Set()
 };
 
+// Group names (not indices -- names stay stable across re-imports/edits,
+// indices don't) that the user has hidden from the editor list, e.g. _MP
+// popgroups that don't need editing for the singleplayer game.
+let hiddenGroups = {
+  vehicles: new Set(),
+  peds: new Set()
+};
+
+// When true for a section, hidden groups are still rendered (dimmed, with
+// an "Unhide" button) instead of being skipped entirely -- lets the user
+// manage/undo hides without digging through devtools.
+let showHiddenGroups = {
+  vehicles: false,
+  peds: false
+};
+
 let openLibraryClasses = new Set();
 let openPackItems = new Set();
 

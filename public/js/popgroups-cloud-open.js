@@ -90,6 +90,11 @@
       peds: new Set(project.openGroups?.peds || [])
     };
 
+    hiddenGroups = {
+      vehicles: new Set(project.hiddenGroups?.vehicles || []),
+      peds: new Set(project.hiddenGroups?.peds || [])
+    };
+
     const parser = new DOMParser();
     const xml = parser.parseFromString(xmlText, "text/xml");
 

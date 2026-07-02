@@ -6,11 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <link rel="stylesheet" href="css/design-tokens.css">
-<link rel="stylesheet" href="/css/site-shell.css">
   <link rel="stylesheet" href="css/site-menu.css">
   <link rel="stylesheet" href="/css/accountnav.css">
   <link rel="stylesheet" href="css/style.css?v=popgroups-legacy-clean-1">
   <link rel="stylesheet" href="css/popgroups.css?v=popgroups-legacy-clean-1">
+  <!-- site-shell.css loads LAST here, same as every other page. It shares a
+       .panel selector with style.css at equal specificity, so whichever loads
+       last wins the cascade -- this used to load 2nd, which is why popgroups
+       panels didn't match vehicle-meta/handling-meta/vehicle-library. -->
+  <link rel="stylesheet" href="/css/site-shell.css">
 </head>
 
 <body data-page="popgroups" class="popgroups-legacy-page">
@@ -26,11 +30,13 @@
 
 <div id="siteToolMenu"></div>
 
-<section class="pg-legacy-hero">
-  <div>
-    <p class="eyebrow">Traffic Workspace</p>
-    <h1>PopGroups Workspace</h1>
-    <p>Import PopGroups XML, load vehicles.meta references, scan installed add-on vehicles, drag vehicles into groups, and export a rebuilt PopGroups file.</p>
+<section class="hero-banner pg-hero">
+  <div class="hero-shade">
+    <div class="hero-content">
+      <div class="hero-kicker">Traffic Workspace</div>
+      <h1>PopGroups Workspace</h1>
+      <p>Import PopGroups XML, load vehicles.meta references, scan installed add-on vehicles, drag vehicles into groups, and export a rebuilt PopGroups file.</p>
+    </div>
   </div>
 </section>
 
@@ -67,17 +73,17 @@
 
       <div class="toolbar action-row">
         <button class="btn-orange" onclick="showSection('vehicles')">Vehicles</button>
-        <button class="btn-purple" onclick="showSection('peds')">Peds</button>
-        <button class="btn-blue" onclick="toggleImageMode()">Toggle Images</button>
+        <button class="secondary" onclick="showSection('peds')">Peds</button>
+        <button class="secondary" onclick="toggleImageMode()">Toggle Images</button>
         <button class="btn-green" onclick="refreshImages()">Refresh Images</button>
         <button class="secondary" onclick="openAllGroups()">Open All</button>
         <button class="secondary" onclick="closeAllGroups()">Close All</button>
       </div>
 
       <div class="toolbar action-row">
-        <button onclick="copyVehGroupsToClipboard()">Copy VEH Groups</button>
-        <button onclick="copyCurrentGroupOnly()">Copy Current Group</button>
-        <button onclick="exportEditedXML()">Export Safe XML</button>
+        <button class="secondary" onclick="copyVehGroupsToClipboard()">Copy VEH Groups</button>
+        <button class="secondary" onclick="copyCurrentGroupOnly()">Copy Current Group</button>
+        <button class="secondary" onclick="exportEditedXML()">Export Safe XML</button>
       </div>
 
       <div id="status"></div>
@@ -99,7 +105,7 @@
 
         <div class="workspace-save-actions">
           <button class="btn-green" type="button" onclick="saveWorkspaceNow()">Save Now</button>
-          <button type="button" onclick="exportWorkspaceBackup()">Export Workspace Backup</button>
+          <button class="secondary" type="button" onclick="exportWorkspaceBackup()">Export Workspace Backup</button>
           <button class="secondary" type="button" onclick="document.getElementById('workspaceBackupImport').click()">Import Workspace Backup</button>
           <button class="secondary" type="button" onclick="clearSavedVehicleMetadata()">Clear Meta Cache</button>
           <button class="danger" type="button" onclick="clearSavedPopgroupsProject()">Clear Saved Popgroups</button>
@@ -125,8 +131,8 @@ dlcpacks/mycar/dlc.rpf/.../vehicles.rpf/2018zl1.yft
 
       <div class="toolbar action-row">
         <button id="pgRunInstalledScan" class="btn-orange" type="button">Run Scanner</button>
-        <button id="pgMarkInstalledCloud" class="btn-blue" type="button">Mark Installed in Cloud</button>
-        <button id="pgCopyInstalledModels" type="button">Copy Models</button>
+        <button id="pgMarkInstalledCloud" class="secondary" type="button">Mark Installed in Cloud</button>
+        <button id="pgCopyInstalledModels" class="secondary" type="button">Copy Models</button>
         <button id="pgClearInstalledScan" class="danger" type="button">Clear</button>
       </div>
 
@@ -143,6 +149,8 @@ dlcpacks/mycar/dlc.rpf/.../vehicles.rpf/2018zl1.yft
         <input id="searchBox" placeholder="Search current popgroups...">
       </div>
 
+      <div id="hiddenGroupsBar" class="pg-hidden-groups-bar" hidden></div>
+
       <div id="results"></div>
     </section>
 
@@ -150,7 +158,7 @@ dlcpacks/mycar/dlc.rpf/.../vehicles.rpf/2018zl1.yft
       <div class="pg-library-heading">
         <button id="libraryCollapseToggle" class="pg-library-collapse-btn" type="button" aria-expanded="true" aria-controls="libraryPanelBody" title="Collapse vehicle library">&#8250;</button>
         <h2>Vehicle Library</h2>
-        <button class="btn-orange" type="button" onclick="location.href='vehicle-library.html'">Open Full Library</button>
+        <button class="secondary" type="button" onclick="location.href='vehicle-library.html'">Open Full Library</button>
       </div>
 
       <div id="libraryPanelBody">

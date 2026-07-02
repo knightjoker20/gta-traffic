@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mockup — PopGroups Workspace Restyle | GTA Traffic Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="css/design-tokens.css">
+<link rel="stylesheet" href="css/site-menu.css">
+<link rel="stylesheet" href="/css/accountnav.css">
+<link rel="stylesheet" href="css/style.css">
+<!-- site-shell.css must load LAST, same as every other page (vehicle-library.html,
+     vehicle-meta.html, handling-meta.html, index.html). The live popgroups.html loads
+     it 2nd (right after design-tokens.css, before style.css/popgroups.css) -- since
+     .panel is defined in both style.css and site-shell.css with equal specificity,
+     whichever loads last wins the cascade. On every other page site-shell.css's nicer
+     12px/amber-bordered .panel wins; on popgroups.html style.css's plain 0-radius/gray
+     .panel wins instead (popgroups.css then re-overrides that with its own 18px/blue-gray
+     version) -- this is the actual root cause of the "corners are rounder, colors don't
+     match" difference. Fixing the <link> order is the real one-line fix. -->
+<link rel="stylesheet" href="/css/site-shell.css">
+
+<style>
+  /* ============================================================
+     MOCKUP-ONLY STYLES — a cleaned-up restyle of popgroups.css.
+     Not wired into the live page. Reuses the same design tokens,
+     .hero-banner, and .panel treatment as vehicle-library.html
+     and vehicle-meta.html so this page finally matches them.
+     ============================================================ */
+
+  .preview-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px auto 0;
+    width: fit-content;
+    padding: 7px 14px;
+    border: 1px solid rgba(168,85,247,.4);
+    border-radius: 999px;
+    background: rgba(88,28,135,.18);
+    color: #d3a8ff;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .preview-flag-wrap { display: flex; justify-content: center; }
+
+  .pg-shell {
+    width: min(1880px, calc(100% - 24px));
+    margin: 0 auto;
+    padding: 24px 0 70px;
+  }
+
+  .pg-hero .hero-content { max-width: 900px; }
+
+  .pg-top-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  /* No radius/border/background override here on purpose -- .panel already
+     gets the site's one shared card look (12px radius, amber-tinted border,
+     near-black gradient) from site-shell.css. PopGroups previously fought
+     that with its own 18px/gray-blue .pg-top-grid > .panel rule, which is
+     why it looked different from every other tool page. */
+
+  .pg-top-grid h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pg-drop-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .pg-drop-zone {
+    border: 2px dashed rgba(255,255,255,.22);
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    background: rgba(255,255,255,.035);
+    color: rgba(255,255,255,.7);
+    transition: border-color .15s ease, background .15s ease, transform .15s ease;
+  }
+
+  .pg-drop-zone:hover {
+    transform: translateY(-1px);
+    border-color: rgba(245,158,11,.6);
+    background: rgba(245,158,11,.07);
+  }
+
+  .pg-drop-icon { font-size: 34px; margin-bottom: 8px; color: var(--color-brand); }
+  .pg-drop-zone strong { display: block; color: #fff; margin-bottom: 4px; }
+  .pg-drop-zone small { color: rgba(255,255,255,.55); }
+  .pg-drop-zone.purple .pg-drop-icon { color: var(--purple2); }
+
+  .pg-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 4px 0 12px;
+  }
+
+  /* Buttons intentionally use the site's real button classes (plain <button>,
+     .btn-orange, .btn-green, .secondary, .danger from style.css) instead of a
+     new palette -- this mockup previously invented its own .btn/.btn-primary/
+     .btn-ghost classes that don't exist anywhere else on the site. The fix
+     here is fewer *distinct* colors per panel (no more purple/blue toolbar
+     rainbow), not a new button system. */
+
+  .pg-status-stack { display: grid; gap: 8px; margin: 12px 0; }
+
+  .pg-status {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0,0,0,.24);
+    font-size: .82rem;
+    line-height: 1.4;
+  }
+  .pg-status.good { border-left: 4px solid var(--color-success); }
+  .pg-status.warn { border-left: 4px solid var(--color-brand); }
+  .pg-status.info { border-left: 4px solid var(--color-info); }
+
+  .pg-workspace-box {
+    margin-top: 16px;
+    padding: 14px;
+    border: 1px solid rgba(245,158,11,.24);
+    border-radius: 14px;
+    background: rgba(245,158,11,.05);
+  }
+
+  .pg-workspace-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .pg-workspace-heading h3 { margin: 0 0 3px; font-size: .96rem; }
+  .pg-workspace-heading p { margin: 0; font-size: .78rem; color: rgba(255,255,255,.58); }
+
+  .pg-autosave-badge {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(34,197,94,.14);
+    border: 1px solid rgba(34,197,94,.4);
+    color: #8ff0b9;
+    font-size: .68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .pg-scanner-textarea {
+    width: 100%;
+    min-height: 120px;
+    margin-top: 12px;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 12px;
+    background: rgba(0,0,0,.28);
+    color: #fff;
+    padding: 12px;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    resize: vertical;
+  }
+
+  .pg-main-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .pg-search-wrap { margin-bottom: 12px; }
+  .pg-search-wrap input {
+    width: 100%;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 10px;
+    background: rgba(0,0,0,.28);
+    color: #fff;
+    padding: 10px 12px;
+  }
+
+  .pg-sample-groups { display: grid; gap: 12px; }
+
+  .pg-group-card {
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 14px;
+    background: rgba(255,255,255,.03);
+    overflow: hidden;
+  }
+
+  .pg-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 11px 14px;
+    background: rgba(255,255,255,.04);
+  }
+
+  .pg-group-header strong { color: #fff; font-size: .88rem; }
+  .pg-group-header span {
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(56,189,248,.16);
+    color: #8bdcff;
+    font-size: .68rem;
+    font-weight: 800;
+  }
+
+  .pg-group-body {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .pg-mini-vehicle {
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 8px;
+    background: rgba(255,255,255,.02);
+    padding: 8px;
+    text-align: center;
+  }
+
+  .pg-mini-vehicle-thumb {
+    height: 46px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    background: radial-gradient(circle at 50% 30%, rgba(249,115,22,.22), transparent 60%), #12192a;
+  }
+
+  .pg-mini-vehicle span { display: block; color: rgba(255,255,255,.72); font-size: .64rem; }
+
+  .pg-library-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .pg-library-heading h2 { margin: 0; flex: 1; }
+
+  .pg-library-collapse-btn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.06);
+    color: #fff;
+    font-size: 18px;
+  }
+
+  .pg-sidebar-category {
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 10px;
+    background: rgba(12,19,33,.94);
+    overflow: hidden;
+    margin-bottom: 9px;
+  }
+
+  .pg-sidebar-category summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 11px;
+    background: rgba(55,72,105,.55);
+  }
+  .pg-sidebar-category summary::-webkit-details-marker { display: none; }
+  .pg-sidebar-category summary::before { content: "▾"; color: #ffb35a; }
+  .pg-sidebar-category:not([open]) summary::before { content: "▸"; }
+  .pg-sidebar-category summary strong { flex: 1; color: #fff; font-size: .82rem; text-transform: uppercase; }
+  .pg-sidebar-category summary span { color: #9dd7ff; font-size: .75rem; font-weight: 900; }
+
+  .pg-sidebar-vehicle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .pg-sidebar-vehicle-card {
+    padding: 6px;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 8px;
+    background: rgba(255,255,255,.02);
+  }
+
+  .pg-sidebar-vehicle-img {
+    width: 100%;
+    height: 56px;
+    border-radius: 6px;
+    background: radial-gradient(circle at 50% 30%, rgba(147,51,234,.2), transparent 60%), #12192a;
+  }
+
+  .pg-sidebar-vehicle-card h4 { margin: 6px 0 0; color: #fff; font-size: .68rem; }
+  .pg-sidebar-vehicle-card p { margin: 1px 0 0; color: rgba(255,255,255,.5); font-size: .6rem; }
+
+  @media (max-width: 1200px) {
+    .pg-top-grid, .pg-main-layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body data-page="popgroups">
+<header class="app-header">
+  <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic Studio">
+    <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic Studio Logo">
+    <div class="brand-copy">
+      <div class="brand-title">GTA Traffic Studio</div>
+      <div class="tagline">PopGroups Workspace</div>
+    </div>
+  </a>
+</header>
+
+<div class="preview-flag-wrap"><span class="preview-flag">Design mockup &middot; not wired into the live site</span></div>
+
+<section class="hero-banner pg-hero">
+  <div class="hero-shade">
+    <div class="hero-content">
+      <div class="hero-kicker">Traffic Workspace</div>
+      <h1>PopGroups Workspace</h1>
+      <p>Import PopGroups XML, load vehicles.meta references, scan installed add-on vehicles, drag vehicles into groups, and export a rebuilt PopGroups file.</p>
+    </div>
+  </div>
+</section>
+
+<main class="pg-shell">
+
+  <div class="pg-top-grid">
+
+    <section class="panel">
+      <h2><span class="icon-orange">⇩</span> Imports</h2>
+
+      <div class="pg-drop-row">
+        <div class="pg-drop-zone">
+          <div class="pg-drop-icon">▱</div>
+          <strong>Drop your popgroups.xml</strong>
+          <small>or popgroups.ymt XML export here</small>
+        </div>
+        <div class="pg-drop-zone purple">
+          <div class="pg-drop-icon">▱</div>
+          <strong>Drop vehicles.meta here</strong>
+          <small>Used for model names, classes, handling IDs, and sidebar matching.</small>
+        </div>
+      </div>
+
+      <div class="pg-actions">
+        <button class="btn-orange">Vehicles</button>
+        <button class="secondary">Peds</button>
+        <button class="secondary">Toggle Images</button>
+        <button class="btn-green">Refresh Images</button>
+        <button class="secondary">Open All</button>
+        <button class="secondary">Close All</button>
+      </div>
+
+      <div class="pg-actions">
+        <button class="secondary">Copy VEH Groups</button>
+        <button class="secondary">Copy Current Group</button>
+        <button class="secondary">Export Safe XML</button>
+      </div>
+
+      <div class="pg-status-stack">
+        <div class="pg-status good">Loaded popgroups.xml — 42 groups, 318 vehicles referenced.</div>
+        <div class="pg-status info">vehicles.meta linked: 214 of 318 model names matched.</div>
+      </div>
+
+      <div class="pg-workspace-box">
+        <div class="pg-workspace-heading">
+          <div>
+            <h3>Saved Workspace</h3>
+            <p>Parsed metadata and the most recent PopGroups project are restored automatically in this browser.</p>
+          </div>
+          <span class="pg-autosave-badge">Autosave On</span>
+        </div>
+        <div class="pg-actions">
+          <button class="btn-green">Save Now</button>
+          <button class="secondary">Export Workspace Backup</button>
+          <button class="secondary">Import Workspace Backup</button>
+          <button class="secondary">Clear Meta Cache</button>
+          <button class="danger">Clear Saved Popgroups</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2><span class="icon-orange">⇧</span> Installed Add-on Vehicle Scanner</h2>
+      <p class="small" style="color:rgba(255,255,255,.6)">Paste or drop a DLC folder/file list. The scanner detects .yft and .ytd model names and helps mark installed vehicles.</p>
+
+      <div class="pg-drop-zone">
+        <div class="pg-drop-icon">◫</div>
+        <strong>Drop installed vehicle file list here</strong>
+        <small>Accepts copied folder listings, OpenIV export lists, or plain text.</small>
+      </div>
+
+      <textarea class="pg-scanner-textarea" placeholder="Paste installed vehicle file list here, example:
+dlcpacks/mycar/dlc.rpf/.../vehicles.rpf/2018zl1.yft
+2018zl1_hi.yft
+2018zl1.ytd"></textarea>
+
+      <div class="pg-actions">
+        <button class="btn-orange">Run Scanner</button>
+        <button class="secondary">Mark Installed in Cloud</button>
+        <button class="secondary">Copy Models</button>
+        <button class="danger">Clear</button>
+      </div>
+
+      <div class="pg-status warn">No installed add-on scan yet.</div>
+    </section>
+
+  </div>
+
+  <div class="pg-main-layout">
+    <section class="panel">
+      <h2>Vehicles</h2>
+
+      <div class="pg-search-wrap">
+        <input placeholder="Search current popgroups...">
+      </div>
+
+      <div class="pg-sample-groups">
+        <div class="pg-group-card">
+          <div class="pg-group-header"><strong>VEH_COUNTRYSIDE_RARE</strong><span>6 vehicles</span></div>
+          <div class="pg-group-body">
+            <div class="pg-mini-vehicle"><div class="pg-mini-vehicle-thumb"></div><span>DUKES</span></div>
+            <div class="pg-mini-vehicle"><div class="pg-mini-vehicle-thumb"></div><span>BLADE</span></div>
+            <div class="pg-mini-vehicle"><div class="pg-mini-vehicle-thumb"></div><span>VIGERO</span></div>
+          </div>
+        </div>
+        <div class="pg-group-card">
+          <div class="pg-group-header"><strong>VEH_FREEWAY</strong><span>4 vehicles</span></div>
+          <div class="pg-group-body">
+            <div class="pg-mini-vehicle"><div class="pg-mini-vehicle-thumb"></div><span>DOMINATOR10</span></div>
+            <div class="pg-mini-vehicle"><div class="pg-mini-vehicle-thumb"></div><span>ORACLE2</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="pg-library-heading">
+        <button class="pg-library-collapse-btn" title="Collapse vehicle library">&#8250;</button>
+        <h2>Vehicle Library</h2>
+        <button class="secondary">Open Full Library</button>
+      </div>
+
+      <div class="pg-search-wrap">
+        <input placeholder="Search library vehicle, class, make, handling, pack...">
+      </div>
+
+      <details class="pg-sidebar-category" open>
+        <summary><strong>Sports</strong><span>72</span></summary>
+        <div class="pg-sidebar-vehicle-grid">
+          <div class="pg-sidebar-vehicle-card"><div class="pg-sidebar-vehicle-img"></div><h4>G6BUFFALO</h4><p>No pack assigned</p></div>
+          <div class="pg-sidebar-vehicle-card"><div class="pg-sidebar-vehicle-img"></div><h4>NINEF</h4><p>Rockstar DLC</p></div>
+        </div>
+      </details>
+      <details class="pg-sidebar-category">
+        <summary><strong>Sedans</strong><span>45</span></summary>
+      </details>
+      <details class="pg-sidebar-category">
+        <summary><strong>Muscle</strong><span>47</span></summary>
+      </details>
+    </section>
+  </div>
+</main>
+
+<footer class="app-footer">
+  <div>Built for Modders</div>
+  <div>Browser Based</div>
+  <div>Your Files Stay Local</div>
+  <div>Export Ready</div>
+  <div><strong>GTA Traffic Studio</strong></div>
+</footer>
+</body>
+</html>

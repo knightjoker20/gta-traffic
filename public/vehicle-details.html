@@ -71,6 +71,13 @@
         <div class="vd-main-column">
           <section class="panel">
             <div class="vd-section-heading">
+              <div><h2>Tags</h2><p>Click a tag to browse other vehicles in the library sharing it.</p></div>
+            </div>
+            <div id="vdTagCloud" class="tag-cloud"></div>
+          </section>
+
+          <section class="panel">
+            <div class="vd-section-heading">
               <div><h2>Vehicle.meta Details</h2><p>Parsed from the most recently imported vehicles.meta entry. Editable fields save as your own personal customization &mdash; the shared vanilla data is never changed.</p></div>
             </div>
             <div id="vdVehicleMetaDetails" class="vd-detail-grid"></div>
@@ -182,15 +189,6 @@
               </label>
               <label>DLC / RPF Folder Location
                 <input id="vdDlcFolderPath" name="dlcFolderPath" type="text" placeholder="mods/update/x64/dlcpacks/...">
-              </label>
-              <label>Base YFT File Location
-                <input id="vdYftPath" name="yftPath" type="text" placeholder=".../vehicles.rpf/model.yft">
-              </label>
-              <label>High-detail YFT Location
-                <input id="vdYftHiPath" name="yftHiPath" type="text" placeholder=".../vehicles.rpf/model_hi.yft">
-              </label>
-              <label>YTD Texture Location
-                <input id="vdYtdPath" name="ytdPath" type="text" placeholder=".../vehicles.rpf/model.ytd">
               </label>
               <label>vehicles.meta Location
                 <input id="vdVehiclesMetaPath" name="vehiclesMetaPath" type="text" placeholder=".../common/data/levels/gta5/vehicles.meta">

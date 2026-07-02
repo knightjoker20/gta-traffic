@@ -1036,7 +1036,7 @@ const el = id => document.getElementById(id);
 
   const CUSTOM_FIELDS = [
     "displayName", "rockstarDlc", "sourcePack", "gameVersion", "installDate", "installType", "replacementFor",
-    "dlcFolderPath", "yftPath", "yftHiPath", "ytdPath", "vehiclesMetaPath",
+    "dlcFolderPath", "vehiclesMetaPath",
     "handlingMetaPath", "downloadUrl", "tags", "notes"
   ];
 
@@ -1049,15 +1049,25 @@ const el = id => document.getElementById(id);
     installType: "vdInstallType",
     replacementFor: "vdReplacementFor",
     dlcFolderPath: "vdDlcFolderPath",
-    yftPath: "vdYftPath",
-    yftHiPath: "vdYftHiPath",
-    ytdPath: "vdYtdPath",
     vehiclesMetaPath: "vdVehiclesMetaPath",
     handlingMetaPath: "vdHandlingMetaPath",
     downloadUrl: "vdDownloadUrl",
     tags: "vdTags",
     notes: "vdNotes"
   };
+
+  function renderTagCloud() {
+    const host = el("vdTagCloud");
+    if (!host) return;
+    const raw = el("vdTags") ? el("vdTags").value : (state.vehicle?.custom?.tags || "");
+    const tags = String(raw || "")
+      .split(",")
+      .map(tag => tag.trim())
+      .filter(Boolean);
+    host.innerHTML = tags.length
+      ? tags.map(tag => `<a class="tag-pill" href="vehicle-library.html?tag=${encodeURIComponent(tag.toLowerCase())}" title="Browse other vehicles tagged &quot;${escapeHTML(tag)}&quot;">${escapeHTML(tag)}</a>`).join("")
+      : `<span class="vd-no-data">No tags yet. Add some under Library Details below.</span>`;
+  }
 
   function populateCustomForm() {
     const custom = state.vehicle.custom || {};
@@ -1301,6 +1311,7 @@ async function loadVehicle(modelName) {
   renderAppearanceMetadata();
   renderSources();
   populateCustomForm();
+  renderTagCloud();
 
   setStatus(
     `Loaded ${vehicle.modelName} from the ${
@@ -1332,6 +1343,7 @@ async function loadVehicle(modelName) {
       el(CUSTOM_IDS[field]).addEventListener("input", scheduleSave);
       el(CUSTOM_IDS[field]).addEventListener("change", scheduleSave);
     });
+    el("vdTags").addEventListener("input", renderTagCloud);
 
 el("vdInstallButton").addEventListener(
   "click",
@@ -1691,7 +1703,6 @@ async function initialize() {
         "The Vehicle Library is empty.",
         "warn"
       );
-
       el("vdVehicleSelect").innerHTML =
         `<option value="">No vehicles available</option>`;
 

@@ -22,7 +22,16 @@ function renderSection(section) {
       allModels.indexOf(item) !== index
   );
 
+  renderHiddenGroupsBar(section, data);
+
   data.forEach((group, groupIndex) => {
+    const isHidden =
+      hiddenGroups[section].has(group.name);
+
+    if (isHidden && !showHiddenGroups[section]) {
+      return;
+    }
+
     const groupMatches = group.name
       .toLowerCase()
       .includes(query);
@@ -76,14 +85,27 @@ function renderSection(section) {
         duplicates.includes(model)
       ).length;
 
+    const isMultiplayerGroup =
+      /_MP$/i.test(group.name.trim());
+
     const groupDiv =
       document.createElement("div");
 
-    groupDiv.className = "group";
+    groupDiv.className = [
+      "group",
+      isMultiplayerGroup ? "group-mp" : "group-vanilla",
+      isHidden ? "group-hidden-visible" : ""
+    ].filter(Boolean).join(" ");
 
     groupDiv.innerHTML = `
       <div class="group-header">
         <strong>${escapeHTML(group.name)}</strong>
+
+        ${
+          isMultiplayerGroup
+            ? '<span class="pg-mp-badge">Multiplayer</span>'
+            : '<span class="pg-sp-badge">Singleplayer</span>'
+        }
 
         <span class="count">
           — ${group.models.length} entries
@@ -104,6 +126,12 @@ function renderSection(section) {
         ${
           section === "vehicles"
             ? renderGroupLoadSummary(group.models)
+            : ""
+        }
+
+        ${
+          isMultiplayerGroup
+            ? `<button type="button" class="pg-group-hide-button" data-hide-group="${escapeHTML(group.name)}">${isHidden ? "Unhide" : "Hide"}</button>`
             : ""
         }
       </div>
@@ -173,10 +201,63 @@ function renderSection(section) {
         }
       });
 
+    const hideButton =
+      groupDiv.querySelector("[data-hide-group]");
+
+    if (hideButton) {
+      hideButton.addEventListener("click", event => {
+        // Don't let this also trigger the group-header's open/close toggle.
+        event.stopPropagation();
+
+        if (hiddenGroups[section].has(group.name)) {
+          hiddenGroups[section].delete(group.name);
+        } else {
+          hiddenGroups[section].add(group.name);
+        }
+
+        if (typeof schedulePopgroupsProjectSave === "function") {
+          schedulePopgroupsProjectSave();
+        }
+
+        renderSection(section);
+      });
+    }
+
     els.results.appendChild(groupDiv);
   });
 
   updateStats();
+}
+
+function renderHiddenGroupsBar(section, data) {
+  const bar = document.getElementById("hiddenGroupsBar");
+  if (!bar) return;
+
+  const hiddenCount = data.filter(group =>
+    hiddenGroups[section].has(group.name)
+  ).length;
+
+  if (!hiddenCount) {
+    bar.hidden = true;
+    bar.innerHTML = "";
+    return;
+  }
+
+  bar.hidden = false;
+
+  bar.innerHTML = `
+    <span>${hiddenCount} multiplayer group${hiddenCount === 1 ? "" : "s"} hidden</span>
+    <button type="button" id="pgToggleHiddenGroups" class="secondary">
+      ${showHiddenGroups[section] ? "Hide the hidden groups again" : "Show hidden groups"}
+    </button>
+  `;
+
+  document
+    .getElementById("pgToggleHiddenGroups")
+    .addEventListener("click", () => {
+      showHiddenGroups[section] = !showHiddenGroups[section];
+      renderSection(section);
+    });
 }
 
 // [END MODULE: RENDERING]
@@ -557,6 +638,14 @@ window.toggleMainLibraryFilter = toggleMainLibraryFilter;
 function renderVehicleLibrary() {
   const container = document.getElementById("vehicleLibrary");
   if (!container) return;
+
+  // popgroups-workspace.js claims this container on script load and renders
+  // it from the cloud vehicle list as a collapsible category list. Skip this
+  // legacy renderer entirely when that's the case, instead of racing it --
+  // this used to cause a visible flash (and could even revert the sidebar
+  // back to this flat card layout later, e.g. after saving a pack) whenever
+  // anything called renderVehicleLibrary() on the PopGroups page.
+  if (container.dataset.libraryOwner === "cloud-workspace") return;
 
   const source =
     typeof vehicleMeta !== "undefined"

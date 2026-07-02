@@ -3,6 +3,19 @@
    Uses the existing GTA Traffic dark/orange design system.
    ===================================================== */
 
+/* Scoped to .vl-library-page (not the shared data-page="library" attribute,
+   which vehicle-details.html also uses) so this background only applies to
+   vehicle-library.html itself. */
+body.vl-library-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(4, 8, 17, 0.78), rgba(4, 8, 17, 0.96)),
+    url("/assets/hero/Grand_theft-beach-1.png");
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+}
+
 .vehicle-library-main,
 .vehicle-detail-main {
   width: min(1900px, calc(100% - 24px));
@@ -258,6 +271,38 @@
   background: rgba(255,255,255,.09);
   font-size: .7rem;
   text-align: center;
+}
+
+/* Tag cloud — used in the vehicle-library sidebar and on vehicle-details.html */
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, .28);
+  background: rgba(148, 163, 184, .1);
+  color: #cbd5e1;
+  font-weight: 700;
+  font-size: .78rem;
+  line-height: 1.5;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.tag-pill:hover {
+  border-color: rgba(249, 115, 22, .55);
+  background: rgba(249, 115, 22, .14);
+  color: #fff;
+}
+.tag-pill.active {
+  background: linear-gradient(135deg, rgba(249, 115, 22, .92), rgba(236, 72, 153, .78));
+  border-color: rgba(251, 146, 60, .8);
+  color: #fff7ed;
 }
 
 .vl-filter-stack { display: grid; gap: 10px; }

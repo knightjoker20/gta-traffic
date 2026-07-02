@@ -28,6 +28,11 @@ function parsePopgroups(text, filename) {
     peds: new Set()
   };
 
+  hiddenGroups = {
+    vehicles: new Set(),
+    peds: new Set()
+  };
+
   hasUnsavedChanges = false;
 
   const parser = new DOMParser();

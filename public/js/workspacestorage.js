@@ -203,6 +203,10 @@ function buildPopgroupsProjectSnapshot() {
       vehicles: Array.from(openGroups.vehicles || []),
       peds: Array.from(openGroups.peds || [])
     },
+    hiddenGroups: {
+      vehicles: Array.from(hiddenGroups.vehicles || []),
+      peds: Array.from(hiddenGroups.peds || [])
+    },
     searchText: els.searchBox?.value || ""
   };
 }
@@ -431,6 +435,15 @@ async function restoreSavedWorkspace() {
         ),
         peds: new Set(
           project.openGroups?.peds || []
+        )
+      };
+
+      hiddenGroups = {
+        vehicles: new Set(
+          project.hiddenGroups?.vehicles || []
+        ),
+        peds: new Set(
+          project.hiddenGroups?.peds || []
         )
       };
 
@@ -750,6 +763,10 @@ async function clearSavedPopgroupsProject() {
     peds: []
   };
   openGroups = {
+    vehicles: new Set(),
+    peds: new Set()
+  };
+  hiddenGroups = {
     vehicles: new Set(),
     peds: new Set()
   };
