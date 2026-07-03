@@ -96,7 +96,7 @@
     // rows = [{ vehicleId, rawXml, kitName }]
     const kitRenameMap = {};
 
-    const processedItems = rows.map(({ vehicleId, rawXml, kitName }) => {
+    const processedItems = rows.map(({ vehicleId, rawXml, kitName }, idx) => {
       const oldName = (kitName || '0_default_modkit').trim();
       const newName = `${vehicleId}_modkit`;
       kitRenameMap[vehicleId] = { old: oldName, new: newName };
@@ -112,6 +112,10 @@
       // 2. Replace any bare text references to the old name inside the block
       //    (some mods inline kit name as text content in child elements)
       xml = xml.replace(new RegExp(`\\b${escRe(oldName)}\\b`, 'g'), newName);
+
+      // 3. Renumber the numeric <id value="N"> to avoid duplicates across vehicles.
+      //    Each vehicle gets a unique sequential ID starting from 1.
+      xml = xml.replace(/<id\s+value="\d+"\s*\/>/gi, `<id value="${idx + 1}" />`);
 
       return xml;
     });
@@ -261,8 +265,8 @@ ${modelEntries.join('\n')}
       <changeSetName>${pack.dlc_name}_AUTOGEN</changeSetName>
       <filesToDisable />
       <filesToEnable>
-        <Item>${dev}:/data/vehicles.meta</Item>
         <Item>${dev}:/data/handling.meta</Item>
+        <Item>${dev}:/data/vehicles.meta</Item>
         <Item>${dev}:/data/carcols.meta</Item>
         <Item>${dev}:/data/carvariations.meta</Item>
         <Item>${dev}:/%PLATFORM%/vehicles.rpf</Item>
@@ -306,55 +310,102 @@ ${modelEntries.join('\n')}
       .join('\n');
 
     const modelsNote = metaOnly ? `
-⚠ META-ONLY PACKAGE
-This OIV contains meta files only. Model files (.yft/.ytd)
-were NOT included. After installing, manually copy each
-vehicle's model files into the dlc.rpf using OpenIV:
-  mods/update/x64/dlcpacks/${pack.dlc_name}/dlc.rpf
-  └─ x64/vehicles.rpf/
+⚠ META-ONLY PACKAGE — MODEL FILES NOT INCLUDED
+This OIV contains meta files only (.meta, content.xml, setup2.xml).
+Model files (.yft / .ytd) were NOT included.
+
+REQUIRED after installing this OIV:
+  Open OpenIV and navigate to:
+    mods/update/x64/dlcpacks/${pack.dlc_name}/dlc.rpf/x64/vehicles.rpf/
+  Then drag-drop each vehicle's .yft and .ytd into that RPF.
+  Without the model files, vehicles will NOT spawn (even if they
+  appear in a trainer's vehicle list).
 ` : '';
 
     return `GTA Traffic Studio — Pack Builder
-Pack: ${pack.name}
-DLC: ${pack.dlc_name}
-Vehicles: ${vehicles.length}
+Pack:      ${pack.name}
+DLC name:  ${pack.dlc_name}
+Vehicles:  ${vehicles.length}
 Generated: ${new Date().toISOString()}
 ${modelsNote}
-═══════════════════════════════════════
-INSTALL STEPS
-═══════════════════════════════════════
+═══════════════════════════════════════════════
+STEP 1 — INSTALL THE OIV
+═══════════════════════════════════════════════
+Open the .oiv with OpenIV:
+  • Drag it onto the OpenIV window, OR
+  • File → Open Package
 
-1. Open the .oiv with OpenIV
-   (drag it onto the OpenIV window, or File > Open Package)
+Click "Install". OpenIV will create:
+  mods/update/x64/dlcpacks/${pack.dlc_name}/dlc.rpf
 
-2. Click "Install"
-   OpenIV will create:
-     mods/update/x64/dlcpacks/${pack.dlc_name}/dlc.rpf
+Expected DLC structure after install:
+  dlc.rpf/
+  ├─ content.xml
+  ├─ setup2.xml
+  ├─ data/
+  │   ├─ vehicles.meta
+  │   ├─ handling.meta
+  │   ├─ carcols.meta
+  │   └─ carvariations.meta
+  └─ x64/
+      └─ vehicles.rpf/
+          ├─ ${vehicles[0]?.vehicle_id || 'vehicle'}.yft
+          └─ ${vehicles[0]?.vehicle_id || 'vehicle'}.ytd
 
-3. Add the DLC to dlclist.xml — REQUIRED
-   Open:  mods/update/update.rpf/common/data/dlclist.xml
-   Add inside <Paths>, AFTER existing entries:
+═══════════════════════════════════════════════
+STEP 2 — ADD TO dlclist.xml  (REQUIRED)
+═══════════════════════════════════════════════
+Location: mods/update/update.rpf/common/data/dlclist.xml
 
-     <Item>dlcpacks:/${pack.dlc_name}/</Item>
+Add this line INSIDE <Paths>, AFTER all existing entries:
 
-   ⚠ Back up dlclist.xml before editing.
+  <Item>dlcpacks:/${pack.dlc_name}/</Item>
 
-4. Launch GTA V. Vehicles will be available in traffic
-   once popgroups.xml references them.
+⚠ Back up dlclist.xml before editing.
+⚠ The trailing slash is required.
 
-═══════════════════════════════════════
+═══════════════════════════════════════════════
+STEP 3 — VERIFY WITH OPENIV BEFORE LAUNCHING
+═══════════════════════════════════════════════
+Before starting GTA V, open OpenIV and confirm:
+  ✓ dlcpacks/${pack.dlc_name}/dlc.rpf  EXISTS
+  ✓ dlc.rpf/content.xml                EXISTS
+  ✓ dlc.rpf/setup2.xml                 EXISTS
+  ✓ dlc.rpf/data/vehicles.meta         EXISTS
+  ✓ dlc.rpf/x64/vehicles.rpf           EXISTS and NOT EMPTY
+  ✓ dlc.rpf/x64/vehicles.rpf/*.yft     at least one model file
+
+If vehicles.rpf is empty → the spawn will fail with "no valid model."
+
+═══════════════════════════════════════════════
+TROUBLESHOOTING — "No valid model" on spawn
+═══════════════════════════════════════════════
+This error means the game cannot find the model file in streaming.
+
+Check in this order:
+  1. dlclist.xml has <Item>dlcpacks:/${pack.dlc_name}/</Item>
+  2. vehicles.rpf contains the .yft files for each vehicle
+     (use OpenIV to open dlc.rpf → x64 → vehicles.rpf and verify)
+  3. The .yft filename matches the vehicle spawn name exactly
+     e.g. vehicle spawn name "sultan" → file must be "sultan.yft"
+  4. The DLC entry in dlclist.xml uses the EXACT same name as the
+     dlcpacks folder:  "${pack.dlc_name}"
+  5. Restart GTA V completely after changing dlclist.xml
+
+NOTE: Some trainers show vehicles in their menu from a hardcoded list,
+even if the DLC isn't loaded. The vehicle appearing in the spawn menu
+does NOT confirm the DLC is active. Verify via step 1 and 2 above.
+
+═══════════════════════════════════════════════
 CARCOLS KIT RENAMES (merge log)
-═══════════════════════════════════════
-Generic kit names were renamed to avoid collisions:
+═══════════════════════════════════════════════
+Kit names were renamed to avoid ID collisions in the merged file:
 
-${kitLog || '  (no renames needed)'}
+${kitLog || '  (no renames needed — all vehicles use default modkit or have no carcols)'}
 
-If you see vehicles with missing liveries, cross-check
-these names against any hand-edited carcols references.
-
-═══════════════════════════════════════
-INCLUDED VEHICLES
-═══════════════════════════════════════
+═══════════════════════════════════════════════
+INCLUDED VEHICLES (${vehicles.length} total)
+═══════════════════════════════════════════════
 ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('\n')}
 `;
   }
