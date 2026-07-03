@@ -855,10 +855,11 @@
       return;
     }
 
+    const REQUIRED_META = ["vehicles", "handling", "carvariations"]; // carcols optional
     const issues = [];
     for (const v of packVehicles) {
       const types = (v.meta_types || "").split(",").filter(Boolean);
-      const missingMeta = META_TYPES.filter(t => !types.includes(t));
+      const missingMeta = REQUIRED_META.filter(t => !types.includes(t));
       if (missingMeta.length) issues.push(`${v.vehicle_id}: missing ${missingMeta.join(", ")} meta`);
     }
 
@@ -874,10 +875,11 @@
     const lines = [];
     let errCount = 0, warnCount = 0;
 
+    const REQUIRED_META = ["vehicles", "handling", "carvariations"]; // carcols optional
     for (const v of packVehicles) {
       const meta  = metaStatusCache[v.vehicle_id] || {};
-      const types = META_TYPES.filter(t => meta[t] && meta[t].status !== "error");
-      const missing = META_TYPES.filter(t => !types.includes(t));
+      const validTypes = META_TYPES.filter(t => meta[t] && meta[t].status !== "error");
+      const missing = REQUIRED_META.filter(t => !validTypes.includes(t));
 
       if (missing.length) {
         lines.push(`<li class="pb-val-error">⛔ ${v.vehicle_id}: missing ${missing.join(", ")} meta</li>`);
@@ -890,6 +892,11 @@
             warnCount++;
           }
         });
+        // carcols is optional — note if missing but don't block export
+        if (!meta.carcols) {
+          lines.push(`<li class="pb-val-warn">⚠ ${v.vehicle_id}: no carcols meta (OK for vehicles without modkits)</li>`);
+          warnCount++;
+        }
         if (!v.has_yft || !v.has_ytd) {
           lines.push(`<li class="pb-val-warn">⚠ ${v.vehicle_id}: model files (.yft/.ytd) not marked ready — will need to be provided at export time</li>`);
           warnCount++;

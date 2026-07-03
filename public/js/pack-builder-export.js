@@ -432,16 +432,15 @@ ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('
         }
       }
 
-      // 2. Block on missing required meta
+      // 2. Block on missing required meta (carcols is optional)
+      const REQUIRED_EXPORT = ['vehicles', 'handling', 'carvariations'];
       const missing = vehicles.filter(v =>
-        ['vehicles', 'handling', 'carcols', 'carvariations'].some(
-          t => !metaByVehicle[v.vehicle_id]?.[t]?.raw_xml
-        )
+        REQUIRED_EXPORT.some(t => !metaByVehicle[v.vehicle_id]?.[t]?.raw_xml)
       );
       if (missing.length) {
         throw new Error(
           `Missing meta files for: ${missing.map(v => v.vehicle_id).join(', ')}. ` +
-          'Open the meta modal and upload all 4 types for each vehicle.'
+          'Open the meta modal and upload vehicles, handling, and carvariations for each vehicle.'
         );
       }
 
@@ -457,11 +456,14 @@ ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('
       );
 
       setProgress('Merging carcols.meta (renaming kit IDs)…');
-      const carcolsRows = vehicles.map(v => ({
-        vehicleId: v.vehicle_id,
-        rawXml:    metaByVehicle[v.vehicle_id].carcols.raw_xml,
-        kitName:   metaByVehicle[v.vehicle_id].carcols.kit_name,
-      }));
+      // Only include vehicles that actually have a carcols entry (it's optional)
+      const carcolsRows = vehicles
+        .filter(v => metaByVehicle[v.vehicle_id].carcols?.raw_xml)
+        .map(v => ({
+          vehicleId: v.vehicle_id,
+          rawXml:    metaByVehicle[v.vehicle_id].carcols.raw_xml,
+          kitName:   metaByVehicle[v.vehicle_id].carcols.kit_name,
+        }));
       const { xml: carcolsXml, kitRenameMap } = mergeCarcolsMeta(carcolsRows);
 
       setProgress('Merging carvariations.meta…');
