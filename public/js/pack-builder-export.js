@@ -170,9 +170,11 @@
     });
 
     const verParts = (pack.version || '1.0').split('.');
+    // OpenIV requires a GUID in {XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX} format
+    const packGuid = `{${crypto.randomUUID().toUpperCase()}}`;
 
     return `<?xml version="1.0" encoding="UTF-8"?>
-<package version="2.0" id="com.gta-traffic.${pack.dlc_name}" target="Five">
+<package version="2.0" id="${packGuid}" target="Five">
   <metadata>
     <name>${escXml(pack.name)}</name>
     <version>
