@@ -248,17 +248,26 @@ ${vehicles.map(v => `    <Item>${v.vehicle_id}</Item>`).join('\n')}
   }
 
   // Plain-text install guide included in the .oiv
-  function buildInstallNotes(pack, vehicles, kitRenameMap) {
+  function buildInstallNotes(pack, vehicles, kitRenameMap, metaOnly) {
     const kitLog = Object.entries(kitRenameMap)
       .map(([vid, r]) => `  ${vid}: "${r.old}" → "${r.new}"`)
       .join('\n');
+
+    const modelsNote = metaOnly ? `
+⚠ META-ONLY PACKAGE
+This OIV contains meta files only. Model files (.yft/.ytd)
+were NOT included. After installing, manually copy each
+vehicle's model files into the dlc.rpf using OpenIV:
+  mods/update/x64/dlcpacks/${pack.dlc_name}/dlc.rpf
+  └─ x64/models/cdimages/vehicles.rpf/
+` : '';
 
     return `GTA Traffic Studio — Pack Builder
 Pack: ${pack.name}
 DLC: ${pack.dlc_name}
 Vehicles: ${vehicles.length}
 Generated: ${new Date().toISOString()}
-
+${modelsNote}
 ═══════════════════════════════════════
 INSTALL STEPS
 ═══════════════════════════════════════
@@ -303,10 +312,11 @@ ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('
   async function buildOiv(pack, vehicles, mergedMeta, modelFiles, kitRenameMap, onProgress) {
     const JSZip = await loadJSZip();
     const zip = new JSZip();
+    const metaOnly = Object.keys(modelFiles).length === 0;
 
     onProgress('Writing assembly.xml…');
     zip.file('assembly.xml', buildAssemblyXml(pack, vehicles, modelFiles));
-    zip.file('INSTALL_NOTES.txt', buildInstallNotes(pack, vehicles, kitRenameMap));
+    zip.file('INSTALL_NOTES.txt', buildInstallNotes(pack, vehicles, kitRenameMap, metaOnly));
 
     onProgress('Writing meta files…');
     const metaFolder = zip.folder('meta');
@@ -383,7 +393,10 @@ ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('
 
         <div class="pb-modal-footer">
           <span id="pbeFileCount" class="pb-upload-status">No model files added yet</span>
-          <button class="btn-orange" id="pbeExportBtn" type="button">Export .OIV</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="secondary" id="pbeMetaOnlyBtn" type="button" title="Export OIV with meta files only — add model files manually in OpenIV later">⬇ Meta Only</button>
+            <button class="btn-orange" id="pbeExportBtn" type="button">Export .OIV</button>
+          </div>
         </div>
 
       </div>
@@ -502,10 +515,11 @@ ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('
       );
 
       // 6. Trigger download
+      const metaOnly = Object.keys(modelFiles).length === 0;
       const url = URL.createObjectURL(blob);
       const a   = document.createElement('a');
       a.href     = url;
-      a.download = `${pack.dlc_name}.oiv`;
+      a.download = metaOnly ? `${pack.dlc_name}-meta-only.oiv` : `${pack.dlc_name}.oiv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -567,6 +581,11 @@ ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('
     // ── Export ──
     overlay.querySelector('#pbeExportBtn').addEventListener('click', () => {
       runExport(pack, vehicles, modelFiles, overlay);
+    });
+
+    // ── Meta-only export (no model files) ──
+    overlay.querySelector('#pbeMetaOnlyBtn').addEventListener('click', () => {
+      runExport(pack, vehicles, {}, overlay);
     });
   };
 
