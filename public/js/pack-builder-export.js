@@ -208,56 +208,94 @@ ${modelEntries.join('\n')}
   }
 
   // content.xml — tells the game engine what data files this DLC loads
+  // Uses dlc_{name}:/ path alias registered by setup2.xml <deviceName>
+  // %PLATFORM% resolves to "x64" on PC
   function buildContentXml(pack, vehicles) {
+    const dev = `dlc_${pack.dlc_name}`;
+    const ts  = new Date().toLocaleString('en-GB', { hour12: false })
+                  .replace(',', '');
     return `<?xml version="1.0" encoding="UTF-8"?>
 <CDataFileMgr__ContentsOfDataFileXml>
   <disabledFiles />
-  <includedXmlFiles>
+  <includedXmlFiles />
+  <includedDataFiles />
+  <dataFiles>
     <Item>
-      <filename>dlcpacks:/${pack.dlc_name}/dlc.rpf/data/vehicles.meta</filename>
+      <filename>${dev}:/data/vehicles.meta</filename>
       <fileType>VEHICLE_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
     </Item>
     <Item>
-      <filename>dlcpacks:/${pack.dlc_name}/dlc.rpf/data/handling.meta</filename>
+      <filename>${dev}:/data/handling.meta</filename>
       <fileType>HANDLING_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
     </Item>
     <Item>
-      <filename>dlcpacks:/${pack.dlc_name}/dlc.rpf/data/carcols.meta</filename>
+      <filename>${dev}:/data/carcols.meta</filename>
       <fileType>CARCOLS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
     </Item>
     <Item>
-      <filename>dlcpacks:/${pack.dlc_name}/dlc.rpf/data/carvariations.meta</filename>
+      <filename>${dev}:/data/carvariations.meta</filename>
       <fileType>VEHICLE_VARIATION_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
     </Item>
-  </includedXmlFiles>
-  <includedDataFiles>
     <Item>
-      <filename>dlcpacks:/${pack.dlc_name}/dlc.rpf/x64/vehicles.rpf</filename>
+      <filename>${dev}:/%PLATFORM%/vehicles.rpf</filename>
       <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
     </Item>
-  </includedDataFiles>
-  <dataFiles />
-  <exportedVehicleModels>
-${vehicles.map(v => `    <Item>${v.vehicle_id}</Item>`).join('\n')}
-  </exportedVehicleModels>
-  <flags>4</flags>
+  </dataFiles>
+  <contentChangeSets>
+    <Item>
+      <changeSetName>${pack.dlc_name}_AUTOGEN</changeSetName>
+      <filesToDisable />
+      <filesToEnable>
+        <Item>${dev}:/data/vehicles.meta</Item>
+        <Item>${dev}:/data/handling.meta</Item>
+        <Item>${dev}:/data/carcols.meta</Item>
+        <Item>${dev}:/data/carvariations.meta</Item>
+        <Item>${dev}:/%PLATFORM%/vehicles.rpf</Item>
+      </filesToEnable>
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+    </Item>
+  </contentChangeSets>
+  <patchFiles />
 </CDataFileMgr__ContentsOfDataFileXml>`;
   }
 
-  // setup2.xml — required DLC metadata file
+  // setup2.xml — registers the DLC device name (dlc_{name}:/) with the game
   function buildSetup2Xml(pack) {
+    const ts = new Date().toLocaleString('en-GB', { hour12: false }).replace(',', '');
     return `<?xml version="1.0" encoding="UTF-8"?>
 <SSetupData>
-  <executableHash />
-  <mapByName>false</mapByName>
-  <dlcVersion>1</dlcVersion>
-  <flags>0</flags>
+  <deviceName>dlc_${pack.dlc_name}</deviceName>
+  <datFile>content.xml</datFile>
+  <timeStamp>${ts}</timeStamp>
   <nameHash>${pack.dlc_name}</nameHash>
-  <contentChangeSets />
-  <contentChangeSetGroups />
-  <startupScript />
-  <rawFiles />
-  <contentchangesetgroupcount>0</contentchangesetgroupcount>
+  <contentChangeSetGroups>
+    <Item>
+      <NameHash>GROUP_STARTUP</NameHash>
+      <ContentChangeSets>
+        <Item>${pack.dlc_name}_AUTOGEN</Item>
+      </ContentChangeSets>
+    </Item>
+  </contentChangeSetGroups>
+  <type>EXTRACONTENT_COMPAT_PACK</type>
+  <order value="9" />
 </SSetupData>`;
   }
 
