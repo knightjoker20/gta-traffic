@@ -347,9 +347,8 @@ ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('
 
     onProgress('Adding model files…');
     const modelsFolder = contentDir.folder('models');
-    for (const [name, file] of Object.entries(modelFiles)) {
-      const buf = await file.arrayBuffer();
-      modelsFolder.file(name, buf);
+    for (const [name, buf] of Object.entries(modelFiles)) {
+      modelsFolder.file(name, buf); // already ArrayBuffer, read at drop time
     }
 
     onProgress('Compressing…');
@@ -554,7 +553,7 @@ ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('
   // ── Entry point ────────────────────────────────────────────────────────────
 
   window.pbExport = function (pack, vehicles, _metaCache) {
-    const modelFiles = {}; // { 'sultan.yft': File, ... }
+    const modelFiles = {}; // { 'sultan.yft': ArrayBuffer, ... } — read immediately on drop
 
     const overlay = createOverlay(pack, vehicles);
 
@@ -562,12 +561,13 @@ ${vehicles.map((v, i) => `${String(i + 1).padStart(3)}. ${v.vehicle_id}`).join('
     overlay.querySelector('#pbeClose').addEventListener('click', () => overlay.remove());
 
     // ── File handling ──
-    function handleFiles(fileList) {
+    // Read ArrayBuffers immediately — browser revokes File access after drag session ends
+    async function handleFiles(fileList) {
       for (const file of fileList) {
         const name = file.name.toLowerCase();
         if (!name.endsWith('.yft') && !name.endsWith('.ytd')) continue;
 
-        modelFiles[name] = file;
+        modelFiles[name] = await file.arrayBuffer();
 
         // Update pip
         const base = name.replace(/_hi\.yft$/, '').replace(/\.(yft|ytd)$/, '');
