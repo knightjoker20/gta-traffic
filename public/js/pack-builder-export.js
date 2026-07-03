@@ -180,9 +180,13 @@
     <version>
       <major>${escXml(verParts[0] || '1')}</major>
       <minor>${escXml(verParts[1] || '0')}</minor>
+      <tag />
+      <revision>0</revision>
     </version>
-    <author>${escXml(pack.author_name || 'GTA Traffic Studio')}</author>
-    <description>${escXml(pack.description || '')}</description>
+    <author>
+      <displayName>${escXml(pack.author_name || 'GTA Traffic Studio')}</displayName>
+    </author>
+    <description><![CDATA[${(pack.description || '').replace(/\]\]>/g, ']]]]><![CDATA[>')}]]></description>
   </metadata>
   <content>
     <archive path="dlcpacks:/${pack.dlc_name}/dlc.rpf" createIfNotExist="True" type="RPF7">
