@@ -55,7 +55,10 @@
       credentials: 'include',
     });
     if (!r.ok) throw new Error(`Meta fetch failed for "${vehicleId}" (${r.status})`);
-    return r.json();
+    const data = await r.json();
+    // API returns { ok, vehicle_id, meta: { vehicles, handling, ... }, complete }
+    // Unwrap the meta map so callers can do meta[type].raw_xml directly
+    return data.meta || {};
   }
 
   // ── Merge engine ───────────────────────────────────────────────────────────

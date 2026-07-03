@@ -7379,7 +7379,7 @@ async function handleBuilderMetaGet(request, env, vehicleId) {
   if (gate) return gate;
 
   const { results } = await env.DB.prepare(`
-    SELECT meta_type, parsed_json, kit_name, status, warnings, uploaded_at, updated_at
+    SELECT meta_type, raw_xml, parsed_json, kit_name, status, warnings, uploaded_at, updated_at
     FROM vehicle_meta_files
     WHERE vehicle_id = ? COLLATE NOCASE AND owner_user_id = ?
     ORDER BY meta_type
