@@ -161,11 +161,11 @@
     const modelEntries = vehicles.flatMap(v => {
       const lines = [];
       if (modelFiles[`${v.vehicle_id}.yft`])
-        lines.push(`      <add source="models/${v.vehicle_id}.yft">${v.vehicle_id}.yft</add>`);
+        lines.push(`        <add source="models/${v.vehicle_id}.yft">${v.vehicle_id}.yft</add>`);
       if (modelFiles[`${v.vehicle_id}_hi.yft`])
-        lines.push(`      <add source="models/${v.vehicle_id}_hi.yft">${v.vehicle_id}_hi.yft</add>`);
+        lines.push(`        <add source="models/${v.vehicle_id}_hi.yft">${v.vehicle_id}_hi.yft</add>`);
       if (modelFiles[`${v.vehicle_id}.ytd`])
-        lines.push(`      <add source="models/${v.vehicle_id}.ytd">${v.vehicle_id}.ytd</add>`);
+        lines.push(`        <add source="models/${v.vehicle_id}.ytd">${v.vehicle_id}.ytd</add>`);
       return lines;
     });
 
@@ -199,7 +199,9 @@
       <add source="meta/handling.meta">data/handling.meta</add>
       <add source="meta/carcols.meta">data/carcols.meta</add>
       <add source="meta/carvariations.meta">data/carvariations.meta</add>
+      <archive path="x64/vehicles.rpf" createIfNotExist="True" type="RPF7">
 ${modelEntries.join('\n')}
+      </archive>
     </archive>
   </content>
 </package>`;
@@ -228,7 +230,12 @@ ${modelEntries.join('\n')}
       <fileType>VEHICLE_VARIATION_FILE</fileType>
     </Item>
   </includedXmlFiles>
-  <includedDataFiles />
+  <includedDataFiles>
+    <Item>
+      <filename>dlcpacks:/${pack.dlc_name}/dlc.rpf/x64/vehicles.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+    </Item>
+  </includedDataFiles>
   <dataFiles />
   <exportedVehicleModels>
 ${vehicles.map(v => `    <Item>${v.vehicle_id}</Item>`).join('\n')}
@@ -266,7 +273,7 @@ This OIV contains meta files only. Model files (.yft/.ytd)
 were NOT included. After installing, manually copy each
 vehicle's model files into the dlc.rpf using OpenIV:
   mods/update/x64/dlcpacks/${pack.dlc_name}/dlc.rpf
-  └─ x64/models/cdimages/vehicles.rpf/
+  └─ x64/vehicles.rpf/
 ` : '';
 
     return `GTA Traffic Studio — Pack Builder
