@@ -63,6 +63,16 @@
 
   // ── Merge engine ───────────────────────────────────────────────────────────
 
+  // Ensures an <Item> element has the required type attribute.
+  // GTA V's RSC deserializer silently skips <Item> blocks that are missing it.
+  function ensureItemType(xml, typeName) {
+    const trimmed = xml.trim();
+    // Already has a type attribute → leave untouched
+    if (/^<Item\s[^>]*\btype=/.test(trimmed)) return trimmed;
+    // No type attribute → inject it right after <Item
+    return trimmed.replace(/^<Item(\s|>)/, `<Item type="${typeName}"$1`);
+  }
+
   // vehicles.meta
   // Wraps all per-vehicle <Item> blocks in a CVehicleModelInfo__InitDataList.
   function mergeVehiclesMeta(rawXmlList) {
@@ -70,7 +80,7 @@
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<CVehicleModelInfo__InitDataList>',
       '  <InitDatas>',
-      ...rawXmlList.map(x => indentBlock(x, 4)),
+      ...rawXmlList.map(x => indentBlock(ensureItemType(x, 'CVehicleModelInfo__InitData'), 4)),
       '  </InitDatas>',
       '</CVehicleModelInfo__InitDataList>',
     ].join('\n');
@@ -82,7 +92,7 @@
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<CHandlingDataMgr>',
       '  <HandlingData>',
-      ...rawXmlList.map(x => indentBlock(x, 4)),
+      ...rawXmlList.map(x => indentBlock(ensureItemType(x, 'CHandlingData'), 4)),
       '  </HandlingData>',
       '</CHandlingDataMgr>',
     ].join('\n');
