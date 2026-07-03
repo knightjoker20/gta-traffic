@@ -34,7 +34,7 @@ function savePageSize(value) {
     vehicles: [],
     handlingMap: new Map(),
 	sourceHistory: [],
-    category: "ALL",
+    categoryFilters: new Set(),
     compare: [],
     page: 1,
 	pageSize: getSavedPageSize(),
@@ -140,8 +140,19 @@ function savePageSize(value) {
       vehicle.custom?.installType
     );
 
-    if (customType) {
+    // Manual tag always wins
+    if (customType && customType !== "Unknown") {
       return customType;
+    }
+
+    // Auto-detect Rockstar vehicles from the bundled lookup table
+    if (
+      window.GTAVanillaModels &&
+      window.GTAVanillaModels.has(
+        String(vehicle.modelName || "").toLowerCase()
+      )
+    ) {
+      return "Vanilla";
     }
 
     if (
@@ -152,6 +163,12 @@ function savePageSize(value) {
     }
 
     return "Unknown";
+  }
+
+  // Vanilla vehicles are always logically installed — they ship with the game.
+  // Manual custom.installed flag still takes precedence for explicit overrides.
+  function isInstalled(vehicle) {
+    return vehicle.custom?.installed === true || inferInstallType(vehicle) === "Vanilla";
   }
 
   function displayTitle(vehicle) {
@@ -271,23 +288,19 @@ function savePageSize(value) {
     return memberships;
   }
 function getImportSourceDetails(file) {
+  // These form fields may not be present on all page variants — fall back gracefully.
   const sourceLabel =
-    el("vlImportSourceLabel").value.trim();
+    el("vlImportSourceLabel")?.value?.trim() ||
+    file.name.replace(/\.[^.]+$/, ""); // fall back to filename without extension
 
   const dlcFolder =
-    el("vlImportDlcFolder").value.trim();
+    el("vlImportDlcFolder")?.value?.trim() || "";
 
   const sourceDirectory =
-    el("vlImportSourcePath").value
+    (el("vlImportSourcePath")?.value || "")
       .trim()
       .replaceAll("\\", "/")
       .replace(/^\/+|\/+$/g, "");
-
-  if (!sourceLabel) {
-    throw new Error(
-      "Enter a Source Label before importing files."
-    );
-  }
 
   const sourcePath = sourceDirectory
     ? `${sourceDirectory}/${file.name}`
@@ -943,7 +956,7 @@ const importSource =
     return store.normalizeId(match[1].replace(/_hi$/i, ""));
   }
 
-  async function toggleInstalledFromAssetFiles(fileList) {
+  async function uninstallFromAssetFiles(fileList) {
     const files = [...(fileList || [])].filter(file => /\.(yft|ytd)$/i.test(file.name));
     const resultHost = el("vlInstallScanResult");
 
@@ -963,10 +976,8 @@ const importSource =
 
     const currentMap = new Map((await store.getVehicles()).map(vehicle => [vehicle.id, vehicle]));
     const updated = [];
-    const installed = [];
     const uninstalled = [];
     const unmatched = [];
-    const today = new Date().toISOString().slice(0, 10);
 
     fileNamesById.forEach((names, id) => {
       const vehicle = currentMap.get(id);
@@ -976,14 +987,13 @@ const importSource =
       }
 
       vehicle.custom = vehicle.custom || {};
-      const nextInstalled = vehicle.custom.installed !== true;
-      vehicle.custom.installed = nextInstalled;
-      vehicle.custom.installDate = nextInstalled ? (vehicle.custom.installDate || today) : "";
+      vehicle.custom.installed = false;
+      vehicle.custom.installDate = "";
       vehicle.custom.lastInstallScanFiles = names;
       vehicle.custom.lastInstallScanAt = new Date().toISOString();
       vehicle.updatedAt = new Date().toISOString();
       updated.push(vehicle);
-      (nextInstalled ? installed : uninstalled).push(vehicle.modelName);
+      uninstalled.push(vehicle.modelName);
     });
 
     if (updated.length) await store.putVehicles(updated);
@@ -992,7 +1002,6 @@ const importSource =
     const unmatchedPreview = unmatched.slice(0, 12).map(item => `<code>${escapeHTML(item.id)}</code>`).join(", ");
     resultHost.innerHTML = `
       <div class="vl-scan-summary">
-        <div><strong>${installed.length}</strong><span>Marked installed</span></div>
         <div><strong>${uninstalled.length}</strong><span>Marked uninstalled</span></div>
         <div><strong>${unmatched.length}</strong><span>Not found in library</span></div>
         <div><strong>${files.length}</strong><span>Files scanned</span></div>
@@ -1000,12 +1009,10 @@ const importSource =
       ${unmatched.length ? `<div class="vl-scan-warning"><strong>Unmatched models:</strong> ${unmatchedPreview}${unmatched.length > 12 ? ` and ${unmatched.length - 12} more` : ""}</div>` : ""}
     `;
 
-    const actionText = [
-      installed.length ? `${installed.length} installed` : "",
-      uninstalled.length ? `${uninstalled.length} uninstalled` : "",
-      unmatched.length ? `${unmatched.length} unmatched` : ""
-    ].filter(Boolean).join(", ");
-    setStatus(`Vehicle file scan complete: ${actionText || "no matching vehicles changed"}.`, unmatched.length ? "warn" : "good");
+    setStatus(
+      `Uninstall scan complete: ${uninstalled.length} marked uninstalled${unmatched.length ? `, ${unmatched.length} unmatched` : ""}.`,
+      unmatched.length ? "warn" : "good"
+    );
   }
 
   async function handleImport(input, importer) {
@@ -1079,15 +1086,19 @@ const importSource =
 
       if (cloudData.vehicles.length > 0) {
         vehicles = cloudData.vehicles;
-        handlingProfiles =
-          cloudData.handlingProfiles;
+
+        // Merge handling profiles: cloud wins on conflict, but local-only profiles
+        // (e.g. from the RPF scanner) are preserved rather than wiped by the cloud load.
+        const mergedHandling = new Map(
+          localHandlingProfiles.map(p => [p.id, p])
+        );
+        cloudData.handlingProfiles.forEach(p => mergedHandling.set(p.id, p));
+        handlingProfiles = [...mergedHandling.values()];
         source = "cloud";
 
         await Promise.all([
           store.putVehicles(vehicles),
-          store.putHandlingProfiles(
-            handlingProfiles
-          )
+          store.putHandlingProfiles(handlingProfiles)
         ]);
       }
     } catch (error) {
@@ -1159,7 +1170,7 @@ const importSource =
   function categoryCounts() {
     const counts = new Map([
       ["ALL", state.vehicles.length],
-      ["INSTALLED", state.vehicles.filter(vehicle => vehicle.custom?.installed === true).length]
+      ["INSTALLED", state.vehicles.filter(vehicle => isInstalled(vehicle)).length]
     ]);
     state.vehicles.forEach(vehicle => {
       const raw = vehicle.vehiclesMeta?.vehicleClass || "UNKNOWN";
@@ -1177,14 +1188,37 @@ const importSource =
       if (b[0] === "INSTALLED") return 1;
       return cleanClassName(a[0]).localeCompare(cleanClassName(b[0]));
     });
-    el("vlCategoryList").innerHTML = entries.map(([key, count]) => `
-      <button class="vl-category-button ${state.category === key ? "active" : ""}" type="button" data-category="${escapeHTML(key)}">
-        <span>${key === "ALL" ? "All Vehicles" : key === "INSTALLED" ? "Installed Vehicles" : cleanClassName(key)}</span><strong>${count.toLocaleString()}</strong>
-      </button>
-    `).join("");
-    el("vlCategoryList").querySelectorAll("[data-category]").forEach(button => {
-      button.addEventListener("click", () => {
-        state.category = button.dataset.category;
+
+    el("vlCategoryList").innerHTML = entries.map(([key, count]) => {
+      const label = key === "ALL" ? "All Vehicles" : key === "INSTALLED" ? "Installed Vehicles" : cleanClassName(key);
+      const isActive = key === "ALL"
+        ? state.categoryFilters.size === 0
+        : state.categoryFilters.has(key);
+
+      if (key === "ALL") {
+        return `<button class="vl-category-button ${isActive ? "active" : ""}" type="button" data-category="ALL">
+          <span>${label}</span><strong>${count.toLocaleString()}</strong>
+        </button>`;
+      }
+      return `<label class="vl-category-button ${isActive ? "active" : ""}">
+        <input type="checkbox" class="vl-category-check" data-category="${escapeHTML(key)}" ${isActive ? "checked" : ""}>
+        <span>${escapeHTML(label)}</span><strong>${count.toLocaleString()}</strong>
+      </label>`;
+    }).join("");
+
+    el("vlCategoryList").querySelector('[data-category="ALL"]')?.addEventListener("click", () => {
+      state.categoryFilters.clear();
+      state.page = 1;
+      renderAll();
+    });
+
+    el("vlCategoryList").querySelectorAll(".vl-category-check").forEach(checkbox => {
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
+          state.categoryFilters.add(checkbox.dataset.category);
+        } else {
+          state.categoryFilters.delete(checkbox.dataset.category);
+        }
         state.page = 1;
         renderAll();
       });
@@ -1264,14 +1298,15 @@ const importSource =
     const query = state.filters.search.toLowerCase().trim();
     const filtered = state.vehicles.filter(vehicle => {
       const handling = linkedHandling(vehicle);
-      if (state.category === "INSTALLED" && vehicle.custom?.installed !== true) return false;
-      if (state.category !== "ALL" && state.category !== "INSTALLED" && (vehicle.vehiclesMeta?.vehicleClass || "UNKNOWN") !== state.category) return false;
+      const hasClassFilters = [...state.categoryFilters].some(k => k !== "INSTALLED");
+      if (state.categoryFilters.has("INSTALLED") && !isInstalled(vehicle)) return false;
+      if (hasClassFilters && !state.categoryFilters.has(vehicle.vehiclesMeta?.vehicleClass || "UNKNOWN")) return false;
       if (state.filters.make && vehicle.vehiclesMeta?.vehicleMakeName !== state.filters.make) return false;
       if (state.filters.type && vehicle.vehiclesMeta?.vehicleType !== state.filters.type) return false;
       if (state.filters.ai && handling?.AIHandling !== state.filters.ai) return false;
       if (state.filters.install && inferInstallType(vehicle) !== state.filters.install) return false;
-      if (state.filters.installed === "installed" && vehicle.custom?.installed !== true) return false;
-      if (state.filters.installed === "not-installed" && vehicle.custom?.installed === true) return false;
+      if (state.filters.installed === "installed" && !isInstalled(vehicle)) return false;
+      if (state.filters.installed === "not-installed" && isInstalled(vehicle)) return false;
       if (state.filters.favoritesOnly && !vehicle.custom?.favorite) return false;
       if (state.filters.tag && !getVehicleTags(vehicle).some(tag => tag.toLowerCase() === state.filters.tag)) return false;
       if (query && !searchableText(vehicle, handling).includes(query)) return false;
@@ -1284,8 +1319,8 @@ const importSource =
       "make-asc": (a, b) => (a.vehiclesMeta?.vehicleMakeName || "").localeCompare(b.vehiclesMeta?.vehicleMakeName || "") || displayTitle(a).localeCompare(displayTitle(b)),
       "class-asc": (a, b) => (a.vehiclesMeta?.vehicleClass || "").localeCompare(b.vehiclesMeta?.vehicleClass || "") || displayTitle(a).localeCompare(displayTitle(b)),
       "ai-asc": (a, b) => (linkedHandling(a)?.AIHandling || "").localeCompare(linkedHandling(b)?.AIHandling || "") || displayTitle(a).localeCompare(displayTitle(b)),
-      "installed-first": (a, b) => Number(b.custom?.installed === true) - Number(a.custom?.installed === true) || displayTitle(a).localeCompare(displayTitle(b)),
-      "not-installed-first": (a, b) => Number(a.custom?.installed === true) - Number(b.custom?.installed === true) || displayTitle(a).localeCompare(displayTitle(b)),
+      "installed-first": (a, b) => Number(isInstalled(b)) - Number(isInstalled(a)) || displayTitle(a).localeCompare(displayTitle(b)),
+      "not-installed-first": (a, b) => Number(isInstalled(a)) - Number(isInstalled(b)) || displayTitle(a).localeCompare(displayTitle(b)),
       "updated-desc": (a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""))
     };
     filtered.sort(sorters[state.filters.sort] || sorters["name-asc"]);
@@ -1296,7 +1331,7 @@ const importSource =
     const withImages = state.vehicles.filter(v => v.custom?.imageDataUrl).length;
     const withHandling = state.vehicles.filter(v => linkedHandling(v)).length;
     const inGroups = state.vehicles.filter(v => (v.popgroups || []).length).length;
-    const installed = state.vehicles.filter(v => v.custom?.installed === true).length;
+    const installed = state.vehicles.filter(v => isInstalled(v)).length;
     el("vlStats").innerHTML = `
       <div><strong>${state.vehicles.length.toLocaleString()}</strong><span>Vehicles</span></div>
       <div><strong>${withImages.toLocaleString()}</strong><span>With Images</span></div>
@@ -1494,12 +1529,13 @@ function cardHtml(vehicle) {
           <h3 class="vl-card-title">${escapeHTML(title)}</h3>
         </div>
 
+        ${vehicle.vehiclesMeta?.vehicleMakeName ? `<p class="vl-card-make">${escapeHTML(vehicle.vehiclesMeta.vehicleMakeName)}</p>` : ""}
         <p class="vl-card-model">${escapeHTML(vehicle.modelName)}</p>
 
         <div class="vl-card-badges">
           <span class="vl-badge">${escapeHTML(classLabel)}</span>
           ${handling?.AIHandling ? `<span class="vl-badge ai">${escapeHTML(handling.AIHandling)}</span>` : ""}
-          ${vehicle.custom?.installed === true ? `<span class="vl-badge installed-status">INSTALLED</span>` : ""}
+          ${isInstalled(vehicle) ? `<span class="vl-badge installed-status">INSTALLED</span>` : ""}
           ${installType !== "Unknown" ? `<span class="vl-badge install">${escapeHTML(installType)}</span>` : ""}
         </div>
 
@@ -1679,7 +1715,7 @@ function cardHtml(vehicle) {
       compareStatRow("Brake force", vehicles, v => numericHandlingValue(linkedHandling(v), "fBrakeForce"), { bar: true, decimals: 1 }),
       compareStatRow("Traction (max)", vehicles, v => numericHandlingValue(linkedHandling(v), "fTractionCurveMax"), { bar: true, decimals: 2 }),
       compareTextRow("Popgroup membership", vehicles, v => [...new Set((v.popgroups || []).map(group => group.groupName))].join(", ")),
-      compareTextRow("Install status", vehicles, v => v.custom?.installed === true ? "Installed" : "Not installed"),
+      compareTextRow("Install status", vehicles, v => isInstalled(v) ? "Installed" : "Not installed"),
       compareTextRow("Install type", vehicles, v => inferInstallType(v)),
       compareTextRow("Tags", vehicles, v => v.custom?.tags)
     ];
@@ -1947,14 +1983,8 @@ grid.querySelectorAll(
 
     const installDropZone = el("vlInstallDropZone");
     const installPicker = el("vlInstallFilesPicker");
-    const installBrowseButton = el("vlInstallBrowse");
-    if (installDropZone && installPicker && installBrowseButton) {
-      installBrowseButton.addEventListener("click", event => {
-        event.stopPropagation();
-        installPicker.click();
-      });
-      installDropZone.addEventListener("click", event => {
-        if (event.target.closest("button")) return;
+    if (installDropZone && installPicker) {
+      installDropZone.addEventListener("click", () => {
         installPicker.click();
       });
       installDropZone.addEventListener("keydown", event => {
@@ -1971,11 +2001,11 @@ grid.querySelectorAll(
         event.preventDefault();
         installDropZone.classList.remove("drag-over");
       }));
-      installDropZone.addEventListener("drop", event => toggleInstalledFromAssetFiles(event.dataTransfer.files));
+      installDropZone.addEventListener("drop", event => uninstallFromAssetFiles(event.dataTransfer.files));
       installPicker.addEventListener("change", event => {
         const files = event.target.files;
         event.target.value = "";
-        toggleInstalledFromAssetFiles(files);
+        uninstallFromAssetFiles(files);
       });
     }
 

@@ -35,6 +35,11 @@ const SITE_TOOL_NAV_ITEMS = [
     href: "vehicle-library.html",
     page: "library"
   },
+  {
+    label: "Pack Builder ✦",
+    href: "pack-builder.html",
+    page: "pack-builder"
+  },
 ];
 
 function renderSiteToolMenu() {

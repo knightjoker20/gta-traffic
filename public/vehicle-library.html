@@ -40,6 +40,28 @@
         <div id="vlStatus" class="vl-status warn">Opening the local vehicle database...</div>
 
         <section class="panel">
+          <h2>Installed Vehicle Scanner</h2>
+          <p class="small vl-muted">Detect which library vehicles you have installed and mark them automatically.</p>
+
+          <div id="vlInstallDropZone" class="vl-install-drop-zone" tabindex="0" role="button">
+            <strong>Drop .yft / .ytd files to uninstall</strong>
+            <span>Drag vehicle files here to mark matching library vehicles as not installed.</span>
+          </div>
+          <input id="vlInstallFilesPicker" class="vl-hidden" type="file" accept=".yft,.ytd" multiple>
+
+          <div class="vl-install-rpf-scan">
+            <div class="vl-rpf-buttons">
+              <button id="vlRpfAddFolderButton" class="btn-orange" type="button">Add DLC Folder</button>
+              <button id="vlRpfFilesButton" class="btn-orange" type="button">Select .rpf Files</button>
+            </div>
+            <div id="vlRpfFolderQueue" class="vl-rpf-folder-queue vl-hidden"></div>
+            <p class="small vl-muted">Add one or more DLC folders to the queue, then scan them all at once. Or pick individual .rpf files directly. Chrome or Edge required.</p>
+          </div>
+
+          <div id="vlInstallScanResult" class="vl-install-scan-result"></div>
+        </section>
+
+        <section class="panel">
           <h2>Library Stats</h2>
           <div class="vl-stat-grid" id="vlStats">
             <div><strong>0</strong><span>Vehicles</span></div>
@@ -90,25 +112,6 @@
         <section class="panel">
           <h2>Tags</h2>
           <div id="vlTagCloud" class="tag-cloud"></div>
-        </section>
-
-        <section class="panel">
-          <h2>Installed Vehicle Scanner</h2>
-          <p class="small vl-muted">Detect which library vehicles you have installed and mark them automatically.</p>
-
-          <div id="vlInstallDropZone" class="vl-install-drop-zone" tabindex="0" role="button">
-            <strong>Drop .yft / .ytd files</strong>
-            <span>Or drag a folder of loose vehicle files here to toggle installed status by matching model name.</span>
-            <button id="vlInstallBrowse" class="secondary" type="button">Browse Files</button>
-          </div>
-          <input id="vlInstallFilesPicker" class="vl-hidden" type="file" accept=".yft,.ytd" multiple>
-
-          <div class="vl-install-rpf-scan">
-            <button id="vlRpfScanButton" class="btn-orange" type="button">Scan DLC Folder (.rpf)</button>
-            <p class="small vl-muted">Point this at your mods/DLC folder. It reads real dlc.rpf archives (including nested archives) and marks matching vehicles installed. Chrome or Edge required. Encrypted/official Rockstar archives are skipped — no game files are ever modified.</p>
-          </div>
-
-          <div id="vlInstallScanResult" class="vl-install-scan-result"></div>
         </section>
 
         <section class="panel">
@@ -246,6 +249,7 @@
 <script src="js/shared/siteshell.js"></script>
   <script src="js/vehiclelibrarystore.js"></script>
   <script src="js/vehiclecloud.js"></script>
+  <script src="js/vanillaVehicles.js"></script>
   <script src="js/vehiclelibrary.js"></script>
   <script src="js/rpfscanner/rpf7parser.js"></script>
   <script src="js/rpfscanner/rpfscannerapp.js"></script>

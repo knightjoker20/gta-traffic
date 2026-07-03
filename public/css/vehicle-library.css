@@ -257,6 +257,7 @@ body.vl-library-page {
   color: rgba(255,255,255,.72);
   text-align: left;
   font-size: .82rem;
+  cursor: pointer;
 }
 .vl-category-button:hover,
 .vl-category-button.active {
@@ -272,6 +273,14 @@ body.vl-library-page {
   font-size: .7rem;
   text-align: center;
 }
+.vl-category-check {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  accent-color: #f97316;
+  cursor: pointer;
+}
+.vl-category-button span { flex: 1; }
 
 /* Tag cloud — used in the vehicle-library sidebar and on vehicle-details.html */
 .tag-cloud {
@@ -789,6 +798,7 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
 .vd-save-state.bad { background: rgba(255,92,92,.12); color: #ff8b8b; }
 .vd-custom-form { display: grid; gap: 11px; }
 .vd-custom-form textarea { resize: vertical; min-height: 140px; font-family: inherit; }
+.vd-delete-button { margin-top: 4px; width: 100%; }
 
 @media (max-width: 900px) {
   .vl-layout { grid-template-columns: 1fr; }
@@ -934,7 +944,26 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
 .vl-install-drop-zone button { margin-top: 5px; }
 .vl-install-scan-result { display: grid; gap: 8px; margin-top: 10px; }
 .vl-install-rpf-scan { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.08); display: grid; gap: 6px; }
-.vl-install-rpf-scan .btn-orange { width: 100%; }
+.vl-rpf-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.vl-rpf-buttons .btn-orange { width: 100%; }
+.vl-rpf-folder-queue { margin-top: 2px; }
+.vl-rpf-folder-list { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 4px; }
+.vl-rpf-folder-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  padding: 6px 8px; border-radius: 7px;
+  background: rgba(245, 158, 11, .07); border: 1px solid rgba(245, 158, 11, .20);
+}
+.vl-rpf-folder-name { font-size: .8rem; color: var(--color-text-muted, #94a3b8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.vl-rpf-folder-remove {
+  flex-shrink: 0; width: 20px; height: 20px; padding: 0; border: none;
+  background: rgba(255,255,255,.08); color: var(--color-text-muted, #94a3b8);
+  border-radius: 50%; font-size: .7rem; cursor: pointer; line-height: 1;
+  transition: background .15s, color .15s;
+}
+.vl-rpf-folder-remove:hover { background: rgba(239, 68, 68, .25); color: #f87171; }
+.vl-rpf-queue-actions { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.vl-rpf-queue-actions .btn-orange { width: 100%; }
+.vl-rpf-clear { font-size: .8rem; padding: 5px 10px; }
 .vl-scan-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
 .vl-scan-summary div { padding: 9px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: rgba(255,255,255,.03); }
 .vl-scan-summary strong { display: block; color: #fff; font-size: 1rem; }

@@ -130,6 +130,12 @@ function renderSection(section) {
         }
 
         ${
+          section === "vehicles"
+            ? renderVanillaCountBadge(group.name, group.models.length)
+            : ""
+        }
+
+        ${
           isMultiplayerGroup
             ? `<button type="button" class="pg-group-hide-button" data-hide-group="${escapeHTML(group.name)}">${isHidden ? "Unhide" : "Hide"}</button>`
             : ""
@@ -233,11 +239,11 @@ function renderHiddenGroupsBar(section, data) {
   const bar = document.getElementById("hiddenGroupsBar");
   if (!bar) return;
 
-  const hiddenCount = data.filter(group =>
-    hiddenGroups[section].has(group.name)
-  ).length;
+  const mpGroups = data.filter(group => /_MP$/i.test(group.name.trim()));
+  const hiddenCount = data.filter(group => hiddenGroups[section].has(group.name)).length;
+  const visibleMpCount = mpGroups.filter(group => !hiddenGroups[section].has(group.name)).length;
 
-  if (!hiddenCount) {
+  if (!hiddenCount && !visibleMpCount) {
     bar.hidden = true;
     bar.innerHTML = "";
     return;
@@ -246,18 +252,29 @@ function renderHiddenGroupsBar(section, data) {
   bar.hidden = false;
 
   bar.innerHTML = `
-    <span>${hiddenCount} multiplayer group${hiddenCount === 1 ? "" : "s"} hidden</span>
-    <button type="button" id="pgToggleHiddenGroups" class="secondary">
-      ${showHiddenGroups[section] ? "Hide the hidden groups again" : "Show hidden groups"}
-    </button>
+    ${visibleMpCount > 0 ? `
+      <button type="button" id="pgHideAllMp" class="secondary">
+        Hide all ${visibleMpCount} Multiplayer group${visibleMpCount === 1 ? "" : "s"}
+      </button>
+    ` : ""}
+    ${hiddenCount > 0 ? `
+      <span>${hiddenCount} multiplayer group${hiddenCount === 1 ? "" : "s"} hidden</span>
+      <button type="button" id="pgToggleHiddenGroups" class="secondary">
+        ${showHiddenGroups[section] ? "Hide the hidden groups again" : "Show hidden groups"}
+      </button>
+    ` : ""}
   `;
 
-  document
-    .getElementById("pgToggleHiddenGroups")
-    .addEventListener("click", () => {
-      showHiddenGroups[section] = !showHiddenGroups[section];
-      renderSection(section);
-    });
+  document.getElementById("pgHideAllMp")?.addEventListener("click", () => {
+    mpGroups.forEach(group => hiddenGroups[section].add(group.name));
+    if (typeof schedulePopgroupsProjectSave === "function") schedulePopgroupsProjectSave();
+    renderSection(section);
+  });
+
+  document.getElementById("pgToggleHiddenGroups")?.addEventListener("click", () => {
+    showHiddenGroups[section] = !showHiddenGroups[section];
+    renderSection(section);
+  });
 }
 
 // [END MODULE: RENDERING]
@@ -1663,3 +1680,39 @@ function allModelsFirstIndex(
 }
 
 // [END MODULE: STATISTICS_RENDERING]
+
+// =====================================================
+// [MODULE: VANILLA COUNT BADGE]
+// Compares a vehicle group's current entry count against
+// the unmodified Rockstar baseline from vanillaPopgroupCounts.js.
+// Green  = exact match
+// Amber  = ±1–3 vehicles
+// Red    = more than 3 off (or unknown group)
+// =====================================================
+
+function renderVanillaCountBadge(groupName, currentCount) {
+  const counts = window.vanillaPopgroupCounts;
+  if (!counts) return "";
+
+  const vanillaCount = counts[groupName];
+  if (vanillaCount === undefined) {
+    // Non-vanilla group (add-on) — show neutral "Custom" badge
+    return '<span class="pg-vanilla-badge pg-vanilla-badge--custom" title="Not a vanilla group">Custom</span>';
+  }
+
+  const diff = currentCount - vanillaCount;
+  const absDiff = Math.abs(diff);
+
+  if (absDiff === 0) {
+    return `<span class="pg-vanilla-badge pg-vanilla-badge--ok" title="Matches vanilla (${vanillaCount})">✓ Vanilla</span>`;
+  }
+
+  const sign = diff > 0 ? "+" : "";
+  const label = `${sign}${diff} vs vanilla`;
+
+  if (absDiff <= 3) {
+    return `<span class="pg-vanilla-badge pg-vanilla-badge--warn" title="Vanilla baseline: ${vanillaCount} vehicles">${label}</span>`;
+  }
+
+  return `<span class="pg-vanilla-badge pg-vanilla-badge--danger" title="Vanilla baseline: ${vanillaCount} vehicles">${label}</span>`;
+}

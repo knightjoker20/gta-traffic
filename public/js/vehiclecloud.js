@@ -101,6 +101,12 @@
         ...(localVehicle.custom || {}),
         ...cloudVehicle.custom,
 
+        // If either local (RPF scanner) or cloud says installed, keep it installed.
+        // Local uninstall (drop zone) sets local to false; cloud false + local false = false.
+        installed:
+          cloudVehicle.custom?.installed === true ||
+          localVehicle.custom?.installed === true,
+
         imageDataUrl:
           localVehicle.custom?.imageDataUrl || "",
 
@@ -424,14 +430,6 @@ async function getVehiclePacks(modelName, options = {}) {
 }
 
 async function importPackDatabaseToCloud(packData, options = {}) {
-  const token = getLibraryWriteToken();
-
-  if (!token) {
-    throw new Error(
-      "The library write token was not entered."
-    );
-  }
-
   const payload = {
     workspaceId: options.workspaceId || "default",
     sourceType: options.sourceType || "pack-database",
@@ -440,20 +438,7 @@ async function importPackDatabaseToCloud(packData, options = {}) {
     vehiclePackMap: packData?.vehiclePackMap || {}
   };
 
-  const response = await fetch(
-    "/api/packs/import",
-    {
-      method: "POST",
-
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-Library-Token": token
-      },
-
-      body: JSON.stringify(payload)
-    }
-  );
+  const response = await fetchLibraryWrite("/api/packs/import", "POST", payload);
 
   let result;
 
@@ -516,80 +501,77 @@ const LIBRARY_WRITE_TOKEN_KEY =
   "gtaTrafficLibraryWriteToken";
 
 function getLibraryWriteToken() {
-  let token = sessionStorage.getItem(
-    LIBRARY_WRITE_TOKEN_KEY
-  );
-
+  let token = sessionStorage.getItem(LIBRARY_WRITE_TOKEN_KEY);
   if (!token) {
-    token = window.prompt(
-      "Enter the GTA Traffic library write token:"
-    );
-
-    token = String(token || "").trim();
-
-    if (token) {
-      sessionStorage.setItem(
-        LIBRARY_WRITE_TOKEN_KEY,
-        token
-      );
-    }
+    token = String(window.prompt("Enter the GTA Traffic library write token:") || "").trim();
+    if (token) sessionStorage.setItem(LIBRARY_WRITE_TOKEN_KEY, token);
   }
-
   return token;
 }
 
-async function updateVehicle(
-  modelName,
-  changes
-) {
-  const token = getLibraryWriteToken();
+// Shared fetch helper for write operations.
+// Always sends the session cookie (credentials: "same-origin" is the default).
+// If the server returns 401, falls back to prompting for the write token and retries once.
+async function fetchLibraryWrite(url, method, body) {
+  const baseHeaders = { Accept: "application/json" };
+  if (body !== undefined) baseHeaders["Content-Type"] = "application/json";
+  const bodyStr = body !== undefined ? JSON.stringify(body) : undefined;
 
-  if (!token) {
-    throw new Error(
-      "The library write token was not entered."
-    );
+  let response = await fetch(url, { method, headers: { ...baseHeaders }, body: bodyStr });
+
+  if (response.status === 401) {
+    const token = getLibraryWriteToken();
+    if (!token) throw new Error("The library write token was not entered.");
+    response = await fetch(url, {
+      method,
+      headers: { ...baseHeaders, "X-Library-Token": token },
+      body: bodyStr
+    });
+    if (response.status === 401) sessionStorage.removeItem(LIBRARY_WRITE_TOKEN_KEY);
   }
 
-  const response = await fetch(
+  return response;
+}
+
+async function updateVehicle(modelName, changes) {
+  const response = await fetchLibraryWrite(
     `/api/vehicles/${encodeURIComponent(modelName)}`,
-    {
-      method: "PATCH",
-
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-Library-Token": token
-      },
-
-      body: JSON.stringify(changes)
-    }
+    "PATCH",
+    changes
   );
 
   let result;
-
   try {
     result = await response.json();
   } catch {
-    result = {
-      ok: false,
-      error: "The update response was not valid JSON."
-    };
+    result = { ok: false, error: "The update response was not valid JSON." };
   }
 
   if (!response.ok || !result.ok) {
-    if (response.status === 401) {
-      sessionStorage.removeItem(
-        LIBRARY_WRITE_TOKEN_KEY
-      );
-    }
-
-    throw new Error(
-      result.error ||
-      `Vehicle update failed with status ${response.status}.`
-    );
+    throw new Error(result.error || `Vehicle update failed with status ${response.status}.`);
   }
 
   return result.vehicle;
+}
+
+async function deleteVehicle(modelName) {
+  const response = await fetchLibraryWrite(
+    `/api/vehicles/${encodeURIComponent(modelName)}`,
+    "DELETE"
+  );
+
+  let result;
+  try {
+    result = await response.json();
+  } catch {
+    result = { ok: false, error: "The delete response was not valid JSON." };
+  }
+
+  if (!response.ok || !result.ok) {
+    throw new Error(result.error || `Vehicle delete failed with status ${response.status}.`);
+  }
+
+  return result;
 }
 async function getVehicleAppearance(modelName, options = {}) {
   const normalizedModelName =
@@ -616,14 +598,6 @@ async function getVehicleAppearance(modelName, options = {}) {
 }
 
 async function importVehicleAppearanceMetadata(metadata, options = {}) {
-  const token = getLibraryWriteToken();
-
-  if (!token) {
-    throw new Error(
-      "The library write token was not entered."
-    );
-  }
-
   const payload = {
     workspaceId: options.workspaceId || "default",
     sourceLabel: options.sourceLabel || "Appearance Metadata",
@@ -632,88 +606,30 @@ async function importVehicleAppearanceMetadata(metadata, options = {}) {
     carcols: metadata?.carcols || null
   };
 
-  const response = await fetch(
-    "/api/vehicle-appearance/import",
-    {
-      method: "POST",
-
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-Library-Token": token
-      },
-
-      body: JSON.stringify(payload)
-    }
-  );
-
+  const response = await fetchLibraryWrite("/api/vehicle-appearance/import", "POST", payload);
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok || result.ok === false) {
-    throw new Error(
-      result.error ||
-      "Vehicle appearance metadata could not be imported."
-    );
+    throw new Error(result.error || "Vehicle appearance metadata could not be imported.");
   }
 
   return result;
 }
 
 async function importLibraryBatch(payload) {
-  const token = getLibraryWriteToken();
-
-  if (!token) {
-    throw new Error(
-      "The library write token was not entered."
-    );
-  }
-
-  const response = await fetch(
-    "/api/library/import-v2",
-    {
-      method: "POST",
-
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-Library-Token": token
-      },
-
-      body: JSON.stringify(payload)
-    }
-  );
+  const response = await fetchLibraryWrite("/api/library/import-v2", "POST", payload);
 
   let result;
-
   try {
     result = await response.json();
   } catch {
-    result = {
-      ok: false,
-      error:
-        "The cloud import response was not valid JSON."
-    };
+    result = { ok: false, error: "The cloud import response was not valid JSON." };
   }
 
   if (!response.ok || !result.ok) {
-    if (response.status === 401) {
-      sessionStorage.removeItem(
-        LIBRARY_WRITE_TOKEN_KEY
-      );
-    }
-
-    const details =
-      Array.isArray(result.details) &&
-      result.details.length
-        ? ` ${result.details.join(" ")}`
-        : "";
-
-    throw new Error(
-      (
-        result.error ||
-        `Cloud import failed with status ${response.status}.`
-      ) + details
-    );
+    const details = Array.isArray(result.details) && result.details.length
+      ? ` ${result.details.join(" ")}` : "";
+    throw new Error((result.error || `Cloud import failed with status ${response.status}.`) + details);
   }
 
   return result;
@@ -994,6 +910,7 @@ window.vehicleCloud = {
   getHandlingFieldEdits,
   saveHandlingFieldEdit,
   restoreHandlingField,
-  restoreAllHandlingFieldEdits
+  restoreAllHandlingFieldEdits,
+  deleteVehicle
 };
 })();

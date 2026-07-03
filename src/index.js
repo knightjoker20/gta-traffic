@@ -429,6 +429,17 @@ async function handleHealthCheck(env) {
   });
 }
 
+async function handleVanillaVehicleList(request, env) {
+  const result = await env.DB.prepare(
+    `SELECT model_name, hash FROM vanilla_vehicles ORDER BY model_name COLLATE NOCASE`
+  ).all();
+  const vehicles = (result.results || []).map(row => ({
+    modelName: row.model_name,
+    hash: row.hash
+  }));
+  return jsonResponse({ ok: true, vehicles });
+}
+
 async function handleVehicleList(request, env) {
   const url = new URL(request.url);
 
@@ -1220,7 +1231,7 @@ async function handleSourceHistoryList(
 }
 async function handleLibraryV2Import(request, env) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -2075,7 +2086,7 @@ async function handleVehicleAppearanceGet(request, env) {
 
 async function handleVehicleAppearanceImport(request, env) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -2324,7 +2335,7 @@ async function handleVehicleAppearanceImport(request, env) {
 
 async function handlePackImport(request, env) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -3295,32 +3306,29 @@ async function handleVehicleImageBulkImport(request, env) {
   });
 }
 
-function checkLibraryWriteAuthorization(request, env) {
+async function checkLibraryWriteAuthorization(request, env) {
+  // Accept explicit library write token (for scripts / admin tools)
+  const suppliedToken = request.headers.get("x-library-token") || "";
+  if (env.LIBRARY_WRITE_TOKEN && suppliedToken === env.LIBRARY_WRITE_TOKEN) {
+    return null;
+  }
+
+  // Accept a valid login session as an alternative (no token required when logged in)
+  const session = await getCurrentAuthSession(request, env);
+  if (session) {
+    return null;
+  }
+
   if (!env.LIBRARY_WRITE_TOKEN) {
     return jsonResponse(
-      {
-        ok: false,
-        error:
-          "LIBRARY_WRITE_TOKEN has not been configured for this Worker"
-      },
+      { ok: false, error: "LIBRARY_WRITE_TOKEN has not been configured for this Worker" },
       503
     );
   }
-
-  const suppliedToken =
-    request.headers.get("x-library-token") || "";
-
-  if (suppliedToken !== env.LIBRARY_WRITE_TOKEN) {
-    return jsonResponse(
-      {
-        ok: false,
-        error: "Unauthorized library update"
-      },
-      401
-    );
-  }
-
-  return null;
+  return jsonResponse(
+    { ok: false, error: "Unauthorized library update" },
+    401
+  );
 }
 
 function tagsForDatabase(value) {
@@ -3346,7 +3354,7 @@ async function handleVehiclePatch(
   requestedModelName
 ) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -3585,6 +3593,25 @@ const EDITABLE_VEHICLE_FIELDS = {
 function normalizeEditValue(value) {
   if (value === null || value === undefined) return "";
   return String(value).trim();
+}
+
+async function handleVehicleDelete(request, env, requestedModelName) {
+  const authError = await checkLibraryWriteAuthorization(request, env);
+  if (authError) return authError;
+
+  const modelName = String(requestedModelName || "").trim();
+  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(modelName)) {
+    return jsonResponse({ ok: false, error: "The vehicle model name is invalid" }, 400);
+  }
+
+  // Remove the vehicle and all related rows
+  await env.DB.batch([
+    env.DB.prepare(`DELETE FROM vehicles WHERE model_name = ? COLLATE NOCASE`).bind(modelName),
+    env.DB.prepare(`DELETE FROM vehicle_popgroups WHERE vehicle_id = ? COLLATE NOCASE`).bind(modelName),
+    env.DB.prepare(`DELETE FROM vehicle_field_edits WHERE model_name = ? COLLATE NOCASE`).bind(modelName),
+  ]);
+
+  return jsonResponse({ ok: true, deleted: modelName });
 }
 
 async function handleVehicleFieldEditsGet(request, env, modelName) {
@@ -3922,7 +3949,7 @@ async function countAdminTableRows(env, tableName) {
 
 async function handleAdminSummary(request, env) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -4036,7 +4063,7 @@ async function writeAdminAuditLog(env, entry = {}) {
 
 async function handleAdminUserList(request, env) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -4085,7 +4112,7 @@ async function handleAdminUserList(request, env) {
 
 async function handleAdminUserCreate(request, env) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -4203,7 +4230,7 @@ async function handleAdminUserCreate(request, env) {
 
 async function handleAdminUserUpdate(request, env, userId) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -4400,7 +4427,7 @@ async function runAdminSelectAll(env, sql, bindings = []) {
 
 async function handleAdminWorkspaceList(request, env) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -4435,7 +4462,7 @@ async function handleAdminWorkspaceList(request, env) {
 
 async function handleAdminWorkspaceMemberList(request, env) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -4538,7 +4565,7 @@ async function getAdminWorkspaceMember(env, workspaceId, userId) {
 
 async function handleAdminWorkspaceMemberUpsert(request, env) {
   const authorizationError =
-    checkLibraryWriteAuthorization(request, env);
+    await checkLibraryWriteAuthorization(request, env);
 
   if (authorizationError) {
     return authorizationError;
@@ -5272,7 +5299,7 @@ function sanitizeMetaPackName(value) {
 }
 
 async function handleMetaFilePut(request, env, fileType, rawPackName) {
-  const authErr = checkLibraryWriteAuthorization(request, env);
+  const authErr = await checkLibraryWriteAuthorization(request, env);
   if (authErr) return authErr;
 
   if (!VALID_META_FILE_TYPES.has(fileType)) {
@@ -5392,7 +5419,7 @@ async function handleMetaFileGet(request, env, fileType, packOrModel) {
 }
 
 async function handleMetaFileDelete(request, env, fileType, packName) {
-  const authErr = checkLibraryWriteAuthorization(request, env);
+  const authErr = await checkLibraryWriteAuthorization(request, env);
   if (authErr) return authErr;
 
   if (!VALID_META_FILE_TYPES.has(fileType)) {
@@ -5517,6 +5544,14 @@ export default {
       ) {
         return await handleVehicleList(request, env);
       }
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/vanilla-vehicles"
+      ) {
+        return await handleVanillaVehicleList(request, env);
+      }
+
 if (
   request.method === "GET" &&
   url.pathname === "/api/handling-profiles"
@@ -5643,6 +5678,40 @@ if (
   return await handlePackImport(request, env);
 }
 
+// ── Pack Builder (premium) ─────────────────────────────
+if (request.method === "GET" && url.pathname === "/api/builder/packs") {
+  return await handleBuilderPackList(request, env);
+}
+if (request.method === "POST" && url.pathname === "/api/builder/packs") {
+  return await handleBuilderPackCreate(request, env);
+}
+const builderPackRoute = url.pathname.match(/^\/api\/builder\/packs\/([a-zA-Z0-9_:-]{1,120})$/);
+if (builderPackRoute) {
+  if (request.method === "GET")    return await handleBuilderPackGet(request, env, builderPackRoute[1]);
+  if (request.method === "PUT")    return await handleBuilderPackUpdate(request, env, builderPackRoute[1]);
+  if (request.method === "DELETE") return await handleBuilderPackDelete(request, env, builderPackRoute[1]);
+}
+const builderVehicleRoute = url.pathname.match(/^\/api\/builder\/packs\/([a-zA-Z0-9_:-]{1,120})\/vehicles$/);
+if (builderVehicleRoute) {
+  if (request.method === "GET")  return await handleBuilderPackVehicleList(request, env, builderVehicleRoute[1]);
+  if (request.method === "POST") return await handleBuilderPackVehicleAdd(request, env, builderVehicleRoute[1]);
+}
+const builderVehicleItemRoute = url.pathname.match(
+  /^\/api\/builder\/packs\/([a-zA-Z0-9_:-]{1,120})\/vehicles\/([a-zA-Z0-9_-]{1,100})$/
+);
+if (builderVehicleItemRoute) {
+  if (request.method === "PATCH")  return await handleBuilderPackVehiclePatch(request, env, builderVehicleItemRoute[1], builderVehicleItemRoute[2]);
+  if (request.method === "DELETE") return await handleBuilderPackVehicleRemove(request, env, builderVehicleItemRoute[1], builderVehicleItemRoute[2]);
+}
+if (request.method === "POST" && url.pathname === "/api/builder/vehicle-meta") {
+  return await handleBuilderMetaUpload(request, env);
+}
+const builderVehicleMetaRoute = url.pathname.match(/^\/api\/builder\/vehicle-meta\/([a-zA-Z0-9_-]{1,100})$/);
+if (builderVehicleMetaRoute && request.method === "GET") {
+  return await handleBuilderMetaGet(request, env, builderVehicleMetaRoute[1]);
+}
+// ── End Pack Builder ───────────────────────────────────
+
 const vehiclePatchRoute =
   url.pathname.match(
     /^\/api\/vehicles\/([a-zA-Z0-9_-]{1,100})$/
@@ -5653,6 +5722,17 @@ if (
   request.method === "PATCH"
 ) {
   return await handleVehiclePatch(
+    request,
+    env,
+    vehiclePatchRoute[1]
+  );
+}
+
+if (
+  vehiclePatchRoute &&
+  request.method === "DELETE"
+) {
+  return await handleVehicleDelete(
     request,
     env,
     vehiclePatchRoute[1]
@@ -6972,103 +7052,418 @@ async function handleModDbPopgroupList(request, env) {
   return jsonResponse({ ok: true, groups: results });
 }
 
-async function handleModDbPopgroup(request, env, groupName) {
-  const url = new URL(request.url);
-  const packId    = url.searchParams.get('pack') || 'default';
-  const groupType = url.searchParams.get('type') || 'veh';
-  const { results } = await env.DB.prepare(
-    'SELECT * FROM popgroup_members WHERE pack_id = ? AND group_type = ? AND group_name = ? ORDER BY sort_order'
-  ).bind(packId, groupType, groupName).all();
-  return jsonResponse({ ok: true, groupName, groupType, members: results });
+// =====================================================
+// PACK BUILDER HANDLERS (premium)
+// /api/builder/packs  — pack projects
+// /api/builder/vehicle-meta — per-vehicle meta files
+// =====================================================
+
+function requirePremium(auth) {
+  if (!auth) return jsonResponse({ ok: false, error: "Authentication required" }, 401);
+  const ok = ["premium", "admin"].includes(auth.user.plan) ||
+             ["admin", "owner", "moderator"].includes(auth.user.role);
+  if (!ok) return jsonResponse({ ok: false, error: "Premium subscription required" }, 403);
+  return null;
 }
 
-async function handleModDbPopgroupByModel(request, env, modelName) {
-  const url = new URL(request.url);
-  const packId = url.searchParams.get('pack') || 'default';
-  const { results } = await env.DB.prepare(
-    'SELECT DISTINCT group_type, group_name, flags FROM popgroup_members WHERE pack_id = ? AND model_name = ?'
-  ).bind(packId, modelName).all();
-  return jsonResponse({ ok: true, modelName, groups: results });
+function createPackId() {
+  return "pack:" + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + ":" + Math.random().toString(36).slice(2));
 }
 
-async function handleModDbPopcycleZones(request, env) {
-  const url = new URL(request.url);
-  const packId = url.searchParams.get('pack') || 'default';
-  const { results } = await env.DB.prepare(
-    'SELECT DISTINCT zone FROM popcycle_slots WHERE pack_id = ? ORDER BY zone'
-  ).bind(packId).all();
-  return jsonResponse({ ok: true, zones: results.map(r => r.zone) });
+function slugifyDlcName(name) {
+  return name.toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").slice(0, 40);
 }
 
-async function handleModDbPopcycle(request, env) {
-  const url = new URL(request.url);
-  const packId  = url.searchParams.get('pack') || 'default';
-  const zone    = url.searchParams.get('zone');
-  const dayType = url.searchParams.get('day');
-  if (!zone) return jsonResponse({ ok: false, error: 'Missing ?zone=' }, 400);
-  let sql = 'SELECT * FROM popcycle_slots WHERE pack_id = ? AND zone = ?';
-  const params = [packId, zone];
-  if (dayType) { sql += ' AND day_type = ?'; params.push(dayType); }
-  sql += ' ORDER BY day_type, hour_slot';
-  const { results } = await env.DB.prepare(sql).bind(...params).all();
-  return jsonResponse({ ok: true, zone, slots: results.map(r => ({
-    ...r,
-    ped_groups: safeParseJson(r.ped_groups),
-    veh_groups: safeParseJson(r.veh_groups),
-  })) });
+function validateDlcName(dlcName) {
+  return /^[a-z0-9_]{1,40}$/.test(dlcName);
 }
 
-function safeParseJson(v) {
-  try { return JSON.parse(v || '[]'); } catch { return []; }
+// GET /api/builder/packs
+async function handleBuilderPackList(request, env) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  const { results } = await env.DB.prepare(`
+    SELECT p.id, p.name, p.dlc_name, p.description, p.version, p.author_name,
+           p.status, p.created_at, p.updated_at,
+           COUNT(pv.id) AS vehicle_count
+    FROM packs p
+    LEFT JOIN pack_vehicles pv ON pv.pack_id = p.id
+    WHERE p.owner_user_id = ?
+    GROUP BY p.id
+    ORDER BY p.updated_at DESC
+  `).bind(auth.user.id).all();
+
+  return jsonResponse({ ok: true, packs: results });
 }
 
-/**
- * Resolve: zone + hour slot → vehGroups → vehicle entries
- * Returns assembled traffic picture for that zone/time.
- */
-async function handleModDbPopcycleResolve(request, env) {
-  const url     = new URL(request.url);
-  const packId  = url.searchParams.get('pack')  || 'default';
-  const zone    = url.searchParams.get('zone');
-  const dayType = url.searchParams.get('day')   || 'weekday';
-  const hourSlot = parseInt(url.searchParams.get('hour') || '6', 10);
-  if (!zone) return jsonResponse({ ok: false, error: 'Missing ?zone=' }, 400);
+// POST /api/builder/packs
+async function handleBuilderPackCreate(request, env) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
 
-  const slot = await env.DB.prepare(
-    'SELECT * FROM popcycle_slots WHERE pack_id = ? AND zone = ? AND day_type = ? AND hour_slot = ?'
-  ).bind(packId, zone, dayType, hourSlot).first();
+  let body;
+  try { body = await request.json(); } catch { return jsonResponse({ ok: false, error: "Invalid JSON" }, 400); }
 
-  if (!slot) return jsonResponse({ ok: false, error: 'Slot not found' }, 404);
+  const name = String(body.name || "").trim();
+  if (!name) return jsonResponse({ ok: false, error: "Pack name is required" }, 400);
 
-  const vehGroupList = safeParseJson(slot.veh_groups);
-  const resolvedGroups = [];
+  const dlcName = body.dlc_name ? String(body.dlc_name).trim() : slugifyDlcName(name);
+  if (!validateDlcName(dlcName)) {
+    return jsonResponse({ ok: false, error: "DLC name must be lowercase letters, numbers, and underscores only (max 40 chars)" }, 400);
+  }
 
-  for (const { group, weight } of vehGroupList) {
-    const { results: members } = await env.DB.prepare(
-      'SELECT model_name, sort_order FROM popgroup_members WHERE pack_id = ? AND group_type = ? AND group_name = ? ORDER BY sort_order'
-    ).bind(packId, 'veh', group).all();
+  // Check uniqueness for this user
+  const existing = await env.DB.prepare(
+    "SELECT id FROM packs WHERE owner_user_id = ? AND dlc_name = ?"
+  ).bind(auth.user.id, dlcName).first();
+  if (existing) return jsonResponse({ ok: false, error: `You already have a pack with DLC name "${dlcName}"` }, 409);
 
-    const vehicleRows = [];
-    for (const { model_name } of members) {
-      const veh = await env.DB.prepare(
-        'SELECT model_name, handling_id, vehicle_class, vehicle_type, frequency, make_name FROM vehicle_meta_entries WHERE pack_id = ? AND model_name = ?'
-      ).bind(packId, model_name).first();
-      vehicleRows.push(veh || { model_name, _missing: true });
+  const id = createPackId();
+  await env.DB.prepare(`
+    INSERT INTO packs (id, owner_user_id, name, dlc_name, description, version, author_name)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    id, auth.user.id, name, dlcName,
+    String(body.description || "").trim() || null,
+    String(body.version || "1.0").trim(),
+    String(body.author_name || "").trim() || null
+  ).run();
+
+  const pack = await env.DB.prepare("SELECT * FROM packs WHERE id = ?").bind(id).first();
+  return jsonResponse({ ok: true, pack }, 201);
+}
+
+// GET /api/builder/packs/:id
+async function handleBuilderPackGet(request, env, packId) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  const pack = await env.DB.prepare(
+    "SELECT * FROM packs WHERE id = ? AND owner_user_id = ?"
+  ).bind(packId, auth.user.id).first();
+  if (!pack) return jsonResponse({ ok: false, error: "Pack not found" }, 404);
+
+  // Vehicles with meta status summary
+  const { results: vehicles } = await env.DB.prepare(`
+    SELECT
+      pv.id, pv.vehicle_id, pv.sort_order,
+      pv.has_yft, pv.has_yft_hi, pv.has_ytd, pv.added_at,
+      v.make_name, v.display_name, v.vehicle_class AS category,
+      (SELECT COUNT(*) FROM vehicle_meta_files vmf
+       WHERE vmf.vehicle_id = pv.vehicle_id AND vmf.owner_user_id = ? AND vmf.status != 'error') AS meta_count,
+      (SELECT GROUP_CONCAT(vmf2.meta_type)
+       FROM vehicle_meta_files vmf2
+       WHERE vmf2.vehicle_id = pv.vehicle_id AND vmf2.owner_user_id = ? AND vmf2.status != 'error') AS meta_types
+    FROM pack_vehicles pv
+    LEFT JOIN vehicles v ON v.model_name = pv.vehicle_id COLLATE NOCASE
+    WHERE pv.pack_id = ?
+    ORDER BY pv.sort_order, pv.added_at
+  `).bind(auth.user.id, auth.user.id, packId).all();
+
+  return jsonResponse({ ok: true, pack, vehicles });
+}
+
+// PUT /api/builder/packs/:id
+async function handleBuilderPackUpdate(request, env, packId) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  const pack = await env.DB.prepare(
+    "SELECT * FROM packs WHERE id = ? AND owner_user_id = ?"
+  ).bind(packId, auth.user.id).first();
+  if (!pack) return jsonResponse({ ok: false, error: "Pack not found" }, 404);
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResponse({ ok: false, error: "Invalid JSON" }, 400); }
+
+  const name        = body.name        !== undefined ? String(body.name).trim()        : pack.name;
+  const description = body.description !== undefined ? String(body.description).trim() || null : pack.description;
+  const version     = body.version     !== undefined ? String(body.version).trim()     : pack.version;
+  const author_name = body.author_name !== undefined ? String(body.author_name).trim() || null : pack.author_name;
+  const status      = body.status      !== undefined ? String(body.status).trim()      : pack.status;
+
+  if (!name) return jsonResponse({ ok: false, error: "Pack name cannot be empty" }, 400);
+  if (!["draft", "ready", "exported"].includes(status)) {
+    return jsonResponse({ ok: false, error: "Invalid status" }, 400);
+  }
+
+  // dlc_name is immutable after creation to avoid breaking installed packs
+  await env.DB.prepare(`
+    UPDATE packs SET name=?, description=?, version=?, author_name=?, status=?, updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
+  `).bind(name, description, version, author_name, status, packId).run();
+
+  const updated = await env.DB.prepare("SELECT * FROM packs WHERE id = ?").bind(packId).first();
+  return jsonResponse({ ok: true, pack: updated });
+}
+
+// DELETE /api/builder/packs/:id
+async function handleBuilderPackDelete(request, env, packId) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  const pack = await env.DB.prepare(
+    "SELECT id FROM packs WHERE id = ? AND owner_user_id = ?"
+  ).bind(packId, auth.user.id).first();
+  if (!pack) return jsonResponse({ ok: false, error: "Pack not found" }, 404);
+
+  // Cascade deletes pack_vehicles via FK
+  await env.DB.prepare("DELETE FROM packs WHERE id = ?").bind(packId).run();
+  return jsonResponse({ ok: true });
+}
+
+// GET /api/builder/packs/:id/vehicles
+async function handleBuilderPackVehicleList(request, env, packId) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  const pack = await env.DB.prepare(
+    "SELECT id FROM packs WHERE id = ? AND owner_user_id = ?"
+  ).bind(packId, auth.user.id).first();
+  if (!pack) return jsonResponse({ ok: false, error: "Pack not found" }, 404);
+
+  const { results } = await env.DB.prepare(`
+    SELECT pv.*, v.make_name, v.display_name, v.category
+    FROM pack_vehicles pv
+    LEFT JOIN vehicles v ON v.model_name = pv.vehicle_id COLLATE NOCASE
+    WHERE pv.pack_id = ?
+    ORDER BY pv.sort_order, pv.added_at
+  `).bind(packId).all();
+
+  return jsonResponse({ ok: true, vehicles: results });
+}
+
+// POST /api/builder/packs/:id/vehicles
+async function handleBuilderPackVehicleAdd(request, env, packId) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  const pack = await env.DB.prepare(
+    "SELECT id FROM packs WHERE id = ? AND owner_user_id = ?"
+  ).bind(packId, auth.user.id).first();
+  if (!pack) return jsonResponse({ ok: false, error: "Pack not found" }, 404);
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResponse({ ok: false, error: "Invalid JSON" }, 400); }
+
+  const vehicleId = String(body.vehicle_id || "").toLowerCase().trim();
+  if (!vehicleId) return jsonResponse({ ok: false, error: "vehicle_id is required" }, 400);
+
+  // Get current max sort_order
+  const maxRow = await env.DB.prepare(
+    "SELECT MAX(sort_order) AS max_order FROM pack_vehicles WHERE pack_id = ?"
+  ).bind(packId).first();
+  const sortOrder = (maxRow?.max_order ?? -1) + 1;
+
+  try {
+    await env.DB.prepare(
+      "INSERT INTO pack_vehicles (pack_id, vehicle_id, sort_order) VALUES (?, ?, ?)"
+    ).bind(packId, vehicleId, sortOrder).run();
+  } catch (e) {
+    if (String(e).includes("UNIQUE")) {
+      return jsonResponse({ ok: false, error: `${vehicleId} is already in this pack` }, 409);
     }
-    resolvedGroups.push({ group, weight, vehicles: vehicleRows });
+    throw e;
+  }
+
+  // Bump pack updated_at
+  await env.DB.prepare("UPDATE packs SET updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(packId).run();
+
+  return jsonResponse({ ok: true, vehicle_id: vehicleId, sort_order: sortOrder }, 201);
+}
+
+// PATCH /api/builder/packs/:id/vehicles/:vehicleId
+async function handleBuilderPackVehiclePatch(request, env, packId, vehicleId) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  const pack = await env.DB.prepare(
+    "SELECT id FROM packs WHERE id = ? AND owner_user_id = ?"
+  ).bind(packId, auth.user.id).first();
+  if (!pack) return jsonResponse({ ok: false, error: "Pack not found" }, 404);
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResponse({ ok: false, error: "Invalid JSON" }, 400); }
+
+  const fields = [];
+  const vals   = [];
+
+  if (body.has_yft    !== undefined) { fields.push("has_yft = ?");    vals.push(body.has_yft    ? 1 : 0); }
+  if (body.has_yft_hi !== undefined) { fields.push("has_yft_hi = ?"); vals.push(body.has_yft_hi ? 1 : 0); }
+  if (body.has_ytd    !== undefined) { fields.push("has_ytd = ?");    vals.push(body.has_ytd    ? 1 : 0); }
+  if (body.sort_order !== undefined) { fields.push("sort_order = ?"); vals.push(Number(body.sort_order)); }
+
+  if (!fields.length) return jsonResponse({ ok: false, error: "No fields to update" }, 400);
+
+  vals.push(packId, vehicleId.toLowerCase());
+  await env.DB.prepare(
+    `UPDATE pack_vehicles SET ${fields.join(", ")} WHERE pack_id = ? AND vehicle_id = ? COLLATE NOCASE`
+  ).bind(...vals).run();
+
+  return jsonResponse({ ok: true });
+}
+
+// DELETE /api/builder/packs/:id/vehicles/:vehicleId
+async function handleBuilderPackVehicleRemove(request, env, packId, vehicleId) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  const pack = await env.DB.prepare(
+    "SELECT id FROM packs WHERE id = ? AND owner_user_id = ?"
+  ).bind(packId, auth.user.id).first();
+  if (!pack) return jsonResponse({ ok: false, error: "Pack not found" }, 404);
+
+  await env.DB.prepare(
+    "DELETE FROM pack_vehicles WHERE pack_id = ? AND vehicle_id = ? COLLATE NOCASE"
+  ).bind(packId, vehicleId).run();
+  await env.DB.prepare("UPDATE packs SET updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(packId).run();
+
+  return jsonResponse({ ok: true });
+}
+
+// POST /api/builder/vehicle-meta
+// Body: { vehicle_id, meta_type, raw_xml }
+async function handleBuilderMetaUpload(request, env) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResponse({ ok: false, error: "Invalid JSON" }, 400); }
+
+  const vehicleId = String(body.vehicle_id || "").toLowerCase().trim();
+  const metaType  = String(body.meta_type  || "").toLowerCase().trim();
+  const rawXml    = String(body.raw_xml    || "").trim();
+
+  if (!vehicleId) return jsonResponse({ ok: false, error: "vehicle_id required" }, 400);
+  if (!["vehicles", "handling", "carcols", "carvariations"].includes(metaType)) {
+    return jsonResponse({ ok: false, error: "meta_type must be vehicles, handling, carcols, or carvariations" }, 400);
+  }
+  if (!rawXml) return jsonResponse({ ok: false, error: "raw_xml required" }, 400);
+
+  // Validate and parse the XML on the server to catch obvious errors early
+  const { parsed, kitName, warnings, status } = parseAndValidateMetaXml(rawXml, metaType, vehicleId);
+
+  await env.DB.prepare(`
+    INSERT INTO vehicle_meta_files (vehicle_id, owner_user_id, meta_type, raw_xml, parsed_json, kit_name, status, warnings)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(vehicle_id, owner_user_id, meta_type)
+    DO UPDATE SET raw_xml=excluded.raw_xml, parsed_json=excluded.parsed_json,
+                  kit_name=excluded.kit_name, status=excluded.status, warnings=excluded.warnings,
+                  updated_at=CURRENT_TIMESTAMP
+  `).bind(
+    vehicleId, auth.user.id, metaType, rawXml,
+    JSON.stringify(parsed),
+    kitName || null,
+    status,
+    warnings.length ? JSON.stringify(warnings) : null
+  ).run();
+
+  return jsonResponse({ ok: true, vehicle_id: vehicleId, meta_type: metaType, status, warnings, parsed });
+}
+
+// GET /api/builder/vehicle-meta/:vehicleId
+async function handleBuilderMetaGet(request, env, vehicleId) {
+  const auth = await getCurrentAuthSession(request, env);
+  const gate = requirePremium(auth);
+  if (gate) return gate;
+
+  const { results } = await env.DB.prepare(`
+    SELECT meta_type, parsed_json, kit_name, status, warnings, uploaded_at, updated_at
+    FROM vehicle_meta_files
+    WHERE vehicle_id = ? COLLATE NOCASE AND owner_user_id = ?
+    ORDER BY meta_type
+  `).bind(vehicleId, auth.user.id).all();
+
+  const byType = {};
+  for (const row of results) {
+    byType[row.meta_type] = {
+      ...row,
+      parsed: row.parsed_json ? JSON.parse(row.parsed_json) : null,
+      warnings: row.warnings ? JSON.parse(row.warnings) : []
+    };
   }
 
   return jsonResponse({
     ok: true,
-    zone,
-    dayType,
-    hourSlot,
-    hourLabel: `${(hourSlot * 2).toString().padStart(2,'0')}:00`,
-    maxCars: slot.max_cars,
-    maxPeds: slot.max_peds,
-    maxParkedCars: slot.max_parked_cars,
-    pctCopCars: slot.pct_cop_cars,
-    groups: resolvedGroups,
+    vehicle_id: vehicleId,
+    meta: byType,
+    complete: ["vehicles", "handling", "carcols", "carvariations"].every(t => byType[t] && byType[t].status !== "error")
   });
 }
 
+// ── Meta XML parser/validator ─────────────────────────
+// Runs in the Worker (no DOM). Uses lightweight regex/string
+// extraction to pull key fields and detect common issues.
+// Full validation happens at merge time in the browser.
+function parseAndValidateMetaXml(xml, metaType, vehicleId) {
+  const warnings = [];
+  let parsed  = {};
+  let kitName = null;
+  let status  = "ok";
+
+  const getTag  = (src, tag) => { const m = src.match(new RegExp(`<${tag}[^>]*>([^<]*)<\/${tag}>`, "i")); return m ? m[1].trim() : null; };
+  const hasTag  = (src, tag) => new RegExp(`<${tag}[\\s>]`, "i").test(src);
+
+  try {
+    if (metaType === "vehicles") {
+      const modelName = getTag(xml, "modelName");
+      const txdName   = getTag(xml, "txdName");
+      const handlingId= getTag(xml, "handlingId");
+      const vehClass  = getTag(xml, "vehicleClass");
+      if (!modelName) { warnings.push("Missing <modelName>"); status = "error"; }
+      else if (modelName.toLowerCase() !== vehicleId) warnings.push(`modelName "${modelName}" doesn't match vehicle ID "${vehicleId}"`);
+      if (!txdName)    warnings.push("Missing <txdName>");
+      if (!handlingId) warnings.push("Missing <handlingId>");
+      if (!vehClass)   warnings.push("Missing <vehicleClass>");
+      if (!hasTag(xml, "Item")) warnings.push("No <Item> wrapper found — paste the full <Item> block");
+      parsed = { modelName, txdName, handlingId, vehicleClass: vehClass };
+    }
+
+    else if (metaType === "handling") {
+      const handlingName = getTag(xml, "handlingName");
+      const fMass        = getTag(xml, "fMass");
+      if (!handlingName) { warnings.push("Missing <handlingName>"); status = "error"; }
+      const typeMatch = xml.match(/type="([^"]+)"/);
+      const handlingType = typeMatch ? typeMatch[1] : "CHandlingData";
+      parsed = { handlingName, fMass, type: handlingType };
+    }
+
+    else if (metaType === "carcols") {
+      const kitNameMatch = xml.match(/<kitName>([^<]+)<\/kitName>/i);
+      kitName = kitNameMatch ? kitNameMatch[1].trim() : null;
+      if (!kitName) { warnings.push("No <kitName> found in carcols block"); status = "warning"; }
+      else if (kitName === "0_default_modkit") {
+        warnings.push("Generic kit name '0_default_modkit' — will be auto-renamed at merge time");
+      }
+      parsed = { kitName };
+    }
+
+    else if (metaType === "carvariations") {
+      const modelName    = getTag(xml, "modelName");
+      const kitNameMatch = xml.match(/<kitName>([^<]+)<\/kitName>/i);
+      kitName = kitNameMatch ? kitNameMatch[1].trim() : null;
+      if (!modelName) warnings.push("Missing <modelName> in carvariations block");
+      if (!kitName)   warnings.push("No <kitName> reference found in carvariations block");
+      parsed = { modelName, kitName };
+    }
+
+    if (status === "ok" && warnings.length) status = "warning";
+
+  } catch (e) {
+    warnings.push("Parse error: " + String(e));
+    status = "error";
+  }
+
+  return { parsed, kitName, warnings, status };
+}

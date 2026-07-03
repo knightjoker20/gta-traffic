@@ -21,6 +21,26 @@ function normalizeInstallType(value) {
   return raw;
 }
 
+// Infer install type: manual tag wins; fall back to vanilla lookup, then Unknown.
+function inferInstallType(vehicle) {
+  const manual = normalizeInstallType(vehicle?.custom?.installType);
+  if (manual && manual !== "Unknown") return manual;
+
+  if (
+    window.GTAVanillaModels &&
+    window.GTAVanillaModels.has(String(vehicle?.modelName || "").toLowerCase())
+  ) {
+    return "Vanilla";
+  }
+
+  return manual || "Unknown";
+}
+
+// Vanilla vehicles are always logically installed — they ship with the game.
+function isVehicleInstalled(vehicle) {
+  return vehicle?.custom?.installed === true || inferInstallType(vehicle) === "Vanilla";
+}
+
 // =====================================================
 // GTA Traffic Vehicle Details V1.0
 // Displays merged parsed data and saves custom reference
@@ -217,6 +237,13 @@ const el = id => document.getElementById(id);
     el("vdRemoveImage").disabled = !image;
   }
 
+  // Return the effective value for a vehiclesMeta field, applying any saved field edit as an override.
+  function effectiveMeta(field) {
+    const override = state.fieldEdits?.[field];
+    if (override?.editedValue !== undefined && override.editedValue !== "") return override.editedValue;
+    return (state.vehicle?.vehiclesMeta || {})[field] || "";
+  }
+
   function renderIdentity() {
     const vehicle = state.vehicle;
     const meta = vehicle.vehiclesMeta || {};
@@ -226,8 +253,9 @@ const el = id => document.getElementById(id);
     el("vdDisplayTitle").textContent = title;
 
     const makeLine = el("vdMakeLine");
-    if (meta.vehicleMakeName) {
-      makeLine.textContent = meta.vehicleMakeName;
+    const makeName = effectiveMeta("vehicleMakeName");
+    if (makeName) {
+      makeLine.textContent = makeName;
       makeLine.hidden = false;
     } else {
       makeLine.textContent = "";
@@ -236,12 +264,14 @@ const el = id => document.getElementById(id);
 
     el("vdModelName").textContent = `Model: ${vehicle.modelName}`;
 
+    const vehicleClass = effectiveMeta("vehicleClass") || meta.vehicleClass;
+    const vehicleType = effectiveMeta("vehicleType") || meta.vehicleType;
     const badges = [
-      meta.vehicleClass ? `<span class="vd-badge">${escapeHTML(cleanClassName(meta.vehicleClass))}</span>` : "",
-      meta.vehicleType ? `<span class="vd-badge">${escapeHTML(meta.vehicleType)}</span>` : "",
+      vehicleClass ? `<span class="vd-badge">${escapeHTML(cleanClassName(vehicleClass))}</span>` : "",
+      vehicleType ? `<span class="vd-badge">${escapeHTML(vehicleType)}</span>` : "",
       handling?.AIHandling ? `<span class="vd-badge green">AI: ${escapeHTML(handling.AIHandling)}</span>` : "",
-      vehicle.custom?.installed === true ? `<span class="vd-badge installed">INSTALLED</span>` : "",
-      normalizeInstallType(vehicle.custom?.installType) ? `<span class="vd-badge green">${escapeHTML(normalizeInstallType(vehicle.custom.installType))}</span>` : ""
+      isVehicleInstalled(vehicle) ? `<span class="vd-badge installed">INSTALLED</span>` : "",
+      inferInstallType(vehicle) !== "Unknown" ? `<span class="vd-badge green">${escapeHTML(inferInstallType(vehicle))}</span>` : ""
     ].filter(Boolean);
     el("vdIdentityBadges").innerHTML = badges.join("");
 
@@ -268,10 +298,10 @@ const el = id => document.getElementById(id);
 
     el("vdFavorite").textContent = vehicle.custom?.favorite ? "★ Favorite" : "☆ Add Favorite";
     const installButton = el("vdInstallButton");
-    const isInstalled = vehicle.custom?.installed === true;
-    installButton.textContent = isInstalled ? "✓ Installed" : "+ Install Vehicle";
-    installButton.classList.toggle("active", isInstalled);
-    installButton.setAttribute("aria-pressed", String(isInstalled));
+    const installed = isVehicleInstalled(vehicle);
+    installButton.textContent = installed ? "✓ Installed" : "+ Install Vehicle";
+    installButton.classList.toggle("active", installed);
+    installButton.setAttribute("aria-pressed", String(installed));
     renderImage();
   }
 
@@ -1421,6 +1451,32 @@ async function loadVehicle(modelName) {
       event.preventDefault();
       saveCurrentVehicle();
     });
+
+    el("vdDeleteButton")?.addEventListener("click", async () => {
+      const vehicle = state.vehicle;
+      if (!vehicle) return;
+      const name = vehicle.custom?.displayName || vehicle.vehiclesMeta?.gameName || vehicle.modelName;
+      if (!confirm(`Permanently delete "${name}" (${vehicle.modelName}) from the library?\n\nThis cannot be undone.`)) return;
+
+      const btn = el("vdDeleteButton");
+      btn.disabled = true;
+      btn.textContent = "Deleting…";
+      try {
+        await window.vehicleCloud.deleteVehicle(vehicle.modelName);
+        // Also remove from local IndexedDB
+        if (window.vehicleLibraryStore) {
+          const all = await window.vehicleLibraryStore.getVehicles();
+          await window.vehicleLibraryStore.putVehicles(
+            all.filter(v => v.modelName?.toLowerCase() !== vehicle.modelName?.toLowerCase())
+          );
+        }
+        window.location.href = "vehicle-library.html";
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = "Delete Vehicle";
+        alert("Delete failed: " + (err.message || err));
+      }
+    });
     CUSTOM_FIELDS.forEach(field => {
       el(CUSTOM_IDS[field]).addEventListener("input", scheduleSave);
       el(CUSTOM_IDS[field]).addEventListener("change", scheduleSave);
@@ -1750,15 +1806,17 @@ async function initialize() {
         if (cloudData.vehicles.length > 0) {
           vehicles = cloudData.vehicles;
 
-          handlingProfiles =
-            cloudData.handlingProfiles;
+          // Merge handling profiles: cloud wins on conflict, but local-only profiles
+          // (e.g. from the RPF scanner) are preserved rather than wiped by the cloud load.
+          const mergedHandling = new Map(
+            localHandlingProfiles.map(p => [p.id, p])
+          );
+          cloudData.handlingProfiles.forEach(p => mergedHandling.set(p.id, p));
+          handlingProfiles = [...mergedHandling.values()];
 
           await Promise.all([
             store.putVehicles(vehicles),
-
-            store.putHandlingProfiles(
-              handlingProfiles
-            )
+            store.putHandlingProfiles(handlingProfiles)
           ]);
 
           state.source = "cloud";

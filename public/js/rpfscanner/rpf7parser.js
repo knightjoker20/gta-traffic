@@ -53,6 +53,20 @@ window.RpfParser = (() => {
     return new TextDecoder("utf-8", { fatal: false }).decode(inflated);
   }
 
+  const HANDLING_FIELDS = [
+    "fMass", "fInitialDragCoeff", "fDownForceModifier", "fPercentSubmerged",
+    "fDriveBiasFront", "nInitialDriveGears", "fInitialDriveForce", "fDriveInertia",
+    "fClutchChangeRateScaleUpShift", "fClutchChangeRateScaleDownShift", "fInitialDriveMaxFlatVel",
+    "fBrakeForce", "fBrakeBiasFront", "fHandBrakeForce", "fSteeringLock",
+    "fTractionCurveMax", "fTractionCurveMin", "fTractionCurveLateral",
+    "fLowSpeedTractionLossMult", "fTractionBiasFront", "fTractionLossMult",
+    "fSuspensionForce", "fSuspensionCompDamp", "fSuspensionReboundDamp",
+    "fSuspensionUpperLimit", "fSuspensionLowerLimit", "fSuspensionRaise",
+    "fSuspensionBiasFront", "fAntiRollBarForce", "fAntiRollBarBiasFront",
+    "fRollCentreHeightFront", "fRollCentreHeightRear", "fCollisionDamageMult",
+    "fWeaponDamageMult", "fDeformationDamageMult", "fEngineDamageMult"
+  ];
+
   function parseVehiclesMetaModelNames(xmlText) {
     const records = [];
     try {
@@ -65,12 +79,56 @@ window.RpfParser = (() => {
         if (!modelName) return;
         records.push({
           modelName,
+          handlingId: item.querySelector("handlingId")?.textContent?.trim() || "",
           gameName: item.querySelector("gameName")?.textContent?.trim() || "",
-          vehicleMakeName: item.querySelector("vehicleMakeName")?.textContent?.trim() || ""
+          vehicleMakeName: item.querySelector("vehicleMakeName")?.textContent?.trim() || "",
+          vehicleClass: item.querySelector("vehicleClass")?.textContent?.trim() || "",
+          vehicleType: item.querySelector("type")?.textContent?.trim() || ""
         });
       });
     } catch (error) {
       // Malformed or unexpected XML - name-based matching from .yft/.ytd entries still works.
+    }
+    return records;
+  }
+
+  function parseHandlingMetaData(xmlText) {
+    const records = [];
+    try {
+      const doc = new DOMParser().parseFromString(xmlText, "text/xml");
+      if (doc.querySelector("parsererror")) return records;
+
+      const handlingDataEl = doc.querySelector("HandlingData");
+      if (!handlingDataEl) return records;
+
+      [...handlingDataEl.children].forEach(item => {
+        if (item.getAttribute("type") !== "CHandlingData" && !item.querySelector("handlingName")) return;
+        const handlingName = item.querySelector("handlingName")?.textContent?.trim();
+        if (!handlingName) return;
+
+        const profile = {
+          id: handlingName.toLowerCase(),
+          handlingName,
+          AIHandling: item.querySelector("AIHandling")?.textContent?.trim() || "",
+          subHandlingTypes: [...(item.querySelector("SubHandlingData")?.children || [])]
+            .map(sub => sub.getAttribute("type") || "UNKNOWN")
+            .filter(Boolean),
+          updatedAt: new Date().toISOString()
+        };
+
+        HANDLING_FIELDS.forEach(field => {
+          const node = item.querySelector(field);
+          if (!node) return;
+          const raw = node.getAttribute("value");
+          if (raw === null) return;
+          const val = parseFloat(raw);
+          if (!isNaN(val)) profile[field] = val;
+        });
+
+        records.push(profile);
+      });
+    } catch (error) {
+      // Malformed XML - skip silently.
     }
     return records;
   }
@@ -88,12 +146,13 @@ window.RpfParser = (() => {
 
   // Parses one archive's bytes (a single dlc.rpf, already read into memory as a Uint8Array).
   // Recurses into nested .rpf archives (a top-level dlc.rpf commonly contains a nested vehicles.rpf, etc).
-  // Returns { archiveLabel, modelAssets: Map, metaModels: Map, warnings: string[], archiveCount, encryptedSkipped }
+  // Returns { archiveLabel, modelAssets: Map, metaModels: Map, handlingData: Map, warnings: string[], archiveCount, encryptedSkipped }
   async function scanArchiveBuffer(bytes, archiveLabel, options = {}) {
     const result = {
       archiveLabel,
       modelAssets: new Map(),
       metaModels: new Map(),
+      handlingData: new Map(),
       warnings: [],
       archiveCount: 0,
       encryptedSkipped: 0
@@ -214,6 +273,20 @@ window.RpfParser = (() => {
               }
             } catch (error) {
               result.warnings.push(`${childPath}: could not read vehicles.meta (${error.message}).`);
+            }
+            continue;
+          }
+
+          if (child.nameLower === "handling.meta" && options.readHandlingMeta !== false) {
+            try {
+              const text = await extractBinaryEntryText(bytes, startPos, child);
+              if (text) {
+                parseHandlingMetaData(text).forEach(profile => {
+                  result.handlingData.set(profile.id, { ...profile, archivePath: childPath });
+                });
+              }
+            } catch (error) {
+              result.warnings.push(`${childPath}: could not read handling.meta (${error.message}).`);
             }
             continue;
           }

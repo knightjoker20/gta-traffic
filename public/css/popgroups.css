@@ -72,25 +72,7 @@
 }
 
 .pg-top-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
-  gap: 18px;
   margin-bottom: 18px;
-}
-
-.pg-installed-scanner {
-  grid-column: auto;
-}
-
-.pg-installed-scanner textarea {
-  width: 100%;
-  min-height: 150px;
-  margin: 12px 0;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 12px;
-  background: rgba(4,9,18,.78);
-  color: #fff;
-  padding: 12px;
 }
 
 .pg-wide-main-layout,
@@ -396,28 +378,24 @@
   text-decoration: none;
 }
 
-.pg-sidebar-installed-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.pg-sidebar-installed-badge {
+  display: inline-block;
   margin-top: 3px;
-  color: rgba(234,242,255,.72);
+  color: rgba(234,242,255,.35);
   font-size: .6rem;
   font-weight: 700;
-  cursor: pointer;
   user-select: none;
 }
 
-.pg-sidebar-installed-toggle input {
-  width: 11px;
-  height: 11px;
-  margin: 0;
-  accent-color: #f59e0b;
-  cursor: pointer;
+.pg-sidebar-installed-badge.active {
+  color: #fbbf24;
 }
 
-.pg-sidebar-installed-toggle:has(input:checked) {
-  color: #fbbf24;
+/* Installed card highlight — amber left-stripe + tinted background */
+.pg-sidebar-vehicle-card:has(.pg-sidebar-installed-badge.active) {
+  border-color: var(--color-brand-border, rgba(245, 158, 11, .30));
+  background: var(--color-brand-subtle, rgba(245, 158, 11, .07));
+  box-shadow: inset 3px 0 0 var(--color-brand, #f59e0b);
 }
 
 .has-cloud-image {
@@ -523,4 +501,50 @@
   background: rgba(148, 163, 184, .08);
   color: #cbd5e1;
   font-size: .82rem;
+}
+
+/* -------------------------------------------------------
+   VANILLA COUNT BADGE
+   Appears in each vehicle group header, comparing the
+   current vehicle count to the unmodified Rockstar baseline.
+   ------------------------------------------------------- */
+
+.pg-vanilla-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: .65rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ✓ Exact match */
+.pg-vanilla-badge--ok {
+  background: rgba(34, 197, 94, .15);
+  border: 1px solid rgba(34, 197, 94, .4);
+  color: #86efac;
+}
+
+/* ±1–3 off */
+.pg-vanilla-badge--warn {
+  background: rgba(245, 158, 11, .15);
+  border: 1px solid rgba(245, 158, 11, .4);
+  color: #fcd34d;
+}
+
+/* >3 off */
+.pg-vanilla-badge--danger {
+  background: rgba(239, 68, 68, .15);
+  border: 1px solid rgba(239, 68, 68, .4);
+  color: #fca5a5;
+}
+
+/* Non-vanilla / custom group */
+.pg-vanilla-badge--custom {
+  background: rgba(148, 163, 184, .1);
+  border: 1px solid rgba(148, 163, 184, .3);
+  color: #94a3b8;
 }

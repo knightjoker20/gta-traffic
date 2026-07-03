@@ -29,7 +29,10 @@
       const vehicles = await store.getVehicles();
       installedIds.clear();
       vehicles.forEach((vehicle) => {
-        if (vehicle?.custom?.installed === true) installedIds.add(vehicle.id);
+        const id = vehicle.id || String(vehicle.modelName || "").toLowerCase();
+        if (vehicle?.custom?.installed === true || window.GTAVanillaModels?.has(id)) {
+          installedIds.add(id);
+        }
       });
     } catch (error) {
       console.warn("Could not load installed vehicle status from the local library.", error);
@@ -145,7 +148,9 @@
       "custom",
       "meta",
       "metadata",
-      "vehicle"
+      "vehicle",
+      "vehiclesMeta",
+      "vehicles_meta"
     ].forEach((key) => {
       const value = record?.[key];
 
@@ -598,6 +603,8 @@
           .map((vehicle) => {
             const imageUrl = getImageUrl(vehicle);
             const model = normalizeModelName(vehicle.modelName);
+            const modelId = model.toLowerCase();
+            const installed = installedIds.has(modelId) || installedIds.has(model) || window.GTAVanillaModels?.has(modelId);
 
             return `
               <article class="pg-sidebar-vehicle-card" draggable="true" data-model="${escapeHtml(model)}">
@@ -608,10 +615,7 @@
                   <h4>${escapeHtml(model)}</h4>
                   <p>${escapeHtml(getDisplayName(vehicle))}</p>
                   <p>${escapeHtml(getCategory(vehicle))}</p>
-                  <label class="pg-sidebar-installed-toggle" onclick="event.stopPropagation()">
-                    <input type="checkbox" class="pg-installed-checkbox" data-model="${escapeHtml(model)}" ${installedIds.has(model) ? "checked" : ""}>
-                    Installed
-                  </label>
+                  <span class="pg-sidebar-installed-badge${installed ? " active" : ""}">Installed</span>
                   <a href="vehicle-details.html?model=${encodeURIComponent(model)}">Details</a>
                 </div>
               </article>
