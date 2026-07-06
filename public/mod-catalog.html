@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA5-Mods Catalog | GTA Traffic Studio</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+  <link rel="stylesheet" href="css/mod-catalog.css">
+</head>
+<body data-page="mod-catalog" class="mc-catalog-page">
+
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic Studio">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+      <div class="brand-copy">
+        <div class="brand-title">GTA Traffic Studio</div>
+        <div class="tagline">Mod Catalog</div>
+      </div>
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner mc-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">GTA5-Mods Reference</div>
+        <h1>Car Download Database</h1>
+        <p>Browse, filter, and sort our curated list of downloadable add-on vehicles from GTA5-Mods.com — organized by make, model, type, and popgroup assignments.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="mc-layout">
+
+    <!-- ── Sidebar ─────────────────────────────────────── -->
+    <aside class="mc-sidebar">
+
+      <!-- Status filter -->
+      <div class="mc-filter-panel">
+        <h3>Status</h3>
+        <div class="mc-status-group">
+          <button class="mc-status-btn" id="mcBtnAll"  data-status="all">All</button>
+          <button class="mc-status-btn" id="mcBtnDl"   data-status="dl">Downloaded</button>
+          <button class="mc-status-btn" id="mcBtnWant" data-status="want">Wanted</button>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="mc-filter-panel">
+        <h3>Search</h3>
+        <input
+          type="text"
+          id="mcSearch"
+          placeholder="Make, model, author, group…"
+          autocomplete="off"
+          spellcheck="false"
+        >
+      </div>
+
+      <!-- Filters -->
+      <div class="mc-filter-panel">
+        <h3>Filters</h3>
+
+        <label for="mcMakeFilter">Make</label>
+        <select id="mcMakeFilter">
+          <option value="">All makes</option>
+        </select>
+
+        <label for="mcTypeFilter">Vehicle Type</label>
+        <select id="mcTypeFilter">
+          <option value="">All types</option>
+        </select>
+
+        <label for="mcGroupFilter">VEH Group</label>
+        <select id="mcGroupFilter">
+          <option value="">Any group</option>
+        </select>
+
+        <label>Year Range</label>
+        <div class="mc-year-row">
+          <input type="number" id="mcYearFrom" placeholder="From" min="1900" max="2030">
+          <input type="number" id="mcYearTo"   placeholder="To"   min="1900" max="2030">
+        </div>
+
+        <button class="mc-clear-btn" id="mcClearBtn">✕ Clear all filters</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="mc-stat-pill" id="mcStatDl">
+        <strong>—</strong>Downloaded
+      </div>
+      <div class="mc-stat-pill" id="mcStatWant">
+        <strong>—</strong>Wanted
+      </div>
+
+      <!-- Tag cloud -->
+      <div class="mc-filter-panel mc-tag-cloud-panel">
+        <h3>Tags</h3>
+        <div id="mcTagCloud" class="mc-tag-cloud">
+          <span style="color:#475569;font-size:12px">Loading…</span>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── Main content ────────────────────────────────── -->
+    <main class="mc-main">
+
+      <div class="mc-toolbar">
+        <div class="mc-result-count" id="mcResultCount">Loading catalog…</div>
+      </div>
+
+      <div class="mc-table-wrap">
+        <table class="mc-table">
+          <thead>
+            <tr>
+              <th data-sort="status">Status</th>
+              <th data-sort="year">Year</th>
+              <th data-sort="make">Make</th>
+              <th data-sort="model">Model</th>
+              <th data-sort="type">Type</th>
+              <th>Groups</th>
+              <th>Tags</th>
+              <th>Author</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="mcTbody">
+            <tr>
+              <td colspan="9" class="mc-loading">Loading vehicle catalog</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="js/shared/siteshell.js"></script>
+  <script defer src="/js/accountnav.js"></script>
+  <script src="js/mod-catalog.js"></script>
+</body>
+</html>

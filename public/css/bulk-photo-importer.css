@@ -1,0 +1,178 @@
+/* Bulk Vehicle Photo Importer (admin-only dashboard module) */
+
+.bulk-photo-panel {
+  margin-top: 24px;
+  padding: 32px 34px 36px;
+}
+
+.bulk-photo-heading {
+  margin-bottom: 18px;
+}
+
+.bulk-photo-heading h2 {
+  margin: 0 0 8px;
+}
+
+.bulk-photo-heading code {
+  background: var(--panel-soft, #101828);
+  border: 1px solid var(--border, rgba(148, 163, 184, .22));
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-family: var(--font-mono, "Fira Code", "Cascadia Code", Consolas, monospace);
+  font-size: .9em;
+}
+
+.bulk-photo-token-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.bulk-photo-token-row input {
+  flex: 1;
+  min-width: 260px;
+  border: 1px solid var(--border, rgba(148, 163, 184, .22));
+  border-radius: 12px;
+  background: #0d1118;
+  color: var(--text, #f1f5f9);
+  padding: 12px 14px;
+  outline: none;
+}
+
+.bulk-photo-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  color: var(--muted, #94a3b8);
+  font-size: .92rem;
+  cursor: pointer;
+}
+
+.bulk-photo-checkbox-row input {
+  width: 16px;
+  height: 16px;
+}
+
+.bulk-photo-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 130px;
+  padding: 28px 20px;
+  border: 2px dashed rgba(148, 163, 184, .38);
+  border-radius: 16px;
+  background: rgba(2, 6, 23, .55);
+  color: var(--text, #f1f5f9);
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color .15s ease, background .15s ease;
+}
+
+.bulk-photo-dropzone.is-dragging {
+  border-color: rgba(245, 158, 11, .95);
+  background: rgba(120, 53, 15, .24);
+}
+
+.bulk-photo-dropzone strong {
+  font-size: 1.05rem;
+}
+
+.bulk-photo-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.bulk-photo-summary {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.bulk-photo-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border: 1px solid var(--border, rgba(148, 163, 184, .22));
+  border-radius: 999px;
+  background: var(--panel-soft, #101828);
+  color: var(--text, #f1f5f9);
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.bulk-photo-pill.good {
+  border-color: rgba(34, 197, 94, .36);
+  color: var(--good, #22c55e);
+}
+
+.bulk-photo-pill.warning {
+  border-color: rgba(245, 158, 11, .36);
+  color: var(--warning, #f59e0b);
+}
+
+.bulk-photo-pill.danger {
+  border-color: rgba(239, 68, 68, .36);
+  color: var(--danger, #ef4444);
+}
+
+.bulk-photo-pill.muted {
+  color: var(--muted, #94a3b8);
+}
+
+.bulk-photo-results-wrap {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--border, rgba(148, 163, 184, .22));
+  border-radius: 16px;
+}
+
+.bulk-photo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .88rem;
+}
+
+.bulk-photo-table th,
+.bulk-photo-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, rgba(148, 163, 184, .16));
+  white-space: nowrap;
+}
+
+.bulk-photo-table td:nth-child(4) {
+  white-space: normal;
+}
+
+.bulk-photo-table th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-strong, #0c1120);
+  color: var(--muted, #94a3b8);
+  font-size: .78rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.bulk-photo-table tr:last-child td {
+  border-bottom: none;
+}
+
+@media (max-width: 720px) {
+  .bulk-photo-panel {
+    padding: 24px 20px 28px;
+  }
+
+  .bulk-photo-table {
+    font-size: .82rem;
+  }
+}

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic Handling.meta Editor</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+<link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/handling-meta.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="handling-meta">
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic Studio">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+      <div class="brand-copy">
+        <div class="brand-title">GTA Traffic Studio</div>
+        <div class="tagline">Handling.meta Editor V1.1</div>
+      </div>
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner hm-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Vehicle Physics Manager</div>
+        <h1>GTA Traffic Handling.meta Editor</h1>
+        <p>Import handling.meta, adjust common physics values in the table, or open a complete handling profile to edit every vehicle-specific setting and subhandling section.</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="handling-meta-main">
+    <div class="hm-grid">
+      <div class="hm-stack">
+        <section class="panel">
+          <h2>Import</h2>
+          <div id="hmDropZone" class="hm-drop-zone" role="button" tabindex="0">
+            <div class="hm-drop-icon">▱</div>
+            <strong>Drop handling.meta here</strong>
+            <small>or click to choose a file</small>
+          </div>
+          <input id="hmFilePicker" class="hm-hidden" type="file" accept=".meta,.xml,.txt">
+          <div id="hmCloudBanner" class="hm-cloud-banner" hidden></div>
+          <div id="hmStatus" class="hm-status warn">No handling.meta loaded yet.</div>
+
+          <div class="hm-dlc-name-box">
+            <label for="hmDlcName">DLC / Meta Name</label>
+            <input id="hmDlcName" type="text" maxlength="80" placeholder="Example: police_replacement">
+            <small>Used for organization. Export filename: <strong id="hmExportNamePreview">handling.meta</strong></small>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>File Stats</h2>
+          <div id="hmStats" class="hm-stat-grid">
+            <div class="hm-stat"><strong>0</strong><span>Profiles</span></div>
+            <div class="hm-stat"><strong>0</strong><span>Selected</span></div>
+            <div class="hm-stat"><strong>0</strong><span>Visible</span></div>
+            <div class="hm-stat"><strong>0</strong><span>Warnings</span></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Saved Files</h2>
+          <div id="hmDatabaseStatus" class="hm-database-status warn">Opening local database...</div>
+          <div class="hm-action-row hm-database-actions">
+            <button class="btn-green" type="button" onclick="handlingMetaEditor.saveCurrentProject()">Save Current File</button>
+          </div>
+          <div id="hmSavedProjects" class="hm-saved-projects">
+            <div class="hm-saved-empty">No saved handling.meta files yet.</div>
+          </div>
+          <p class="small hm-muted">Files autosave in this browser after imports and edits. Clearing browser site data can remove them, so export finished files normally.</p>
+        </section>
+
+        <section class="panel">
+          <h2>Export</h2>
+          <div class="hm-export-actions">
+            <button id="hmExportXmlButton" class="btn-green" type="button" onclick="handlingMetaEditor.exportXml()">Export Full handling.meta</button>
+            <button class="btn-orange" type="button" onclick="handlingMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
+            <button type="button" onclick="handlingMetaEditor.exportJson()">Export JSON Backup</button>
+            <button class="secondary" type="button" onclick="handlingMetaEditor.copyXml()">Copy XML</button>
+          </div>
+          <p class="small hm-muted">Every original handling field and subhandling block is preserved. The editor changes the loaded XML nodes directly.</p>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="hm-tabs" role="tablist" aria-label="Handling.meta editor sections">
+          <button class="hm-tab-button active" type="button" data-hm-tab="table" aria-selected="true">Handling Table</button>
+          <button class="hm-tab-button" type="button" data-hm-tab="profile" aria-selected="false">Per-Vehicle Editor</button>
+          <button class="hm-tab-button" type="button" data-hm-tab="analyzer" aria-selected="false">Analyzer</button>
+        </div>
+
+        <div id="hmTabTable" class="hm-tab-panel active">
+          <h2>Handling Table</h2>
+          <div class="hm-note">
+            A handling.meta entry is identified by <strong>handlingName</strong>. For a replacement vehicle, choose the profile matching that vehicle's <strong>handlingId</strong> in vehicles.meta—for example, a replacement using <code>POLICE</code> normally edits the <code>POLICE</code> handling profile.
+          </div>
+
+          <div class="hm-profile-jump">
+            <label>Choose Handling Name
+              <select id="hmTableProfileSelect">
+                <option value="">Load a file first</option>
+              </select>
+            </label>
+            <button id="hmOpenTableProfile" type="button">Open Per-Vehicle Editor</button>
+            <small>Select a handling name from the loaded file, then open its complete physics profile.</small>
+          </div>
+
+          <div class="hm-filter-grid">
+            <label>Search
+              <input id="hmSearch" type="search" placeholder="handlingName...">
+            </label>
+            <label>AI Handling Filter
+              <select id="hmAiFilter"><option value="">All AI types</option></select>
+            </label>
+            <label>Sort by AI Handling
+              <select id="hmAiSort">
+                <option value="original">Original file order</option>
+                <option value="asc">AI Handling A–Z</option>
+                <option value="desc">AI Handling Z–A</option>
+              </select>
+            </label>
+            <label>Subhandling Type
+              <select id="hmSubTypeFilter"><option value="">All subhandling types</option></select>
+            </label>
+          </div>
+
+          <div class="hm-quick-edit" aria-label="Quick multi-row editor">
+            <label>Quick Edit Field
+              <select id="hmQuickEditField"></select>
+            </label>
+            <label>Value
+              <input id="hmQuickEditValue" type="text" placeholder="Enter value to apply">
+            </label>
+            <div class="hm-quick-edit-actions">
+              <button type="button" onclick="handlingMetaEditor.applyQuickEdit('selected')">Apply to Selected</button>
+              <button type="button" onclick="handlingMetaEditor.applyQuickEdit('visible')">Apply to Visible</button>
+              <button class="btn-orange" type="button" onclick="handlingMetaEditor.applyQuickEdit('all')">Apply to All Rows</button>
+            </div>
+          </div>
+
+          <div class="hm-controls">
+            <button type="button" onclick="handlingMetaEditor.selectVisible(true)">Select Visible</button>
+            <button class="secondary" type="button" onclick="handlingMetaEditor.selectVisible(false)">Clear Visible</button>
+            <button class="secondary" type="button" onclick="handlingMetaEditor.clearAllSelections()">Clear All</button>
+            <span class="hm-scroll-hint">The table scrolls vertically and sideways. Use − / + to make small numeric adjustments.</span>
+          </div>
+
+          <div class="hm-table-wrap">
+            <table class="hm-table">
+              <thead>
+                <tr>
+                  <th><input id="hmSelectAllVisible" type="checkbox" title="Select visible rows"></th>
+                  <th>Profile</th>
+                  <th>handlingName</th>
+                  <th>mass</th>
+                  <th>drive bias</th>
+                  <th>gears</th>
+                  <th>drive force</th>
+                  <th>max velocity</th>
+                  <th>brake force</th>
+                  <th>steering lock</th>
+                  <th>traction max</th>
+                  <th>suspension</th>
+                  <th>deformation</th>
+                  <th>AI handling</th>
+                </tr>
+              </thead>
+              <tbody id="hmTableBody">
+                <tr><td colspan="14" class="hm-muted">Load a handling.meta file to begin.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="hmTabProfile" class="hm-tab-panel">
+          <div class="hm-profile-toolbar">
+            <div>
+              <h2>Per-Vehicle Handling Editor</h2>
+              <p class="hm-muted">Choose one handling profile to edit all of its standard, advanced, and subhandling settings.</p>
+            </div>
+            <label>Handling Profile
+              <select id="hmProfileSelect"><option value="">Load a file first</option></select>
+            </label>
+          </div>
+
+          <div class="hm-profile-nav">
+            <button class="secondary" id="hmPreviousProfile" type="button">← Previous</button>
+            <button class="secondary" id="hmNextProfile" type="button">Next →</button>
+            <button type="button" id="hmBackToTable">Return to Table</button>
+            <div class="hm-profile-nav-spacer"></div>
+            <button class="btn-green" type="button" id="hmSaveProfileBtn" onclick="handlingMetaEditor.saveActiveProfile()">Save Changes</button>
+            <button class="btn-orange" type="button" onclick="handlingMetaEditor.exportSingleVehicleXml()">Export This Vehicle</button>
+            <span id="hmProfileSaveMsg" class="hm-profile-save-msg" aria-live="polite"></span>
+          </div>
+
+          <div id="hmProfileEditor" class="hm-profile-editor">
+            <div class="hm-empty-editor">Load a handling.meta file and select a profile.</div>
+          </div>
+        </div>
+
+        <div id="hmTabAnalyzer" class="hm-tab-panel">
+          <h2>Analyzer</h2>
+          <p class="hm-muted hm-analyzer-intro">Checks run automatically after imports and edits. The analyzer looks for duplicate or missing names, invalid numbers, impossible gear counts, bias values outside 0–1, and traction minimums above traction maximums.</p>
+          <div class="hm-action-row" style="margin-bottom:12px">
+            <button id="hmRunAnalyzer" class="btn-green" type="button">Run Analyzer</button>
+          </div>
+          <div id="hmAnalysis" class="hm-analysis-list">
+            <div class="hm-analysis-item warn">Load a handling.meta file, then run the analyzer.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/js/shared/siteheader.js"></script>
+<script src="js/shared/siteshell.js"></script>
+  <script src="js/handlingmetaeditor.js"></script>
+  <script defer src="/js/accountnav.js"></script>
+</body>
+</html>

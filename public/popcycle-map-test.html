@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Popcycle Zone Map — Wireframe</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #07101f;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 14px;
+      background: #0f1929;
+      border-bottom: 1px solid #1e2d45;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .toolbar h1 { font-size: 14px; font-weight: 700; color: #f97316; margin-right: 4px; }
+    .toolbar label { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 5px; }
+    .toolbar input[type=range] { width: 80px; accent-color: #f97316; }
+    .toolbar select {
+      background: #1e2d45; border: 1px solid #2d4060; color: #e2e8f0;
+      padding: 3px 7px; border-radius: 4px; font-size: 12px;
+    }
+    .toolbar button {
+      background: #1e3a5f; border: 1px solid #2d5080; color: #93c5fd;
+      padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+    }
+    .toolbar button:hover { background: #2d5080; }
+    .badge {
+      background: #1e3a1e; border: 1px solid #2d6030; color: #86efac;
+      padding: 2px 8px; border-radius: 10px; font-size: 11px;
+    }
+    #coordDisplay {
+      font-size: 11px; color: #475569; font-variant-numeric: tabular-nums;
+      margin-left: auto; min-width: 180px;
+    }
+
+    /* ── Layout ── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Canvas area ── */
+    .map-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #040c18;
+      cursor: crosshair;
+    }
+    canvas { position: absolute; top: 0; left: 0; }
+    #cvGrid  { z-index: 1; }
+    #cvZones { z-index: 2; }
+    #cvHover { z-index: 3; pointer-events: none; }
+
+    /* ── Side panel ── */
+    .side-panel {
+      width: 310px;
+      flex-shrink: 0;
+      background: #0b1526;
+      border-left: 1px solid #1e2d45;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 10px 14px;
+      background: #0f1929;
+      border-bottom: 1px solid #1e2d45;
+      font-weight: 700;
+      font-size: 12px;
+      color: #f97316;
+    }
+    .panel-body { flex: 1; overflow-y: auto; padding: 12px; }
+
+    .zone-name { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+    .zone-display { font-size: 12px; color: #94a3b8; margin-bottom: 12px; }
+    .zone-coords { font-size: 10px; color: #475569; margin-bottom: 12px; font-variant-numeric: tabular-nums; }
+
+    .sched-table {
+      width: 100%; border-collapse: collapse; font-size: 11px;
+    }
+    .sched-table th {
+      background: #1e2d45; color: #64748b; font-weight: 600;
+      padding: 3px 5px; text-align: right;
+    }
+    .sched-table th:first-child { text-align: left; }
+    .sched-table td {
+      padding: 3px 5px; text-align: right;
+      border-bottom: 1px solid #0f1929; color: #cbd5e1;
+    }
+    .sched-table td:first-child { color: #f97316; font-weight: 600; text-align: left; }
+    .sched-table tr.active-row td { background: #1a3060; }
+    .sched-table tr:hover td { background: #1a2540; }
+
+    .empty-hint {
+      color: #3d5070; font-size: 13px; text-align: center;
+      padding: 40px 20px; line-height: 1.8;
+    }
+
+    .legend {
+      padding: 8px 12px; border-top: 1px solid #1e2d45;
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .leg { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b; }
+    .leg-sw { width: 14px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>⬡ Zone Wireframe</h1>
+  <span class="badge" id="zoneCount">Loading…</span>
+
+  <label>Opacity
+    <input type="range" id="opacitySlider" min="10" max="95" value="55">
+  </label>
+
+  <label>Time slot
+    <select id="timeSlot">
+      <option value="0">12 AM</option>
+      <option value="1">2 AM</option>
+      <option value="2">4 AM</option>
+      <option value="3">6 AM</option>
+      <option value="4">8 AM</option>
+      <option value="5">10 AM</option>
+      <option value="6" selected>12 PM</option>
+      <option value="7">2 PM</option>
+      <option value="8">4 PM</option>
+      <option value="9">6 PM</option>
+      <option value="10">8 PM</option>
+      <option value="11">10 PM</option>
+    </select>
+  </label>
+
+  <label>Color by
+    <select id="colorMode">
+      <option value="cars">Cars density</option>
+      <option value="peds">Ped density</option>
+      <option value="cops">Cop %</option>
+      <option value="zone">Zone ID</option>
+    </select>
+  </label>
+
+  <label><input type="checkbox" id="showGrid" checked> Grid</label>
+  <label><input type="checkbox" id="showLabels" checked> Labels</label>
+
+  <button id="btnFit">Fit all</button>
+  <span id="coordDisplay">X — &nbsp; Y —</span>
+</div>
+
+<div class="layout">
+  <div class="map-wrap" id="mapWrap">
+    <canvas id="cvGrid"></canvas>
+    <canvas id="cvZones"></canvas>
+    <canvas id="cvHover"></canvas>
+  </div>
+
+  <div class="side-panel">
+    <div class="panel-header">Zone Details</div>
+    <div class="panel-body" id="sideBody">
+      <div class="empty-hint">Click any zone<br>to inspect its<br>popcycle schedule.</div>
+    </div>
+    <div class="legend">
+      <div class="leg"><div class="leg-sw" style="background:#ef4444"></div>High</div>
+      <div class="leg"><div class="leg-sw" style="background:#f97316"></div>Med-hi</div>
+      <div class="leg"><div class="leg-sw" style="background:#eab308"></div>Med</div>
+      <div class="leg"><div class="leg-sw" style="background:#22c55e"></div>Low</div>
+      <div class="leg"><div class="leg-sw" style="background:#3b82f6"></div>No data</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────
+// GTA V world coordinate space
+// X increases east, Y increases north (up)
+// ─────────────────────────────────────────────────────────────────────
+const WORLD = { xMin: -4500, xMax: 5000, yMin: -5000, yMax: 8500 };
+
+// ── Viewport state ────────────────────────────────────────────────────
+let vpScale = 1, vpX = 0, vpY = 0;
+let dragging = false, dragStart = null, vpAtDrag = null;
+
+const wrap    = document.getElementById('mapWrap');
+const cvGrid  = document.getElementById('cvGrid');
+const cvZones = document.getElementById('cvZones');
+const cvHover = document.getElementById('cvHover');
+const ctxGrid  = cvGrid.getContext('2d');
+const ctxZones = cvZones.getContext('2d');
+const ctxHover = cvHover.getContext('2d');
+
+let zones    = [];
+let popData  = {};
+let selected = null;
+let hovered  = null;
+
+// ── World ↔ canvas transforms ─────────────────────────────────────────
+// In world space: Y increases upward. Canvas: Y increases downward.
+// We define a "virtual canvas" that maps world extents to pixel coords.
+const W_W = WORLD.xMax - WORLD.xMin;   // world width
+const W_H = WORLD.yMax - WORLD.yMin;   // world height
+
+// Base virtual canvas size (before viewport pan/zoom)
+const BASE_W = 900;
+const BASE_H = BASE_W * (W_H / W_W);   // preserve world aspect ratio
+
+function worldToBase(wx, wy) {
+  return {
+    x: (wx - WORLD.xMin) / W_W * BASE_W,
+    y: BASE_H - (wy - WORLD.yMin) / W_H * BASE_H   // flip Y
+  };
+}
+
+function baseToCanvas(bx, by) {
+  return { x: bx * vpScale + vpX, y: by * vpScale + vpY };
+}
+
+function canvasToWorld(cx, cy) {
+  const bx = (cx - vpX) / vpScale;
+  const by = (cy - vpY) / vpScale;
+  return {
+    x: bx / BASE_W * W_W + WORLD.xMin,
+    y: (BASE_H - by) / BASE_H * W_H + WORLD.yMin
+  };
+}
+
+// ── Resize ────────────────────────────────────────────────────────────
+function resizeCanvases() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  [cvGrid, cvZones, cvHover].forEach(cv => { cv.width = w; cv.height = h; });
+  drawAll();
+}
+
+function fitAll() {
+  const cw = wrap.clientWidth, ch = wrap.clientHeight;
+  const pad = 40;
+  vpScale = Math.min((cw - pad*2) / BASE_W, (ch - pad*2) / BASE_H);
+  vpX = (cw - BASE_W * vpScale) / 2;
+  vpY = (ch - BASE_H * vpScale) / 2;
+  drawAll();
+}
+
+// ── Grid ──────────────────────────────────────────────────────────────
+function drawGrid() {
+  const cw = cvGrid.width, ch = cvGrid.height;
+  ctxGrid.clearRect(0, 0, cw, ch);
+
+  if (!document.getElementById('showGrid').checked) return;
+
+  // Pick a nice grid step in world units
+  const worldWidthOnScreen = W_W / vpScale * (cw / BASE_W);
+  const rawStep = worldWidthOnScreen / 10;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const step = [1, 2, 5].map(m => m * mag).find(s => worldWidthOnScreen / s <= 12) || mag * 10;
+
+  // Range of grid lines visible
+  const topLeft     = canvasToWorld(0, 0);
+  const bottomRight = canvasToWorld(cw, ch);
+  const xStart = Math.floor(Math.min(topLeft.x, bottomRight.x) / step) * step;
+  const xEnd   = Math.ceil (Math.max(topLeft.x, bottomRight.x) / step) * step;
+  const yStart = Math.floor(Math.min(topLeft.y, bottomRight.y) / step) * step;
+  const yEnd   = Math.ceil (Math.max(topLeft.y, bottomRight.y) / step) * step;
+
+  ctxGrid.lineWidth = 0.5;
+  ctxGrid.font = '10px monospace';
+  ctxGrid.textBaseline = 'top';
+
+  for (let wx = xStart; wx <= xEnd; wx += step) {
+    const isAxis = wx === 0;
+    const p = baseToCanvas(...Object.values(worldToBase(wx, 0)));
+    ctxGrid.strokeStyle = isAxis ? 'rgba(249,115,22,0.4)' : 'rgba(255,255,255,0.06)';
+    ctxGrid.beginPath(); ctxGrid.moveTo(p.x, 0); ctxGrid.lineTo(p.x, ch); ctxGrid.stroke();
+    if (vpScale > 0.2) {
+      ctxGrid.fillStyle = 'rgba(100,116,139,0.7)';
+      ctxGrid.fillText(wx.toLocaleString(), p.x + 3, 3);
+    }
+  }
+  for (let wy = yStart; wy <= yEnd; wy += step) {
+    const isAxis = wy === 0;
+    const p = baseToCanvas(...Object.values(worldToBase(0, wy)));
+    ctxGrid.strokeStyle = isAxis ? 'rgba(249,115,22,0.4)' : 'rgba(255,255,255,0.06)';
+    ctxGrid.beginPath(); ctxGrid.moveTo(0, p.y); ctxGrid.lineTo(cw, p.y); ctxGrid.stroke();
+    if (vpScale > 0.2) {
+      ctxGrid.fillStyle = 'rgba(100,116,139,0.7)';
+      ctxGrid.fillText(wy.toLocaleString(), 3, p.y + 3);
+    }
+  }
+
+  // Origin dot
+  const o = baseToCanvas(...Object.values(worldToBase(0, 0)));
+  ctxGrid.beginPath();
+  ctxGrid.arc(o.x, o.y, 4, 0, Math.PI * 2);
+  ctxGrid.fillStyle = 'rgba(249,115,22,0.8)';
+  ctxGrid.fill();
+}
+
+// ── Zone density colour ───────────────────────────────────────────────
+function densityColor(value, max) {
+  if (!max) return 'rgba(59,130,246,';
+  const t = Math.min(value / max, 1);
+  if (t > 0.75) return 'rgba(239,68,68,';
+  if (t > 0.50) return 'rgba(249,115,22,';
+  if (t > 0.25) return 'rgba(234,179,8,';
+  return 'rgba(34,197,94,';
+}
+
+// ── Draw zones ────────────────────────────────────────────────────────
+function drawZones() {
+  const cw = cvZones.width, ch = cvZones.height;
+  ctxZones.clearRect(0, 0, cw, ch);
+  if (!zones.length) return;
+
+  const opacity  = document.getElementById('opacitySlider').value / 100;
+  const slotIdx  = parseInt(document.getElementById('timeSlot').value);
+  const colorBy  = document.getElementById('colorMode').value;
+  const showLbls = document.getElementById('showLabels').checked;
+
+  let maxVal = 1;
+  if (colorBy !== 'zone') {
+    zones.forEach(z => {
+      const r = popData[z.Name]?.weekday?.[slotIdx];
+      if (!r) return;
+      const v = colorBy === 'cars' ? r.cars : colorBy === 'peds' ? r.peds : r.copCars;
+      if (v > maxVal) maxVal = v;
+    });
+  }
+
+  zones.forEach((zone, zi) => {
+    const isSelected = selected?.Name === zone.Name;
+    const r = popData[zone.Name]?.weekday?.[slotIdx];
+
+    let fillBase, stroke;
+    if (colorBy === 'zone') {
+      const hue = (zi * 137.5) % 360;
+      fillBase = `hsla(${hue},65%,55%,`;
+      stroke   = `hsla(${hue},80%,72%,0.9)`;
+    } else if (r) {
+      const v = colorBy === 'cars' ? r.cars : colorBy === 'peds' ? r.peds : r.copCars;
+      fillBase = densityColor(v, maxVal);
+      stroke   = fillBase + '0.85)';
+    } else {
+      fillBase = 'rgba(59,130,246,';
+      stroke   = 'rgba(96,165,250,0.6)';
+    }
+
+    zone.Bounds.forEach(b => {
+      const tl = worldToBase(b.Minimum.X, b.Maximum.Y);
+      const br = worldToBase(b.Maximum.X, b.Minimum.Y);
+      const cx1 = tl.x * vpScale + vpX;
+      const cy1 = tl.y * vpScale + vpY;
+      const bw  = (br.x - tl.x) * vpScale;
+      const bh  = (br.y - tl.y) * vpScale;
+      if (bw < 1 || bh < 1) return;
+
+      const fillAlpha = isSelected ? Math.min(opacity + 0.25, 0.9) : opacity;
+      ctxZones.fillStyle   = fillBase + fillAlpha + ')';
+      ctxZones.strokeStyle = isSelected ? '#fff' : stroke;
+      ctxZones.lineWidth   = isSelected ? 2.5 : 1;
+      ctxZones.fillRect(cx1, cy1, bw, bh);
+      ctxZones.strokeRect(cx1, cy1, bw, bh);
+    });
+
+    // Label
+    if (showLbls && vpScale > 0.07) {
+      const b0 = zone.Bounds[0];
+      const mid = worldToBase(
+        (b0.Minimum.X + b0.Maximum.X) / 2,
+        (b0.Minimum.Y + b0.Maximum.Y) / 2
+      );
+      const lx = mid.x * vpScale + vpX;
+      const ly = mid.y * vpScale + vpY;
+      const fs = Math.max(9, Math.min(13, vpScale * 22));
+      ctxZones.font = `bold ${fs}px sans-serif`;
+      ctxZones.textAlign = 'center';
+      ctxZones.textBaseline = 'middle';
+      ctxZones.fillStyle = 'rgba(0,0,0,0.55)';
+      ctxZones.fillText(zone.Name, lx + 1, ly + 1);
+      ctxZones.fillStyle = isSelected ? '#fff' : 'rgba(240,248,255,0.9)';
+      ctxZones.fillText(zone.Name, lx, ly);
+    }
+  });
+}
+
+// ── Hover highlight ───────────────────────────────────────────────────
+function drawHover() {
+  const cw = cvHover.width, ch = cvHover.height;
+  ctxHover.clearRect(0, 0, cw, ch);
+  if (!hovered || hovered.Name === selected?.Name) return;
+
+  hovered.Bounds.forEach(b => {
+    const tl = worldToBase(b.Minimum.X, b.Maximum.Y);
+    const br = worldToBase(b.Maximum.X, b.Minimum.Y);
+    const cx1 = tl.x * vpScale + vpX;
+    const cy1 = tl.y * vpScale + vpY;
+    const bw  = (br.x - tl.x) * vpScale;
+    const bh  = (br.y - tl.y) * vpScale;
+    if (bw < 1 || bh < 1) return;
+    ctxHover.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctxHover.lineWidth   = 1.5;
+    ctxHover.setLineDash([4, 3]);
+    ctxHover.strokeRect(cx1, cy1, bw, bh);
+    ctxHover.setLineDash([]);
+  });
+}
+
+function drawAll() { drawGrid(); drawZones(); drawHover(); }
+
+// ── Hit test ──────────────────────────────────────────────────────────
+function zoneAt(cx, cy) {
+  const { x: wx, y: wy } = canvasToWorld(cx, cy);
+  for (const z of zones) {
+    for (const b of z.Bounds) {
+      if (wx >= b.Minimum.X && wx <= b.Maximum.X &&
+          wy >= b.Minimum.Y && wy <= b.Maximum.Y) return z;
+    }
+  }
+  return null;
+}
+
+// ── Side panel ────────────────────────────────────────────────────────
+const TIMES = ['12 AM','2 AM','4 AM','6 AM','8 AM','10 AM','12 PM','2 PM','4 PM','6 PM','8 PM','10 PM'];
+
+function renderPanel(zone) {
+  const body = document.getElementById('sideBody');
+  if (!zone) {
+    body.innerHTML = '<div class="empty-hint">Click any zone<br>to inspect its<br>popcycle schedule.</div>';
+    return;
+  }
+  const sched = popData[zone.Name]?.weekday || [];
+  const slot  = parseInt(document.getElementById('timeSlot').value);
+  const b0    = zone.Bounds[0];
+
+  const rows = sched.map((r, i) => `
+    <tr class="${i === slot ? 'active-row' : ''}">
+      <td>${TIMES[i]}</td>
+      <td>${r.peds}</td><td>${r.scenario}</td>
+      <td>${r.cars}</td><td>${r.parked}</td>
+      <td>${r.copCars}%</td>
+    </tr>`).join('');
+
+  body.innerHTML = `
+    <div class="zone-name">${zone.Name}</div>
+    <div class="zone-display">${zone.DisplayName || ''}</div>
+    <div class="zone-coords">
+      X ${b0.Minimum.X.toFixed(0)} → ${b0.Maximum.X.toFixed(0)}&nbsp;&nbsp;
+      Y ${b0.Minimum.Y.toFixed(0)} → ${b0.Maximum.Y.toFixed(0)}
+      ${zone.Bounds.length > 1 ? `<br>+${zone.Bounds.length-1} more bound${zone.Bounds.length>2?'s':''}` : ''}
+    </div>
+    ${rows.length ? `
+    <table class="sched-table">
+      <thead><tr>
+        <th>Time</th><th>Ped</th><th>Scen</th><th>Car</th><th>Park</th><th>Cop%</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : '<div class="empty-hint" style="padding:16px 0">No popcycle data<br>for this zone.</div>'}`;
+}
+
+// ── Mouse: pan / zoom / click / hover ────────────────────────────────
+cvZones.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = cvZones.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  vpX = mx - (mx - vpX) * factor;
+  vpY = my - (my - vpY) * factor;
+  vpScale = Math.max(0.04, Math.min(30, vpScale * factor));
+  drawAll();
+}, { passive: false });
+
+cvZones.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  dragging = false;
+  dragStart = { x: e.clientX, y: e.clientY };
+  vpAtDrag  = { x: vpX, y: vpY };
+  cvZones.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', e => {
+  const rect = cvZones.getBoundingClientRect();
+  const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+
+  // Update coord readout
+  const w = canvasToWorld(cx, cy);
+  document.getElementById('coordDisplay').textContent =
+    `X ${w.x.toFixed(0).padStart(6,' ')}   Y ${w.y.toFixed(0).padStart(6,' ')}`;
+
+  if (dragStart) {
+    const dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+    if (!dragging && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) dragging = true;
+    if (dragging) { vpX = vpAtDrag.x + dx; vpY = vpAtDrag.y + dy; drawAll(); }
+    return;
+  }
+
+  // Hover hit test
+  const z = zoneAt(cx, cy);
+  if (z?.Name !== hovered?.Name) { hovered = z; drawHover(); }
+  cvZones.style.cursor = z ? 'pointer' : 'crosshair';
+});
+
+window.addEventListener('mouseup', e => {
+  if (!dragStart) return;
+  if (!dragging) {
+    const rect = cvZones.getBoundingClientRect();
+    const z = zoneAt(e.clientX - rect.left, e.clientY - rect.top);
+    if (z?.Name !== selected?.Name) { selected = z; renderPanel(z); }
+    drawZones();
+  }
+  dragStart = null; dragging = false;
+  cvZones.style.cursor = hovered ? 'pointer' : 'crosshair';
+});
+
+// ── Control wiring ────────────────────────────────────────────────────
+document.getElementById('btnFit').addEventListener('click', fitAll);
+document.getElementById('opacitySlider').addEventListener('input', drawZones);
+document.getElementById('timeSlot').addEventListener('change', () => { renderPanel(selected); drawZones(); });
+document.getElementById('colorMode').addEventListener('change', drawZones);
+document.getElementById('showGrid').addEventListener('change', drawGrid);
+document.getElementById('showLabels').addEventListener('change', drawZones);
+window.addEventListener('resize', resizeCanvases);
+
+// ── popcycle.dat parser ───────────────────────────────────────────────
+function parsePopcycle(text) {
+  const result = {};
+  const lines = text.split('\n');
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    if (line.startsWith('POP_SCHEDULE:')) {
+      i++;
+      const name = (lines[i] || '').trim(); i++;
+      const weekday = [], weekend = [];
+      let inWeekend = false;
+
+      while (i < lines.length) {
+        const l = lines[i].trim();
+        if (l === 'END_POP_SCHEDULE') { i++; break; }
+        if (l.startsWith('//')) {
+          if (l.includes('Weekend')) inWeekend = true;
+          if (l.includes('Weekday')) inWeekend = false;
+          i++; continue;
+        }
+        if (!l) { i++; continue; }
+        const row = parseRow(l);
+        if (row) (inWeekend ? weekend : weekday).push(row);
+        i++;
+      }
+      result[name] = { weekday, weekend };
+    } else { i++; }
+  }
+  return result;
+}
+
+function parseRow(line) {
+  const p = line.trim().split(/\s+/);
+  if (p.length < 6 || isNaN(parseInt(p[0]))) return null;
+  return {
+    peds:     parseInt(p[0]),
+    scenario: parseInt(p[1]),
+    cars:     parseInt(p[2]),
+    parked:   parseInt(p[3]),
+    copCars:  parseInt(p[5]) || 0,
+  };
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const zr = await fetch('data/zones.json');
+    zones = await zr.json();
+    document.getElementById('zoneCount').textContent = `${zones.length} zones`;
+  } catch { document.getElementById('zoneCount').textContent = 'zones.json missing'; }
+
+  try {
+    const pr = await fetch('data/popcycle-vanilla.dat');
+    popData  = parsePopcycle(await pr.text());
+    const matched = zones.filter(z => popData[z.Name]).length;
+    console.log(`Popcycle: ${matched}/${zones.length} zones matched`);
+  } catch { console.warn('popcycle.dat not loaded'); }
+
+  resizeCanvases();
+  fitAll();
+}
+
+init();
+</script>
+</body>
+</html>

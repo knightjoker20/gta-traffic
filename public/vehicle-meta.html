@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic Vehicle.meta Editor</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+<link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/vehicle-meta.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="vehicle-meta">
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic Studio">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+      <div class="brand-copy">
+        <div class="brand-title">GTA Traffic Studio</div>
+        <div class="tagline">Vehicle.meta Editor V1.6</div>
+      </div>
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner vm-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Vehicle Metadata Manager</div>
+        <h1>GTA Traffic Vehicle.meta Editor</h1>
+        <p>Import vehicles.meta, edit the traffic and classification values that matter, analyze common problems, and export a safe edited file.</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="vehicle-meta-main">
+    <div class="vm-grid">
+      <div class="vm-stack">
+        <section class="panel">
+          <h2>Import</h2>
+          <div id="vmDropZone" class="vm-drop-zone" role="button" tabindex="0">
+            <div class="vm-drop-icon">▱</div>
+            <strong>Drop vehicles.meta here</strong>
+            <small>or click to choose a file</small>
+          </div>
+          <input id="vmFilePicker" class="vm-hidden" type="file" accept=".meta,.xml,.txt">
+          <div id="vmCloudBanner" class="vm-cloud-banner" hidden></div>
+          <div id="vmStatus" class="vm-status warn">No vehicles.meta loaded yet.</div>
+
+          <div class="vm-dlc-name-box">
+            <label for="vmDlcName">DLC / Meta Name</label>
+            <input id="vmDlcName" type="text" maxlength="80" placeholder="Example: ccpack2">
+            <small>Used only for organization. Export filename: <strong id="vmExportNamePreview">vehicles.meta</strong></small>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>File Stats</h2>
+          <div id="vmStats" class="vm-stat-grid">
+            <div class="vm-stat"><strong>0</strong><span>Vehicles</span></div>
+            <div class="vm-stat"><strong>0</strong><span>Selected</span></div>
+            <div class="vm-stat"><strong>0</strong><span>Visible</span></div>
+            <div class="vm-stat"><strong>0</strong><span>Warnings</span></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Saved Files</h2>
+          <div id="vmDatabaseStatus" class="vm-database-status warn">Opening local database...</div>
+          <div class="vm-action-row vm-database-actions">
+            <button class="btn-green" type="button" onclick="vehicleMetaEditor.saveCurrentProject()">Save Current File</button>
+          </div>
+          <div id="vmSavedProjects" class="vm-saved-projects">
+            <div class="vm-saved-empty">No saved vehicle.meta files yet.</div>
+          </div>
+          <p class="small vm-muted">Files autosave in this browser after imports and edits. Clearing browser site data can remove them, so export finished files normally.</p>
+        </section>
+
+        <section class="panel">
+          <h2>Export</h2>
+          <div class="vm-export-actions">
+            <button id="vmExportXmlButton" class="btn-green" type="button" onclick="vehicleMetaEditor.exportXml()">Export Full vehicles.meta</button>
+            <button class="btn-orange" type="button" onclick="vehicleMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
+            <button type="button" onclick="vehicleMetaEditor.exportJson()">Export JSON Backup</button>
+            <button class="secondary" type="button" onclick="vehicleMetaEditor.copyXml()">Copy XML</button>
+            <button id="vmSaveCloudBtn" class="btn-green" type="button" onclick="vehicleMetaEditor.saveToCloud()">&#9729; Save to Cloud</button>
+          </div>
+          <div id="vmCloudSaveStatus" class="vm-cloud-save-status" hidden></div>
+          <p class="small vm-muted">The editor modifies loaded XML nodes directly — original structure is preserved. "Export This Vehicle Only" creates a single-entry file safe to use as a standalone vehicles.meta. "Save to Cloud" stores the full pack in R2 so it auto-loads next visit.</p>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="vm-tabs" role="tablist" aria-label="Vehicle.meta editor sections">
+          <button class="vm-tab-button active" type="button" data-vm-tab="table" aria-selected="true">Vehicle Table</button>
+          <button class="vm-tab-button" type="button" data-vm-tab="analyzer" aria-selected="false">Analyzer</button>
+        </div>
+
+        <div id="vmTabTable" class="vm-tab-panel active">
+          <h2>Vehicle Table</h2>
+          <div class="vm-filter-grid">
+            <label>Search
+              <input id="vmSearch" type="search" placeholder="modelName, gameName, handlingId...">
+            </label>
+            <label>Vehicle Class
+              <select id="vmClassFilter"><option value="">All classes</option></select>
+            </label>
+            <label>Vehicle Type
+              <select id="vmTypeFilter"><option value="">All types</option></select>
+            </label>
+          </div>
+
+          <div class="vm-quick-edit" aria-label="Quick multi-row editor">
+            <label>Quick Edit Field
+              <select id="vmQuickEditField"></select>
+            </label>
+            <label>Value
+              <input id="vmQuickEditValue" type="text" placeholder="Enter value to apply">
+            </label>
+            <div class="vm-quick-edit-actions">
+              <button type="button" onclick="vehicleMetaEditor.applyQuickEdit('selected')">Apply to Selected</button>
+              <button type="button" onclick="vehicleMetaEditor.applyQuickEdit('visible')">Apply to Visible</button>
+              <button class="btn-orange" type="button" onclick="vehicleMetaEditor.applyQuickEdit('all')">Apply to All Rows</button>
+            </div>
+          </div>
+
+          <div class="vm-controls">
+            <button type="button" onclick="vehicleMetaEditor.selectVisible(true)">Select Visible</button>
+            <button class="secondary" type="button" onclick="vehicleMetaEditor.selectVisible(false)">Clear Visible</button>
+            <button class="secondary" type="button" onclick="vehicleMetaEditor.clearAllSelections()">Clear All</button>
+            <span class="vm-scroll-hint">Scroll sideways to see every full-width column.</span>
+          </div>
+
+          <div class="vm-field-help" aria-label="Traffic field explanations">
+            <div><strong>frequency</strong><span>Relative spawn weight. Higher usually means the model is chosen more often, but it is not a percentage.</span></div>
+            <div><strong>maxNum</strong><span>Ambient model-count limit. A value of 10 does not force ten cars to spawn; it tells the spawning system not to freely keep adding unlimited copies.</span></div>
+            <div><strong>maxNumOfSameColor</strong><span>Controls repeated colors for the same model. Lower values encourage color variety; higher values allow more identical-color copies.</span></div>
+            <div><strong>identicalModelSpawnDistance</strong><span>Controls how far apart identical models should be spawned. Higher values discourage duplicate vehicles from appearing close together.</span></div>
+          </div>
+
+          <div class="vm-table-wrap">
+            <table class="vm-table">
+              <thead>
+                <tr>
+                  <th><input id="vmSelectAllVisible" type="checkbox" title="Select visible rows"></th>
+                  <th class="vm-th-danger" title="⚠ GAME-BREAKING — Must match your .yft/.ytd filenames exactly, and entries in popgroups, carcols, carmods, and trainer lists. Changing this will break the vehicle in-game.">modelName <span class="vm-th-badge vm-th-badge-danger">⚠</span></th>
+                  <th>gameName</th>
+                  <th>make</th>
+                  <th title="Relative ambient spawn weighting; higher values generally make the model more likely to be selected.">frequency</th>
+                  <th title="Ambient model-count limit used by GTA's spawning logic; it is not a command to spawn this exact number.">maxNum</th>
+                  <th title="Limits repeated instances of this model using the same color; lower values encourage more color variety.">maxNumOfSameColor</th>
+                  <th title="Minimum spacing used by ambient spawning before another identical model is allowed nearby.">identicalModelSpawnDistance</th>
+                  <th>class</th>
+                  <th>type</th>
+                  <th class="vm-th-risky" title="⚠ Caution — Must match a valid entry in handling.meta. Wrong value = broken handling behavior.">handlingId <span class="vm-th-badge vm-th-badge-risky">⚠</span></th>
+                  <th class="vm-th-risky" title="⚠ Caution — Links to an audio bank entry. Wrong value = silent vehicle.">audio <span class="vm-th-badge vm-th-badge-risky">⚠</span></th>
+                  <th>layout</th>
+                  <th>swankness</th>
+                </tr>
+              </thead>
+              <tbody id="vmTableBody">
+                <tr><td colspan="14" class="vm-muted">Load a vehicles.meta file to begin.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="vmTabAnalyzer" class="vm-tab-panel">
+          <h2>Analyzer</h2>
+          <p class="vm-muted vm-analyzer-intro">Checks are run automatically when a file loads and after edits. Use this button to run them again at any time.</p>
+          <div class="vm-action-row" style="margin-bottom:12px">
+            <button id="vmRunAnalyzer" class="btn-green" type="button">Run Analyzer</button>
+          </div>
+          <div id="vmAnalysis" class="vm-analysis-list">
+            <div class="vm-analysis-item warn">Load a vehicles.meta file, then run the analyzer.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/js/shared/siteheader.js"></script>
+<script src="js/shared/siteshell.js"></script>
+  <script src="js/shared/metafilecloud.js"></script>
+  <script src="js/vehiclemetaeditor.js"></script>
+  <script defer src="/js/accountnav.js"></script>
+</body>
+</html>

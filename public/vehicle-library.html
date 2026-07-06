@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic Vehicle Library</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+<link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/vehicle-library.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+<body data-page="library" class="vl-library-page">
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic Studio">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+      <div class="brand-copy">
+        <div class="brand-title">GTA Traffic Studio</div>
+        <div class="tagline">Vehicle Library V1.3</div>
+      </div>
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner vl-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Visual Vehicle Database</div>
+        <h1>GTA Traffic Vehicle Library</h1>
+        <p>Browse the searchable vehicle database, synced from Popgroups, vehicles.meta, and handling.meta data. Open any vehicle for a complete reference page and your own saved installation notes.</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="vehicle-library-main">
+    <div class="vl-layout">
+      <aside class="vl-sidebar">
+        <div id="vlStatus" class="vl-status warn">Opening the local vehicle database...</div>
+
+        <section class="panel">
+          <h2>Installed Vehicle Scanner</h2>
+          <p class="small vl-muted">Detect which library vehicles you have installed and mark them automatically.</p>
+
+          <div id="vlInstallDropZone" class="vl-install-drop-zone" tabindex="0" role="button">
+            <strong>Drop .yft / .ytd files to uninstall</strong>
+            <span>Drag vehicle files here to mark matching library vehicles as not installed.</span>
+          </div>
+          <input id="vlInstallFilesPicker" class="vl-hidden" type="file" accept=".yft,.ytd" multiple>
+
+          <div class="vl-install-rpf-scan">
+            <div class="vl-rpf-buttons">
+              <button id="vlRpfAddFolderButton" class="btn-orange" type="button">Add DLC Folder</button>
+              <button id="vlRpfFilesButton" class="btn-orange" type="button">Select .rpf Files</button>
+            </div>
+            <div id="vlRpfFolderQueue" class="vl-rpf-folder-queue vl-hidden"></div>
+            <p class="small vl-muted">Add one or more DLC folders to the queue, then scan them all at once. Or pick individual .rpf files directly. Requires Chrome, Edge, Opera, Brave, or another Chromium-based browser (Firefox not supported). When the browser asks for permission, click <strong>Allow</strong> — files are read locally and never uploaded.</p>
+          </div>
+
+          <div id="vlInstallScanResult" class="vl-install-scan-result"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Spawn Name List</h2>
+          <p class="small vl-muted">Paste model names (one per line) to bulk mark as installed or uninstalled. New names are added to the library automatically.</p>
+
+          <div class="vl-spawn-mode-row">
+            <span class="vl-spawn-mode-label">Uninstall</span>
+            <label class="vl-toggle" title="Toggle install / uninstall mode">
+              <input type="checkbox" id="vlSpawnInstallToggle" checked>
+              <span class="vl-toggle-track"><span class="vl-toggle-thumb"></span></span>
+            </label>
+            <span class="vl-spawn-mode-label">Install</span>
+          </div>
+
+          <textarea id="vlSpawnNameInput" class="vl-spawn-input"
+            placeholder="sc300a, silverado99, foxbody&#10;(commas, spaces, or one per line — all work)"
+            rows="6" spellcheck="false" autocomplete="off"></textarea>
+
+          <button class="btn-green" id="vlSpawnApplyBtn" type="button">Apply</button>
+          <div id="vlSpawnResult" class="vl-install-scan-result"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Library Stats</h2>
+          <div class="vl-stat-grid" id="vlStats">
+            <div><strong>0</strong><span>Vehicles</span></div>
+            <div><strong>0</strong><span>With Images</span></div>
+            <div><strong>0</strong><span>Handling Linked</span></div>
+            <div><strong>0</strong><span>In Popgroups</span></div>
+            <div><strong>0</strong><span>Installed</span></div>
+          </div>
+        </section>
+
+        <section class="panel vl-category-panel">
+          <h2>Categories</h2>
+          <div id="vlCategoryList" class="vl-category-list"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Filters</h2>
+          <div class="vl-filter-stack">
+            <label>Vehicle Make
+              <select id="vlMakeFilter"><option value="">All makes</option></select>
+            </label>
+            <label>Vehicle Type
+              <select id="vlTypeFilter"><option value="">All types</option></select>
+            </label>
+            <label>AI Handling
+              <select id="vlAiFilter"><option value="">All AI profiles</option></select>
+            </label>
+            <label>Installed Status
+              <select id="vlInstalledFilter">
+                <option value="">All vehicles</option>
+                <option value="installed">Installed</option>
+                <option value="not-installed">Not Installed</option>
+              </select>
+            </label>
+            <label>Install Type
+              <select id="vlInstallFilter">
+                <option value="">All installation types</option>
+                <option value="Add-On">Add-On</option>
+                <option value="Replacement">Replacement</option>
+                <option value="Vanilla">Vanilla</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+            </label>
+            <label class="vl-check-label"><input id="vlFavoritesOnly" type="checkbox"> Favorites only</label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Tags</h2>
+          <div id="vlTagCloud" class="tag-cloud"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Database</h2>
+          <div class="vl-db-actions">
+            <button class="btn-green" id="vlExportDatabase" type="button">Export Library</button>
+            <button id="vlImportDatabase" type="button">Import Backup</button>
+            <button class="danger" id="vlClearDatabase" type="button">Clear Library</button>
+            <input id="vlDatabasePicker" class="vl-hidden" type="file" accept=".json">
+          </div>
+          <p class="small vl-muted">Records and uploaded images remain in this browser until you clear site data. Export a backup periodically.</p>
+        </section>
+      </aside>
+
+      <section class="panel vl-browser-panel">
+        <div class="vl-browser-header">
+          <div>
+            <h2>Vehicle Library</h2>
+            <p class="vl-muted">Browse every vehicle currently stored in your local database.</p>
+          </div>
+          <div class="vl-header-actions">
+            <button id="vlRandomVehicle" class="btn-orange" type="button">Random Vehicle</button>
+          </div>
+        </div>
+
+        <div class="vl-import-row">
+          <div id="vlVehiclesDropZone" class="vl-import-dropzone" data-pick="vlVehiclesPicker" tabindex="0" role="button">
+            <strong>Drop vehicles.meta</strong>
+            <span>Bulk import or update vehicle records</span>
+          </div>
+          <div id="vlHandlingDropZone" class="vl-import-dropzone" data-pick="vlHandlingPicker" tabindex="0" role="button">
+            <strong>Drop handling.meta</strong>
+            <span>Bulk import or update handling profiles</span>
+          </div>
+          <div id="vlPopgroupsDropZone" class="vl-import-dropzone" data-pick="vlPopgroupsPicker" tabindex="0" role="button">
+            <strong>Drop popgroups.xml</strong>
+            <span>Tag vehicles with their current popgroup</span>
+          </div>
+          <input id="vlVehiclesPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt" multiple>
+          <input id="vlHandlingPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt" multiple>
+          <input id="vlPopgroupsPicker" class="vl-hidden" type="file" accept=".xml,.ymt,.txt" multiple>
+        </div>
+
+        <div class="vl-search-row">
+          <label class="vl-search-box">
+            <span aria-hidden="true">⌕</span>
+            <input id="vlSearch" type="search" placeholder="Search model, game name, make, handling, group, DLC, tag...">
+          </label>
+        </div>
+
+        <div class="vl-results-toolbar">
+          <div id="vlResultCount">0 vehicles</div>
+          <div class="vl-sort-controls">
+            <label>Sort by
+              <select id="vlSort">
+                <option value="name-asc">Name A-Z</option>
+                <option value="name-desc">Name Z-A</option>
+                <option value="make-asc">Make A-Z</option>
+                <option value="class-asc">Class A-Z</option>
+                <option value="ai-asc">AI Handling A-Z</option>
+                <option value="installed-first">Installed First</option>
+                <option value="not-installed-first">Not Installed First</option>
+                <option value="updated-desc">Recently Updated</option>
+              </select>
+            </label>
+			<label>Show
+				<select id="vlPageSize">
+					<option value="25">25</option>
+					<option value="50" selected>50</option>
+					<option value="100">100</option>
+				</select>
+			</label>
+            <div class="vl-view-switch" aria-label="View style">
+              <button id="vlGridView" class="active" type="button" title="Grid view">▦</button>
+              <button id="vlListView" type="button" title="List view">☷</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="vlVehicleGrid" class="vl-vehicle-grid">
+          <div class="vl-empty-state">
+            <strong>No vehicles have been imported.</strong>
+            <span>Import a vehicles.meta file to create the library, then add Popgroups and handling.meta data.</span>
+          </div>
+        </div>
+
+        <div id="vlPagination" class="vl-pagination"></div>
+      </section>
+    </div>
+
+    <section class="panel vl-source-history-panel vl-source-history-wide">
+      <div class="vl-source-history-heading">
+        <div>
+          <h2>Recent Source History</h2>
+          <p class="vl-muted vl-compact-copy">
+            Latest imported vehicles.meta, handling.meta, and Popgroups source files.
+          </p>
+        </div>
+
+        <button id="vlRefreshSourceHistory" type="button">Refresh</button>
+      </div>
+
+      <div id="vlSourceHistoryList" class="vl-source-history-list">
+        <div class="vl-source-history-empty">
+          Source history has not loaded yet.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="vlCompareTray" class="vl-compare-tray vl-hidden">
+    <div class="vl-compare-tray-inner">
+      <div id="vlCompareChips" class="vl-compare-chips"></div>
+      <div class="vl-compare-tray-actions">
+        <button id="vlCompareClear" type="button" class="vl-compare-clear">Clear</button>
+        <button id="vlCompareOpen" type="button" class="vl-compare-open" disabled>Compare</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="vlCompareModalOverlay" class="vl-compare-modal-overlay vl-hidden">
+    <div class="vl-compare-modal" role="dialog" aria-modal="true" aria-label="Compare vehicles">
+      <div class="vl-compare-modal-header">
+        <div>
+          <p class="vl-compare-modal-kicker">Vehicle Library</p>
+          <h2>Compare Vehicles</h2>
+        </div>
+        <button id="vlCompareModalClose" type="button" class="vl-compare-modal-close" aria-label="Close compare">&times;</button>
+      </div>
+      <div id="vlCompareModalBody" class="vl-compare-modal-body"></div>
+    </div>
+  </div>
+
+  <script src="/js/shared/siteheader.js"></script>
+<script src="js/shared/siteshell.js"></script>
+  <script src="js/vehiclelibrarystore.js"></script>
+  <script src="js/vehiclecloud.js"></script>
+  <script src="js/vanillaVehicles.js"></script>
+  <script src="js/vehiclelibrary.js"></script>
+  <script src="js/rpfscanner/rpf7parser.js"></script>
+  <script src="js/rpfscanner/rpfscannerapp.js"></script>
+  <script defer src="/js/accountnav.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,178 @@
+.gta-account-nav {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, .28);
+  border-radius: 999px;
+  background: rgba(7, 10, 15, .82);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
+}
+
+.gta-account-nav a,
+.gta-account-nav button {
+  border: 1px solid rgba(148, 163, 184, .26);
+  border-radius: 999px;
+  background: rgba(21, 29, 42, .92);
+  color: #f5f7fb;
+  cursor: pointer;
+  font: 800 13px/1 Inter, Segoe UI, Arial, sans-serif;
+  padding: 9px 12px;
+  text-decoration: none;
+}
+
+.gta-account-nav a.primary {
+  background: linear-gradient(135deg, #38bdf8, #22c55e);
+  border-color: transparent;
+  color: #031018;
+}
+
+.gta-account-nav .account-email {
+  color: #94a3b8;
+  font: 700 12px/1 Inter, Segoe UI, Arial, sans-serif;
+  max-width: 180px;
+  overflow: hidden;
+  padding: 0 5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .gta-account-nav {
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: 10px;
+    justify-content: center;
+    border-radius: 18px;
+    flex-wrap: wrap;
+  }
+
+  .gta-account-nav .account-email {
+    display: none;
+  }
+}
+
+/* Keep account nav buttons consistent across all site themes */
+.gta-account-nav a.primary,
+body.gta-theme .gta-account-nav a.primary {
+  background: linear-gradient(135deg, #facc15, #f97316 48%, #ef4444) !important;
+  border-color: transparent !important;
+  color: #f5f7fb !important;
+  box-shadow: 0 0 24px rgba(249, 115, 22, .24) !important;
+}
+
+.gta-account-nav a.primary:hover,
+body.gta-theme .gta-account-nav a.primary:hover {
+  filter: brightness(1.08);
+}
+
+.gta-account-nav button,
+body.gta-theme .gta-account-nav button {
+  background: #151d2a !important;
+  color: #f5f7fb !important;
+  border-color: rgba(148, 163, 184, .26) !important;
+}
+
+/* ── Logged-in flyout mode ─────────────────────────────────── */
+.gta-account-nav.is-logged-in {
+  padding: 4px;
+  border-radius: 999px;
+  /* position: fixed is inherited from .gta-account-nav — do NOT override to relative here.
+     The flyout uses position:absolute which is relative to the nearest positioned ancestor,
+     so keeping this fixed is correct: the flyout will anchor to this fixed container. */
+}
+
+/* Avatar trigger button */
+.gta-account-nav-trigger {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #facc15, #f97316 48%, #ef4444) !important;
+  color: #f5f7fb !important;
+  font: 800 14px/1 Inter, Segoe UI, Arial, sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(249, 115, 22, .32);
+  transition: filter .15s;
+}
+
+.gta-account-nav-trigger:hover {
+  filter: brightness(1.12);
+}
+
+/* Flyout panel */
+.gta-account-nav-flyout {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 200px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, .28);
+  border-radius: 14px;
+  background: rgba(7, 10, 15, .96);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .45);
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10000;
+  /* Animate in */
+  transform-origin: top right;
+}
+
+.gta-account-nav-flyout.open {
+  display: flex;
+  animation: gta-flyout-in .15s ease;
+}
+
+@keyframes gta-flyout-in {
+  from { opacity: 0; transform: scale(.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)  translateY(0); }
+}
+
+/* Email row inside flyout */
+.gta-account-nav-flyout .account-email {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, .12);
+  margin-bottom: 2px;
+  max-width: none;
+}
+
+/* Links and buttons inside flyout */
+.gta-account-nav-flyout a,
+.gta-account-nav-flyout button {
+  width: 100%;
+  border-radius: 8px !important;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .gta-account-nav.is-logged-in {
+    bottom: 10px;
+    top: auto;
+    right: 10px;
+    left: auto;
+    border-radius: 999px;
+  }
+
+  .gta-account-nav-flyout {
+    bottom: calc(100% + 10px);
+    top: auto;
+    transform-origin: bottom right;
+  }
+
+  @keyframes gta-flyout-in {
+    from { opacity: 0; transform: scale(.95) translateY(4px); }
+    to   { opacity: 1; transform: scale(1)  translateY(0); }
+  }
+}

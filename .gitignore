@@ -1,0 +1,10 @@
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
+
+# Local vehicle image upload staging
+vehicle-image-upload/
+vehicle-image-upload.lnk

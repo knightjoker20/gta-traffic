@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    GTA Traffic Popcycle Editor
+  </title>
+
+  <!-- =====================================================
+       [SECTION: POPCYCLE_STYLESHEETS]
+       style.css is your existing GTA-Traffic.com site style.
+       The two additional files belong to this add-on.
+       ===================================================== -->
+  <link rel="stylesheet" href="css/design-tokens.css">
+<link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/popcycle.css">
+  <!-- [END SECTION: POPCYCLE_STYLESHEETS] -->
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="popcycle">
+
+  <!-- =====================================================
+       [SECTION: SITE_HEADER]
+       Uses the same logo and centered header approach as the
+       current GTA-Traffic.com build.
+       ===================================================== -->
+  <header class="app-header">
+    <a
+      class="brand-left"
+      href="index.html"
+      aria-label="Return to GTA Traffic Popgroups Editor"
+    >
+      <img
+        class="site-logo"
+        src="assets/gta-traffic-logo.png"
+        alt="GTA Traffic"
+      >
+    </a>
+  </header>
+  <!-- [END SECTION: SITE_HEADER] -->
+
+  <!-- =====================================================
+       [SECTION: SHARED_TOOL_MENU_HOST]
+       siteShell.js inserts the shared menu here.
+       ===================================================== -->
+  <div id="siteToolMenu"></div>
+  <!-- [END SECTION: SHARED_TOOL_MENU_HOST] -->
+
+  <!-- =====================================================
+       [SECTION: POPCYCLE_HERO]
+       Keep the hero content centered in future edits.
+       ===================================================== -->
+  <section class="hero-banner popcycle-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">
+          Population Schedule Manager
+        </div>
+
+        <h1>
+          GTA Traffic Popcycle Editor
+        </h1>
+
+        <p>
+          Edit normal AM/PM traffic periods, view each
+          schedule on the San Andreas map, tune hourly ped,
+          vehicle, and police mixes, and export without
+          hand-editing DAT rows.
+        </p>
+      </div>
+    </div>
+  </section>
+  <!-- [END SECTION: POPCYCLE_HERO] -->
+
+  <main class="popcycle-main">
+
+    <!-- =====================================================
+         [SECTION: POPCYCLE_FILE_CONTROLS]
+         Load files, restore drafts, undo, validate, and export.
+         ===================================================== -->
+    <section class="panel pc-control-panel">
+      <h2>Popcycle File Controls</h2>
+
+      <div class="pc-control-row">
+        <button
+          class="btn-orange"
+          type="button"
+          onclick="loadStockTrafficBase()"
+        >
+          Load Stock Traffic
+        </button>
+
+        <label>
+          <span class="small">
+            Load custom popcycle.dat
+          </span>
+
+          <input
+            id="popcycleFilePicker"
+            class="pc-file-picker"
+            type="file"
+            accept=".dat,.txt"
+          >
+        </label>
+
+        <button
+          class="btn-green"
+          type="button"
+          onclick="savePopcycleWorkspaceNow()"
+        >
+          Save Workspace Now
+        </button>
+
+        <button
+          class="secondary"
+          type="button"
+          onclick="exportPopcycleWorkspaceBackup()"
+        >
+          Export Workspace
+        </button>
+
+        <button
+          class="secondary"
+          type="button"
+          onclick="openPopcycleWorkspaceImportPicker()"
+        >
+          Import Workspace
+        </button>
+
+        <input
+          id="popcycleWorkspaceImportPicker"
+          type="file"
+          accept=".json,application/json"
+          hidden
+          onchange="importPopcycleWorkspaceBackup(this.files[0]); this.value=''"
+        >
+
+        <button
+          class="secondary"
+          type="button"
+          onclick="refreshInstalledPopgroupsReference()"
+        >
+          Refresh Popgroups Groups
+        </button>
+
+        <button
+          class="danger"
+          type="button"
+          onclick="clearSavedPopcycleWorkspace()"
+        >
+          Clear Saved Workspace
+        </button>
+
+        <button
+          id="popcycleUndoButton"
+          class="secondary"
+          type="button"
+          onclick="undoPopcycleEdit()"
+        >
+          Undo
+        </button>
+
+        <button
+          id="popcycleRedoButton"
+          class="secondary"
+          type="button"
+          onclick="redoPopcycleEdit()"
+        >
+          Redo
+        </button>
+
+        <button
+          class="secondary"
+          type="button"
+          onclick="downloadOriginalPopcycleBackup()"
+        >
+          Download Original Backup
+        </button>
+
+        <button
+          class="secondary"
+          type="button"
+          onclick="downloadPopcycleChangeReport()"
+        >
+          Download Change Report
+        </button>
+
+        <button
+          class="btn-green"
+          type="button"
+          onclick="runPopcycleValidation()"
+        >
+          Validate
+        </button>
+
+        <button
+          class="btn-orange"
+          type="button"
+          onclick="exportEditedPopcycle()"
+        >
+          Export Edited DAT
+        </button>
+      </div>
+
+      <div class="pc-status-row">
+        <div id="popcycleFileStatus"></div>
+        <div id="popcycleDraftStatus"></div>
+      </div>
+
+      <div
+        id="popcycleOverview"
+        class="pc-overview"
+      ></div>
+
+      <div
+        id="popcycleWorkspaceStatus"
+        class="pc-workspace-status"
+      ></div>
+    </section>
+    <!-- [END SECTION: POPCYCLE_FILE_CONTROLS] -->
+
+    <!-- =====================================================
+         [SECTION: POPCYCLE_WORKSPACE]
+         Schedule browser on the left, editor on the right.
+         ===================================================== -->
+    <div class="pc-workspace">
+
+      <!-- ===================================================
+           [SECTION: POPCYCLE_SCHEDULE_BROWSER]
+           Search and filter all population schedules.
+           =================================================== -->
+      <aside class="panel pc-sidebar">
+        <h2>Schedules</h2>
+
+        <div class="pc-sidebar-controls">
+          <input
+            id="popcycleScheduleSearch"
+            placeholder="Search schedules..."
+          >
+
+          <select id="popcycleScheduleFilter">
+            <option value="all">
+              All schedules
+            </option>
+
+            <option value="modified">
+              Modified only
+            </option>
+
+            <option value="warnings">
+              Warnings
+            </option>
+
+            <option value="redline">
+              Beyond Redline
+            </option>
+          </select>
+        </div>
+
+        <div
+          id="popcycleScheduleList"
+          class="pc-schedule-list"
+        ></div>
+      </aside>
+      <!-- [END SECTION: POPCYCLE_SCHEDULE_BROWSER] -->
+
+      <!-- ===================================================
+           [SECTION: POPCYCLE_SCHEDULE_EDITOR]
+           Twelve human-readable time rows and numeric fields.
+           =================================================== -->
+      <section class="panel pc-editor-panel">
+        <div class="pc-selected-header">
+          <div>
+            <h2 id="selectedScheduleTitle">
+              Schedule
+            </h2>
+
+            <div
+              id="selectedScheduleStatus"
+              class="small"
+            ></div>
+          </div>
+
+          <button
+            class="secondary"
+            type="button"
+            onclick="resetSelectedScheduleToOriginal()"
+          >
+            Reset Selected Schedule
+          </button>
+        </div>
+
+        <div class="pc-presets">
+          <h3>Schedule Presets</h3>
+
+          <p class="small">
+            Night Shift keeps daytime values at Stock Traffic
+            while reducing late-night and overnight population.
+            Traffic Redline remains an aggressive reference—not
+            a guaranteed safe engine maximum.
+          </p>
+
+          <div
+            id="popcyclePresetButtons"
+            class="pc-preset-buttons"
+          ></div>
+        </div>
+
+        <!-- =================================================
+             [SECTION: POPCYCLE_VISUAL_MAP_EDITOR]
+             Interactive map layers with zoom, pan, schedule
+             selection, and saved map view state.
+             ================================================= -->
+        <details
+          id="popcycleAreaMapPanel"
+          class="pc-area-map-panel pc-visual-map-panel"
+          open
+        >
+          <summary>
+            <span class="pc-map-summary-title">
+              🗺 Visual Popcycle Map Editor
+            </span>
+
+            <span
+              id="popcycleAreaSummaryLabel"
+              class="pc-area-current-location"
+            >
+              Loading map reference...
+            </span>
+          </summary>
+
+          <div
+            id="popcycleVisualMapShell"
+            class="pc-visual-map-shell"
+          >
+            <div
+              id="popcycleMapSelectionSummary"
+              class="pc-map-selection-summary"
+            ></div>
+
+            <div class="pc-map-toolbar">
+              <div
+                id="popcycleMapLayerButtons"
+                class="pc-map-layer-buttons"
+                aria-label="Map layers"
+              ></div>
+
+              <div class="pc-map-control-buttons">
+                <button
+                  type="button"
+                  title="Zoom in"
+                  onclick="zoomPopcycleMap(1.25)"
+                >
+                  ＋
+                </button>
+
+                <button
+                  type="button"
+                  title="Zoom out"
+                  onclick="zoomPopcycleMap(0.8)"
+                >
+                  −
+                </button>
+
+                <span
+                  id="popcycleMapZoomLabel"
+                  class="pc-map-zoom-label"
+                >
+                  100%
+                </span>
+
+                <button
+                  type="button"
+                  class="secondary"
+                  onclick="focusPopcycleMapOnSelected()"
+                >
+                  Focus Selected
+                </button>
+
+                <button
+                  type="button"
+                  class="secondary"
+                  onclick="fitPopcycleMap()"
+                >
+                  Fit Map
+                </button>
+
+                <button
+                  type="button"
+                  class="secondary"
+                  onclick="resetPopcycleMapView()"
+                >
+                  Reset View
+                </button>
+
+                <button
+                  type="button"
+                  class="secondary"
+                  onclick="togglePopcycleMapFullscreen()"
+                >
+                  Fullscreen
+                </button>
+              </div>
+            </div>
+
+            <div class="pc-two-map-layout">
+              <section class="pc-main-map-column">
+                <div class="pc-map-column-heading">
+                  <div>
+                    <h3>San Andreas Overview</h3>
+                    <p>Click a schedule marker to select it. Zoom and drag the map without changing the focused reference panel.</p>
+                  </div>
+                </div>
+                <div class="pc-visual-map-stage pc-main-map-stage">
+                  <canvas id="popcycleVisualMapCanvas" width="1200" height="760" aria-label="Interactive Popcycle schedule overview map"></canvas>
+                  <div class="pc-map-instructions">Mouse wheel: zoom · Drag: pan · Click a marker: select its Popcycle schedule · Double-click: zoom in</div>
+                </div>
+              </section>
+              <aside class="pc-focused-map-column">
+                <div class="pc-map-column-heading">
+                  <div>
+                    <h3>Focused Area</h3>
+                    <p id="popcycleFocusedMapCaption">Select a mapped schedule to view its local area.</p>
+                  </div>
+                  <button type="button" class="secondary" onclick="focusPopcycleMapOnSelected()">Focus Main Map</button>
+                </div>
+                <div class="pc-focused-map-stage">
+                  <canvas id="popcycleFocusedMapCanvas" width="760" height="560" aria-label="Focused local Popcycle area map"></canvas>
+                  <div class="pc-focused-map-legend">
+                    <span><i class="pc-outline-sample pc-outline-selected"></i>Approximate selected area</span>
+                    <span><i class="pc-marker-sample"></i>Schedule location</span>
+                  </div>
+                </div>
+                <div class="pc-area-map-controls">
+                  <label>Manual area override
+                    <select id="popcycleAreaOverrideSelect" onchange="setPopcycleAreaOverride(this.value)">
+                      <option value="">Auto-match selected schedule</option>
+                    </select>
+                  </label>
+                  <button type="button" class="secondary" onclick="resetPopcycleAreaOverride()">Restore Automatic Match</button>
+                </div>
+                <div id="popcycleAreaDetails" class="pc-focused-area-details"></div>
+              </aside>
+            </div>
+          </div>
+        </details>
+        <!-- [END SECTION: POPCYCLE_VISUAL_MAP_EDITOR] -->
+
+        <!-- =================================================
+             [SECTION: POPCYCLE_BATCH_EDITOR_HOST]
+             Batch VEH-group editing and time-slot selection.
+             ================================================= -->
+        <div id="popcycleBatchEditor"></div>
+        <!-- [END SECTION: POPCYCLE_BATCH_EDITOR_HOST] -->
+
+        <div class="pc-table-wrap">
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th class="pc-time-select-heading">
+                  Select
+                </th>
+
+                <th>Time Period</th>
+
+                <th title="Maximum ambient pedestrians">
+                  Peds
+                </th>
+
+                <th title="Maximum scenario pedestrians">
+                  Scenario
+                </th>
+
+                <th title="Maximum ambient cars">
+                  Cars
+                </th>
+
+                <th title="Maximum parked cars">
+                  Parked
+                </th>
+
+                <th title="Low-priority parked cars">
+                  Low Parked
+                </th>
+
+                <th title="Police car percentage">
+                  Cop Cars %
+                </th>
+
+                <th title="Police pedestrian percentage">
+                  Cop Peds %
+                </th>
+
+                <th title="Maximum scenario pedestrian models">
+                  Ped Models
+                </th>
+
+                <th title="Maximum scenario vehicle models">
+                  Vehicle Models
+                </th>
+
+                <th title="Maximum preassigned parked vehicles">
+                  Assigned Parked
+                </th>
+
+                <th>Group Summary</th>
+              </tr>
+            </thead>
+
+            <tbody id="popcycleTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="popcycleGroupSummary"></div>
+      </section>
+      <!-- [END SECTION: POPCYCLE_SCHEDULE_EDITOR] -->
+    </div>
+    <!-- [END SECTION: POPCYCLE_WORKSPACE] -->
+
+    <!-- =====================================================
+         [SECTION: POPCYCLE_VALIDATION_PANEL]
+         Errors block export; warnings require review.
+         ===================================================== -->
+    <section class="panel pc-validation-panel">
+      <h2>Validation and Export Review</h2>
+      <div id="popcycleValidation"></div>
+    </section>
+    <!-- [END SECTION: POPCYCLE_VALIDATION_PANEL] -->
+
+  </main>
+
+  <!-- =====================================================
+       [SECTION: POPCYCLE_SCRIPTS]
+       Script order matters. Keep data and state first,
+       application startup last.
+       ===================================================== -->
+  <script src="data/stocktrafficreference.js"></script>
+  <script src="data/trafficredlinereference.js"></script>
+  <script src="data/popcycleareamapdata.js"></script>
+  <script src="data/popcyclevisualmapconfig.js"></script>
+
+  <script src="/js/shared/siteheader.js"></script>
+<script src="js/shared/siteshell.js"></script>
+
+  <script src="js/popcycle/popcyclestate.js"></script>
+  <script src="js/popcycle/popcycleparser.js"></script>
+  <script src="js/popcycle/popcyclereferences.js"></script>
+  <script src="js/popcycle/popcyclevalidation.js"></script>
+  <script src="js/popcycle/popcyclegroupdescriptions.js"></script>
+  <script src="js/popcycle/popcycleareamap.js"></script>
+  <script src="js/popcycle/popcycleeditor.js"></script>
+  <script src="js/popcycle/popcyclebatcheditor.js"></script>
+  <script src="js/popcycle/popcycleworkspace.js"></script>
+  <script src="js/popcycle/popcycleexport.js"></script>
+  <script src="js/popcycle/popcyclerender.js"></script>
+  <script src="js/popcycle/popcycleapp.js"></script>
+  <!-- [END SECTION: POPCYCLE_SCRIPTS] -->
+
+  <script defer src="/js/accountnav.js"></script>
+</body>
+</html>

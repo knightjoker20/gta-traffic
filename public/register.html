@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Free Account | GTA Traffic</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+<link rel="stylesheet" href="/css/auth.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/theme-gta.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+  <script defer src="/js/auth.js"></script>
+</head>
+<body data-auth-mode="register" data-page="register" class="gta-theme gta-auth-register">
+  <main class="auth-shell">
+    <section class="auth-hero">
+      <div class="brand">
+        <div class="brand-lockup">
+          <span class="brand-icon">GT</span>
+          <span>
+            <strong>GTA Traffic</strong>
+            <small>Traffic editor workspace</small>
+          </span>
+        </div>
+
+        <a href="/">Main Site</a>
+      </div>
+
+      <p class="eyebrow">Free account</p>
+      <h1>Build and save cleaner GTA V traffic setups.</h1>
+      <p>
+        Create a workspace for vehicle libraries, pack tracking, PopGroups, PopCycle tuning,
+        and future saved traffic projects.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <strong>Personal workspace</strong>
+          <span>Your account gets its own GTA Traffic workspace.</span>
+        </div>
+
+        <div class="feature-card">
+          <strong>Project-ready foundation</strong>
+          <span>Saved traffic projects are the next feature being connected.</span>
+        </div>
+
+        <div class="feature-card">
+          <strong>Vehicle tools</strong>
+          <span>Jump into vehicle library and metadata tools from your dashboard.</span>
+        </div>
+
+        <div class="feature-card">
+          <strong>Free plan</strong>
+          <span>Start with the core tools before premium storage is added later.</span>
+        </div>
+      </div>
+
+      <div class="auth-orb" aria-hidden="true"></div>
+    </section>
+
+    <section class="auth-card">
+      <h2>Create your account</h2>
+      <p>Start with a free account and get your own workspace immediately.</p>
+
+      <form id="authForm">
+        <label>
+          Email
+          <input id="emailInput" type="email" autocomplete="email" required>
+        </label>
+
+        <label>
+          Display name
+          <input id="displayNameInput" type="text" autocomplete="name" required>
+        </label>
+
+        <label>
+          Password
+          <input id="passwordInput" type="password" autocomplete="new-password" required minlength="8">
+        </label>
+
+        <label>
+          Confirm password
+          <input id="confirmPasswordInput" type="password" autocomplete="new-password" required minlength="8">
+        </label>
+
+        <div class="form-note">
+          Passwords must be at least 8 characters. Email verification and password reset will be added later.
+        </div>
+
+        <button type="submit">Create Free Account</button>
+        <div id="authStatus" class="status"></div>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="/login.html">Log in</a>
+      </div>
+    </section>
+  </main>
+
+  <script defer src="/js/accountnav.js"></script>
+</body>
+</html>

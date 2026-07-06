@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehicle Flags Reference | GTA Traffic Studio</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+  <style>
+    /* ── Page shell ──────────────────────────────────────────── */
+    .fr-main {
+      max-width: var(--max-width-content);
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+
+    /* .fr-hero uses .hero-banner from site-shell.css */
+
+    /* ── Top explainer: article + decoder side by side ───────── */
+    .fr-top-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+    @media (max-width: 900px) {
+      .fr-top-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Article prose ───────────────────────────────────────── */
+    .fr-article {
+      padding: 24px 28px;
+    }
+    .fr-article h2 {
+      color: var(--color-brand);
+      font-size: var(--text-xl);
+      margin: 0 0 10px;
+    }
+    .fr-article h3 {
+      color: var(--color-text-primary);
+      font-size: var(--text-md);
+      margin: 24px 0 8px;
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: 6px;
+    }
+    .fr-article p {
+      color: var(--color-text-secondary);
+      line-height: var(--leading-loose);
+      margin: 0 0 14px;
+    }
+    .fr-article ul {
+      margin: 0 0 14px 20px;
+      color: var(--color-text-secondary);
+      line-height: 1.9;
+    }
+    .fr-article code {
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      background: var(--color-bg-raised);
+      color: var(--color-brand-light);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 1px 5px;
+    }
+    .fr-example-box {
+      background: var(--color-bg-raised);
+      border: 1px solid var(--color-border);
+      border-left: 3px solid var(--color-brand);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin: 14px 0;
+    }
+    .fr-example-box p {
+      margin: 4px 0;
+      font-size: var(--text-sm);
+    }
+    .fr-hex-demo {
+      font-family: var(--font-mono);
+      font-size: var(--text-lg);
+      letter-spacing: 0.1em;
+      color: var(--color-brand-light);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      margin: 10px 0;
+      text-align: center;
+    }
+    .fr-hex-demo .fr-hex-pos {
+      display: inline-block;
+      text-align: center;
+      min-width: 1.2em;
+    }
+    .fr-hex-demo .fr-hex-active {
+      color: var(--color-success-light);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .fr-attribution {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      border-top: 1px solid var(--color-border);
+      margin-top: 20px;
+      padding-top: 12px;
+    }
+    .fr-attribution a { color: var(--color-text-muted); }
+
+    /* ── Decoder tool ────────────────────────────────────────── */
+    .fr-decoder {
+      position: sticky;
+      top: 16px;
+      padding: 20px;
+    }
+    .fr-decoder h3 {
+      color: var(--color-brand);
+      font-size: var(--text-md);
+      margin: 0 0 14px;
+    }
+    .fr-decoder-type-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .fr-type-tab {
+      padding: 5px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-bg-raised);
+      color: var(--color-text-secondary);
+      font-size: var(--text-xs);
+      font-weight: var(--weight-semi);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .fr-type-tab:hover { border-color: var(--color-brand-border); color: var(--color-brand-light); }
+    .fr-type-tab.active {
+      background: var(--color-brand-subtle);
+      border-color: var(--color-brand-border);
+      color: var(--color-brand-light);
+    }
+    .fr-decoder label {
+      display: block;
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .fr-decoder-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .fr-decoder-input-row input {
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: var(--text-base);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .fr-decoder-input-row button {
+      padding: 8px 16px;
+      background: var(--color-brand);
+      color: var(--color-text-inverse);
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: var(--weight-semi);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+    .fr-decoder-input-row button:hover { background: var(--color-brand-light); }
+    .fr-bit-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 3px;
+      margin-bottom: 14px;
+    }
+    .fr-bit-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-family: var(--font-mono);
+      border-radius: 3px;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-raised);
+      color: var(--color-text-muted);
+      cursor: default;
+      transition: all var(--transition-fast);
+    }
+    .fr-bit-cell.on {
+      background: var(--color-brand-subtle);
+      border-color: var(--color-brand-border);
+      color: var(--color-brand-light);
+      font-weight: var(--weight-bold);
+    }
+    .fr-bit-cell.on.named {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(34, 197, 94, 0.4);
+      color: var(--color-success-light);
+    }
+    .fr-bit-labels {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 3px;
+      margin-bottom: 14px;
+    }
+    .fr-bit-label {
+      text-align: center;
+      font-size: 8px;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+    }
+    .fr-decoded-flags {
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 10px;
+      background: var(--color-bg);
+    }
+    .fr-decoded-flags p {
+      margin: 0;
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      text-align: center;
+      padding: 20px 0;
+    }
+    .fr-decoded-item {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .fr-decoded-item:last-child { border-bottom: none; }
+    .fr-decoded-hex {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-brand-light);
+      flex-shrink: 0;
+      padding-top: 1px;
+      min-width: 72px;
+    }
+    .fr-decoded-name {
+      font-size: var(--text-xs);
+      font-weight: var(--weight-semi);
+      color: var(--color-success-light);
+    }
+    .fr-decoded-desc {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+    .fr-decoded-unknown {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      font-style: italic;
+    }
+
+    /* ── Database section ────────────────────────────────────── */
+    .fr-database {
+      padding: 24px 28px;
+    }
+    .fr-database h2 {
+      margin: 0 0 18px;
+      color: var(--color-text-primary);
+    }
+    .fr-db-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .fr-db-search {
+      flex: 1;
+      min-width: 220px;
+    }
+    .fr-db-search input {
+      width: 100%;
+      padding: 9px 12px;
+    }
+    .fr-filter-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .fr-filter-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-bg-raised);
+      color: var(--color-text-secondary);
+      font-size: var(--text-xs);
+      font-weight: var(--weight-semi);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .fr-filter-btn:hover { border-color: var(--color-brand-border); color: var(--color-brand-light); }
+    .fr-filter-btn.active {
+      background: var(--color-brand-subtle);
+      border-color: var(--color-brand-border);
+      color: var(--color-brand-light);
+    }
+    .fr-filter-btn[data-type="model"].active   { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.35); color: #60a5fa; }
+    .fr-filter-btn[data-type="handling"].active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.35); color: #4ade80; }
+    .fr-filter-btn[data-type="damage"].active   { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.35); color: #f87171; }
+    .fr-filter-btn[data-type="advanced"].active { background: rgba(147,51,234,0.12); border-color: rgba(147,51,234,0.35); color: #a78bfa; }
+    .fr-filter-btn[data-type="meta"].active     { background: rgba(20,184,166,0.12); border-color: rgba(20,184,166,0.35); color: #2dd4bf; }
+
+    .fr-db-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+    }
+    .fr-db-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .fr-db-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: var(--text-xs);
+      font-weight: var(--weight-semi);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-secondary);
+      background: var(--color-bg-raised);
+      border-bottom: 1px solid var(--color-border-strong);
+      white-space: nowrap;
+    }
+    .fr-db-table td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: top;
+    }
+    .fr-db-table tr:last-child td { border-bottom: none; }
+    .fr-db-table tr:hover td { background: var(--color-bg-hover); }
+    .fr-flag-type-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: var(--weight-bold);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+    .fr-badge-model    { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .fr-badge-handling { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .fr-badge-damage   { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .fr-badge-advanced { background: rgba(147,51,234,0.15); color: #a78bfa; border: 1px solid rgba(147,51,234,0.3); }
+    .fr-badge-meta     { background: rgba(20,184,166,0.15); color: #2dd4bf; border: 1px solid rgba(20,184,166,0.3); }
+    .fr-flag-name {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-primary);
+      font-weight: var(--weight-semi);
+    }
+    .fr-flag-hex {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-brand-light);
+    }
+    .fr-flag-desc {
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm);
+      line-height: 1.5;
+    }
+    .fr-flag-desc em {
+      color: var(--color-text-muted);
+      font-style: italic;
+    }
+    .fr-db-count {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-bottom: 10px;
+    }
+    .fr-no-results {
+      text-align: center;
+      padding: 40px;
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+    }
+  </style>
+</head>
+
+<body data-page="flags-reference">
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic Studio">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+      <div class="brand-copy">
+        <div class="brand-title">GTA Traffic Studio</div>
+        <div class="tagline">Vehicle Flags Reference</div>
+      </div>
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner fr-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Handling Reference</div>
+        <h1>Vehicle Flags Reference</h1>
+        <p>Complete guide to GTA V model, handling, damage, advanced, and meta flags — how they work, how to decode them, and a searchable database of all known flags.</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="fr-main">
+
+    <div class="fr-top-grid">
+
+      <!-- ── Educational Article ──────────────────────────────── -->
+      <article class="panel fr-article">
+        <h2>What Vehicle Flags Are</h2>
+        <p>Vehicle flags, or just flags, are essentially attributes that can be toggled on or off on a per-vehicle basis. In GTA 5 they come in four hex-encoded varieties — <strong>Model</strong>, <strong>Handling</strong>, <strong>Damage</strong>, and <strong>Advanced</strong> — plus a set of string-based <strong>Meta</strong> flags in vehicles.meta. Each hex variety has 32 flags associated with it. An example is <code>tyres_can_clip</code>, a handling flag which, when on, allows cars to have a smoother ride over bumps when tyres with larger sidewalls are applied. It's either on or off — there's no partial effect.</p>
+
+        <h3>How Flags Are Applied (Hex Varieties)</h3>
+        <p>Within the handling data for every vehicle there are four lines with an associated hex string. These four data points (<code>strModelFlags</code>, <code>strHandlingFlags</code>, <code>strDamageFlags</code>, <code>strAdvancedFlags</code>) correspond to the four hex flag varieties. The numbers tell the game which individual flags are active for any given vehicle.</p>
+        <p>Each hex string is 8 characters representing a 32-bit number. Each hex digit (position) controls 4 flags. The digit value determines which of those 4 flags are active:</p>
+        <ul>
+          <li><code>1</code> = 1st flag &nbsp; <code>2</code> = 2nd flag &nbsp; <code>3</code> = 1st &amp; 2nd flags</li>
+          <li><code>4</code> = 3rd flag &nbsp; <code>5</code> = 1st &amp; 3rd &nbsp; <code>6</code> = 2nd &amp; 3rd &nbsp; <code>7</code> = all three</li>
+          <li><code>8</code> = 4th flag &nbsp; <code>9</code>&ndash;<code>F</code> = combinations of all four</li>
+          <li><code>F</code> = all 4 flags in that position active</li>
+        </ul>
+        <p>Positions are counted <strong>right to left</strong>, and leading zeros are omitted in the file (e.g. <code>00020006</code> is written as <code>20006</code>).</p>
+
+        <h3>Worked Example</h3>
+        <div class="fr-example-box">
+          <p>To activate <code>reduced_mod_mass</code>: 2nd flag in position 1 → <code>00000002</code></p>
+          <p>To activate <code>has_kers</code>: 3rd flag in position 1 → <code>00000004</code></p>
+          <p>To activate <code>tyres_can_clip</code>: 2nd flag in position 5 → <code>00020000</code></p>
+          <p>All three together → <strong><code>00020006</code></strong> (written in file as <code>20006</code>)</p>
+        </div>
+        <div class="fr-hex-demo" aria-label="Example hex string 00020006">
+          <span class="fr-hex-pos">0</span><span class="fr-hex-pos">0</span><span class="fr-hex-pos">0</span>
+          <span class="fr-hex-pos fr-hex-active">2</span><span class="fr-hex-pos">0</span><span class="fr-hex-pos">0</span>
+          <span class="fr-hex-pos fr-hex-active">0</span><span class="fr-hex-pos fr-hex-active">6</span>
+          <br><small style="font-size:10px;color:var(--color-text-muted);letter-spacing:0">← positions 8 through 1, right to left</small>
+        </div>
+        <p>This would appear in handling.meta as: <code>&lt;strHandlingFlags&gt;20006&lt;/strHandlingFlags&gt;</code></p>
+
+        <h3>Advanced Flags</h3>
+        <p>Advanced flags appear to be a way for Rockstar to experiment with different car behaviours outside the usual three varieties. New advanced flags crop up from time to time when vehicles are added to the game with them activated. Their inclusion on cars has often led to undesirable behaviour — especially in early days — making cars worse to drive compared to having the flags deactivated. Their overall effects have sometimes changed across game updates to make them less drastic.</p>
+
+        <h3>Meta Flags</h3>
+        <p>Meta flags are different from the four hex flag types. They appear as text strings in <code>vehicles.meta</code> and control aspects like whether the vehicle is a bus, whether it has liveries, what type of driver spawns in it, and many other AI and world behaviour settings. They are not encoded in a hex value — instead each is listed as a named flag individually. Use the database below to search the full list.</p>
+
+        <div class="fr-attribution">
+          Flag data sourced from <a href="https://gtacars.net/gta5/glossary" target="_blank" rel="noopener">gtacars.net/gta5/glossary</a>. Explanations written by Broughy1322 with contributions from vehicle experts. Interactive tools by GTA Traffic Studio.
+        </div>
+      </article>
+
+      <!-- ── Decoder Tool ─────────────────────────────────────── -->
+      <aside class="panel fr-decoder">
+        <h3>⚙ Flag Decoder</h3>
+        <div class="fr-decoder-type-tabs">
+          <button class="fr-type-tab active" data-decode-type="model">Model</button>
+          <button class="fr-type-tab" data-decode-type="handling">Handling</button>
+          <button class="fr-type-tab" data-decode-type="damage">Damage</button>
+          <button class="fr-type-tab" data-decode-type="advanced">Advanced</button>
+        </div>
+        <label for="frDecodeInput">Enter hex flag value</label>
+        <div class="fr-decoder-input-row">
+          <input id="frDecodeInput" type="text" placeholder="e.g. 20006" maxlength="8" spellcheck="false">
+          <button type="button" id="frDecodeBtn">Decode</button>
+        </div>
+        <div class="fr-bit-labels" id="frBitLabels"></div>
+        <div class="fr-bit-grid" id="frBitGrid"></div>
+        <div class="fr-decoded-flags" id="frDecodedFlags">
+          <p>Enter a value and press Decode.</p>
+        </div>
+      </aside>
+
+    </div><!-- /fr-top-grid -->
+
+    <!-- ── Full Flag Database ──────────────────────────────────── -->
+    <section class="panel fr-database">
+      <h2>Flags Database</h2>
+      <div class="fr-db-controls">
+        <div class="fr-db-search">
+          <input type="search" id="frDbSearch" placeholder="Search flag names and descriptions…">
+        </div>
+        <div class="fr-filter-tabs">
+          <button class="fr-filter-btn active" data-type="all">All</button>
+          <button class="fr-filter-btn" data-type="model">Model</button>
+          <button class="fr-filter-btn" data-type="handling">Handling</button>
+          <button class="fr-filter-btn" data-type="damage">Damage</button>
+          <button class="fr-filter-btn" data-type="advanced">Advanced</button>
+          <button class="fr-filter-btn" data-type="meta">Meta</button>
+        </div>
+      </div>
+      <div class="fr-db-count" id="frDbCount"></div>
+      <div class="fr-db-table-wrap">
+        <table class="fr-db-table" id="frDbTable">
+          <thead>
+            <tr>
+              <th style="width:90px">Type</th>
+              <th style="width:100px">Hex Value</th>
+              <th style="width:220px">Flag Name</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="frDbBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <div>Built for Modders</div>
+    <div>Browser Based</div>
+    <div>Your Files Stay Local</div>
+    <div>Export Ready</div>
+    <div><strong>GTA Traffic Studio</strong></div>
+  </footer>
+
+  <script>
+  // =====================================================
+  // FLAGS DATABASE
+  // =====================================================
+
+  const FLAGS = [
+
+    // ── MODEL FLAGS ──────────────────────────────────────────────
+    { type:"model", hex:"00000001", bit:0,  name:"is_van",                    desc:"Uses double door animations for the rear doors." },
+    { type:"model", hex:"00000002", bit:1,  name:"is_bus",                    desc:"Uses bus animations for entry & exit." },
+    { type:"model", hex:"00000004", bit:2,  name:"is_low",                    desc:"Uses animations suitable for cars with a low ride height." },
+    { type:"model", hex:"00000008", bit:3,  name:"is_big",                    desc:"Alters the way the AI drive around corners." },
+    { type:"model", hex:"00000010", bit:4,  name:"abs_std",                   desc:"Arcade style Anti-Lock Braking System (ABS) equipped as standard; minimal slip allowed." },
+    { type:"model", hex:"00000020", bit:5,  name:"abs_option",                desc:"Arcade style ABS equipped with braking upgrade; minimal slip allowed." },
+    { type:"model", hex:"00000040", bit:6,  name:"abs_alt_std",               desc:"Realistic style ABS equipped as standard; some slip allowed." },
+    { type:"model", hex:"00000080", bit:7,  name:"abs_alt_option",            desc:"Realistic style ABS equipped with braking upgrade; some slip allowed." },
+    { type:"model", hex:"00000100", bit:8,  name:"no_doors",                  desc:"For vehicles that don't have any openable doors." },
+    { type:"model", hex:"00000200", bit:9,  name:"tandem_seats",              desc:"Allows two people to use the front passenger seat." },
+    { type:"model", hex:"00000400", bit:10, name:"sit_in_boat",               desc:"Uses seated boat animation instead of standing." },
+    { type:"model", hex:"00000800", bit:11, name:"has_tracks",                desc:"For vehicles with tracks instead of tyres." },
+    { type:"model", hex:"00001000", bit:12, name:"no_exhaust",                desc:"Removes all exhaust particles." },
+    { type:"model", hex:"00002000", bit:13, name:"double_exhaust",            desc:"Creates a second exhaust by mirroring the model's exhaust over the y-axis." },
+    { type:"model", hex:"00004000", bit:14, name:"no_1stperson_lookbehind",   desc:"Prevents player from using rear-view when in first person mode." },
+    { type:"model", hex:"00008000", bit:15, name:"can_enter_if_no_door",      desc:"Allows entry into the vehicle even if there are no currently accessible doors." },
+    { type:"model", hex:"00010000", bit:16, name:"axle_f_torsion",            desc:"Front wheels stay vertical to the car." },
+    { type:"model", hex:"00020000", bit:17, name:"axle_f_solid",              desc:"Front wheels stay parallel to each other." },
+    { type:"model", hex:"00040000", bit:18, name:"axle_f_mcpherson",          desc:"Front wheels can tilt." },
+    { type:"model", hex:"00080000", bit:19, name:"attach_ped_to_bodyshell",   desc:"Currently undefined." },
+    { type:"model", hex:"00100000", bit:20, name:"axle_r_torsion",            desc:"Rear wheels stay vertical to the car." },
+    { type:"model", hex:"00200000", bit:21, name:"axle_r_solid",              desc:"Rear wheels stay parallel to each other." },
+    { type:"model", hex:"00400000", bit:22, name:"axle_r_mcpherson",          desc:"Rear wheels can tilt." },
+    { type:"model", hex:"00800000", bit:23, name:"dont_force_grnd_clearance", desc:"Chassis hitbox is taken into account when suspension is compressed while hitting the ground, with sparks rendered." },
+    { type:"model", hex:"01000000", bit:24, name:"dont_render_steer",         desc:"Does not render steering animations." },
+    { type:"model", hex:"02000000", bit:25, name:"no_wheel_burst",            desc:"Has bulletproof tyres as standard." },
+    { type:"model", hex:"04000000", bit:26, name:"indestructible",            desc:"Can't explode or be rendered inoperable from damage." },
+    { type:"model", hex:"08000000", bit:27, name:"double_front_wheels",       desc:"Duplicates the skidmarks of the front tyres." },
+    { type:"model", hex:"10000000", bit:28, name:"is_rc",                     desc:"For RC vehicles; the player model is hidden upon entering." },
+    { type:"model", hex:"20000000", bit:29, name:"double_rear_wheels",        desc:"Duplicates the skidmarks of the rear tyres." },
+    { type:"model", hex:"40000000", bit:30, name:"no_wheel_break",            desc:"Prevents wheel bones from detaching off the vehicle due to damage." },
+    { type:"model", hex:"80000000", bit:31, name:"extra_camber",              desc:"Induces more wheel camber only on vehicles with the has_lowrider_hydraulics meta flag plus hydraulic suspension modkit." },
+
+    // ── HANDLING FLAGS ───────────────────────────────────────────
+    { type:"handling", hex:"00000001", bit:0,  name:"smoothed_compression",                       desc:"Simulates progressive spring suspension, making suspension compression motion smoother." },
+    { type:"handling", hex:"00000002", bit:1,  name:"reduced_mod_mass",                           desc:"Reduces mass added from upgrades." },
+    { type:"handling", hex:"00000004", bit:2,  name:"has_kers",                                   desc:"Partially enables KERS on the vehicle; disables horn and shows the recharge bar below the minimap. KERS boost itself still needs to be enabled by the set_vehicle_kers_allowed native." },
+    { type:"handling", hex:"00000008", bit:3,  name:"has_rally_tyres",                            desc:"Inverts the way grip works. Grip starts at fTractionCurveMin and may increase to fTractionCurveMax upon wheel slip. The vehicle strongly resists sliding and keeps gripping even at extreme angles." },
+    { type:"handling", hex:"00000010", bit:4,  name:"no_handbrake",                               desc:"Disables handbrake control for the vehicle." },
+    { type:"handling", hex:"00000020", bit:5,  name:"steer_rearwheels",                           desc:"Steers the rear wheels instead of the front." },
+    { type:"handling", hex:"00000040", bit:6,  name:"handbrake_rearwheelsteer",                   desc:"Handbrake control makes the rear wheels steer in addition to the front." },
+    { type:"handling", hex:"00000080", bit:7,  name:"steer_all_wheels",                           desc:"Steers all wheels, with rear wheels steering at the same lock angle as the front." },
+    { type:"handling", hex:"00000100", bit:8,  name:"freewheel_no_gas",                           desc:"Disables engine-braking when no throttle is applied." },
+    { type:"handling", hex:"00000200", bit:9,  name:"no_reverse",                                 desc:"Disables reversing for the vehicle." },
+    { type:"handling", hex:"00000400", bit:10, name:"reduced_righting_force",                     desc:"Makes the vehicle slower to flip back on its wheels." },
+    { type:"handling", hex:"00000800", bit:11, name:"steer_no_wheels",                            desc:"Disables steering on all wheels, for use with vehicles that have tracks." },
+    { type:"handling", hex:"00001000", bit:12, name:"cvt",                                        desc:"Gives the vehicle a variable-ratio transmission for use with 1-gear vehicles. Starts with gear ratio 5.0 standing still and decreases to 0.9 at 90% of fInitialDriveMaxFlatVel." },
+    { type:"handling", hex:"00002000", bit:13, name:"alt_ext_wheel_bounds_beh",                   desc:"Currently undefined." },
+    { type:"handling", hex:"00004000", bit:14, name:"dont_raise_bounds_at_speed",                 desc:"Currently undefined." },
+    { type:"handling", hex:"00008000", bit:15, name:"ext_wheel_bounds_col",                       desc:"Currently undefined." },
+    { type:"handling", hex:"00010000", bit:16, name:"less_snow_sink",                             desc:"Less grip loss from deep mud or snow, most notably in North Yankton." },
+    { type:"handling", hex:"00020000", bit:17, name:"tyres_can_clip",                             desc:"Allows tyres to clip into the ground when under enough pressure. Effectiveness depends on tyre sidewall — larger sidewalls (e.g. off-road tyres) perform better. If 04000000 is in strAdvancedFlags, effect is tied to stock tyre sidewall only." },
+    { type:"handling", hex:"00040000", bit:18, name:"reduced_drive_over_damage",                  desc:"Currently undefined." },
+    { type:"handling", hex:"00080000", bit:19, name:"alt_ext_wheel_bounds_shrink",                desc:"Currently undefined." },
+    { type:"handling", hex:"00100000", bit:20, name:"offroad_abilities",                          desc:"Gravity constant increased by 10% to 10.78 m/s². Results in increased grip and faster falling when airborne. Also gives increased power (around half as much as offroad_abilities_x2)." },
+    { type:"handling", hex:"00200000", bit:21, name:"offroad_abilities_x2",                       desc:"Gravity constant increased by 20% to 11.76 m/s². Results in increased grip, faster falling when airborne, bush immunity, increased power, and auto-levelling in mid-air." },
+    { type:"handling", hex:"00400000", bit:22, name:"tyres_raise_side_impact_threshold",          desc:"Includes the tyres in the general collision hitbox of the vehicle, for vehicles whose wheels extend beyond the bodywork." },
+    { type:"handling", hex:"00800000", bit:23, name:"offroad_increased_gravity_no_foliage_drag",  desc:"Gravity constant increased by 20% (11.76 m/s²). Gives bush immunity and increased power. Identical to offroad_abilities_x2 without auto-levelling in mid-air. Formerly called offroad_abilities_x3." },
+    { type:"handling", hex:"01000000", bit:24, name:"enable_lean",                                desc:"Currently undefined." },
+    { type:"handling", hex:"02000000", bit:25, name:"force_no_tc_or_sc",                          desc:"Allows motorcycles to lose traction." },
+    { type:"handling", hex:"04000000", bit:26, name:"heavyarmour",                                desc:"Currently undefined." },
+    { type:"handling", hex:"08000000", bit:27, name:"armoured",                                   desc:"Prevents vehicle doors (including hood and trunk) from opening in collisions." },
+    { type:"handling", hex:"10000000", bit:28, name:"self_righting_in_water",                     desc:"Currently undefined." },
+    { type:"handling", hex:"20000000", bit:29, name:"improved_righting_force",                   desc:"Increases force acting on the vehicle when attempting to flip it back on its wheels. Makes it easier to flip back over." },
+    { type:"handling", hex:"40000000", bit:30, name:"low_speed_wheelies",                         desc:"Allows a motorcycle to perform wheelies at very low speeds." },
+    { type:"handling", hex:"80000000", bit:31, name:"last_available_flag",                        desc:"Currently undefined." },
+
+    // ── DAMAGE FLAGS ─────────────────────────────────────────────
+    { type:"damage", hex:"00000001", bit:0, name:"driver_side_front_door",           desc:"Marks the driver side front door (door_dside_f bone) as non-breakable." },
+    { type:"damage", hex:"00000002", bit:1, name:"driver_side_rear_door",            desc:"Marks the driver side rear door (door_dside_r bone) as non-breakable." },
+    { type:"damage", hex:"00000004", bit:2, name:"driver_passenger_side_front_door", desc:"Marks the passenger side front door (door_pside_f bone) as non-breakable." },
+    { type:"damage", hex:"00000008", bit:3, name:"driver_passenger_side_rear_door",  desc:"Marks the passenger side rear door (door_pside_r bone) as non-breakable." },
+    { type:"damage", hex:"00000010", bit:4, name:"bonnet",                           desc:"Marks the bonnet bone as non-breakable." },
+    { type:"damage", hex:"00000020", bit:5, name:"boot",                             desc:"Marks the boot bone as non-breakable." },
+
+    // ── ADVANCED FLAGS ───────────────────────────────────────────
+    { type:"advanced", hex:"00000001", bit:0,  name:"diff_front",                                    desc:"Currently undefined. Source notes: If we want torsen diffs they will need to know resistance at the wheel as applying the brakes should apply force back to the wheel on the ground." },
+    { type:"advanced", hex:"00000002", bit:1,  name:"diff_rear",                                     desc:"Currently undefined. Source notes: If we want torsen diffs they will need to know resistance at the wheel as applying the brakes should apply force back to the wheel on the ground." },
+    { type:"advanced", hex:"00000004", bit:2,  name:"diff_centre",                                   desc:"Transfers the drive force from the slipping wheels to the less driven wheels." },
+    { type:"advanced", hex:"00000008", bit:3,  name:"diff_limited_front",                            desc:"Currently undefined." },
+    { type:"advanced", hex:"00000010", bit:4,  name:"diff_limited_rear",                             desc:"Currently undefined." },
+    { type:"advanced", hex:"00000020", bit:5,  name:"diff_limited_centre",                           desc:"Currently undefined." },
+    { type:"advanced", hex:"00000040", bit:6,  name:"diff_locking_front",                            desc:"Causes the vehicle's front wheels to wheelspin if the player is holding down the handbrake and forwards/backwards keys." },
+    { type:"advanced", hex:"00000080", bit:7,  name:"diff_locking_rear",                             desc:"Using the handbrake slows the car down more smoothly and often without leaving tyre marks." },
+    { type:"advanced", hex:"00000100", bit:8,  name:"diff_locking_centre",                           desc:"Currently undefined." },
+    { type:"advanced", hex:"00000200", bit:9,  name:"gearbox_full_auto",                             desc:"Currently undefined." },
+    { type:"advanced", hex:"00000400", bit:10, name:"gearbox_manual",                                desc:"Sets the clutch value to 0.0 when idling." },
+    { type:"advanced", hex:"00000800", bit:11, name:"gearbox_direct_shift",                          desc:"Currently undefined." },
+    { type:"advanced", hex:"00001000", bit:12, name:"gearbox_electric",                              desc:"Currently undefined." },
+    { type:"advanced", hex:"00002000", bit:13, name:"assist_traction_control",                       desc:"Currently undefined. Source notes: Just reduce throttle." },
+    { type:"advanced", hex:"00004000", bit:14, name:"assist_stability_control",                      desc:"Currently undefined. Source notes: Apply brakes to individual wheels." },
+    { type:"advanced", hex:"00008000", bit:15, name:"allow_reduced_suspension_force",                desc:"Allows the vehicle to be set to lowered stance in the interaction menu. Requires 04000000 in strAdvancedFlags to function." },
+    { type:"advanced", hex:"00010000", bit:16, name:"hard_rev_limit",                                desc:"For most vehicles: changes gear shift behaviour to upshift earlier and applies a hard speed limit per gear (no handbrake boosting, hard top speed cap). For Tuners sub-class: only limits speed in last two gears (allows handbrake boosting) without changing shift behaviour." },
+    { type:"advanced", hex:"00020000", bit:17, name:"hold_gear_with_wheelspin",                      desc:"Makes the vehicle shift later than normal, causing the engine to bounce off the rev limiter before changing gear. Formerly gear_shift_overrev." },
+    { type:"advanced", hex:"00040000", bit:18, name:"increase_suspension_force_with_speed",          desc:"Increases suspension spring force as vehicle goes faster, causing the vehicle to bounce more at high speeds." },
+    { type:"advanced", hex:"00080000", bit:19, name:"block_increased_rot_velocity_with_drive_force", desc:"Generates fake wheelspin after an instance of real wheelspin. Tyres stabilise visually (0.0 m/s slip in debug) but traction behaves as if still spinning. Formerly fake_wheelspin." },
+    { type:"advanced", hex:"00100000", bit:20, name:"reduced_self_righting_speed",                   desc:"Reduces force acting on the vehicle when attempting to flip it back on its wheels, making it harder to flip back over." },
+    { type:"advanced", hex:"00200000", bit:21, name:"close_ratio_gearbox",                           desc:"Extends the duration of all gears, giving the vehicle longer gear ratios and therefore slower acceleration. Formerly longer_gears." },
+    { type:"advanced", hex:"00400000", bit:22, name:"force_smooth_rpm",                              desc:"Smooth revving in first gear, giving the vehicle a resistance to hitting the rev limit. Formerly smooth_1st_gear." },
+    { type:"advanced", hex:"00800000", bit:23, name:"allow_turn_on_spot",                            desc:"Allows the vehicle to be rotated left or right while parked on the spot. For vehicles with tracks." },
+    { type:"advanced", hex:"01000000", bit:24, name:"can_wheelie",                                   desc:"Allows the vehicle to perform a handbrake wheelie. The entire Muscle class is hardcoded to use this flag." },
+    { type:"advanced", hex:"02000000", bit:25, name:"enable_wheel_blocker_side_impacts",             desc:"Makes the wheels much less likely to clip into the ground when the vehicle is tipped over." },
+    { type:"advanced", hex:"04000000", bit:26, name:"fix_old_bugs",                                  desc:"Limits tyres_can_clip effect to stock tyre sidewall only (disregarding the sidewall of the currently applied tyre). Also prevents suspension dropping when shooting at wheels. Formerly ignore_tuned_wheels_clip." },
+    { type:"advanced", hex:"08000000", bit:27, name:"use_downforce_bias",                            desc:"Changes the way downforce and spoiler turning works, utilising Open Wheel vehicle mechanics. Each spoiler and bumper must have downforce effects defined by AdvancedData in handling.meta. Formerly open_wheel_downforce." },
+    { type:"advanced", hex:"10000000", bit:28, name:"reduce_body_roll_with_suspension_mods",         desc:"Makes suspension upgrades noticeably affect the body roll of the vehicle, which can also cause the vehicle's grip to change." },
+    { type:"advanced", hex:"20000000", bit:29, name:"allows_extended_mods",                          desc:"Enables HSW upgrades for the vehicle defined by AdvancedData in handling.meta. Adds turbo affecting mods for mod slot 20 (VMT_KNOB) and power affecting mods for mod slot 22 (VMT_ICE)." },
+    { type:"advanced", hex:"40000000", bit:30, name:"removed_flag_31",                               desc:"Currently undefined." },
+    { type:"advanced", hex:"80000000", bit:31, name:"removed_flag_32",                               desc:"Currently undefined." },
+
+    // ── META FLAGS (vehicles.meta string flags) ──────────────────
+    { type:"meta", hex:"—", bit:0,   name:"small_worker",                            desc:"This vehicle is a small worker (forklift, luggage handler) and should only be placed on specific paths." },
+    { type:"meta", hex:"—", bit:1,   name:"big",                                     desc:"This vehicle is very big and should avoid turning." },
+    { type:"meta", hex:"—", bit:2,   name:"no_boot",                                 desc:"This vehicle should not be considered for boot inventory." },
+    { type:"meta", hex:"—", bit:3,   name:"only_during_office_hours",                desc:"This vehicle should only be streamed in during office hours." },
+    { type:"meta", hex:"—", bit:4,   name:"boot_in_front",                           desc:"This car has the boot in front so the boot searches should be from front." },
+    { type:"meta", hex:"—", bit:5,   name:"is_van",                                  desc:"This vehicle is a van, the rear doors open sideways." },
+    { type:"meta", hex:"—", bit:6,   name:"avoid_turns",                             desc:"This vehicle is trying to avoid turning. Go straight where possible." },
+    { type:"meta", hex:"—", bit:7,   name:"has_livery",                              desc:"This vehicle has liveries, some texture will be swapped upon instancing. The vehicle will cycle between liveries (named modelname_sign_x) located within the vehicle's texture dictionary." },
+    { type:"meta", hex:"—", bit:8,   name:"livery_match_extra",                      desc:"This vehicle texture swap will match the part swap." },
+    { type:"meta", hex:"—", bit:9,   name:"sports",                                  desc:"Sports car." },
+    { type:"meta", hex:"—", bit:10,  name:"delivery",                                desc:"Can be used for deliveries (vans and small trucks)." },
+    { type:"meta", hex:"—", bit:11,  name:"noambientocclusion",                      desc:"Vehicle doesn't have ambient occlusion rendered." },
+    { type:"meta", hex:"—", bit:12,  name:"only_on_highways",                        desc:"This vehicle can only be created on highways (like a tourbus)." },
+    { type:"meta", hex:"—", bit:13,  name:"tall_ship",                               desc:"This is a tall ship and should not be placed on nodes with LowBridge ticked." },
+    { type:"meta", hex:"—", bit:14,  name:"spawn_on_trailer",                        desc:"If set for a trailer: enables other cars to spawn on it. If set for a normal vehicle: enables it to spawn on a trailer." },
+    { type:"meta", hex:"—", bit:15,  name:"spawn_boat_on_trailer",                   desc:"If set for a trailer: enables a boat to spawn on it. If set for a boat: enables it to spawn on a trailer." },
+    { type:"meta", hex:"—", bit:16,  name:"extras_gang",                             desc:"If gang: use all of extras 5-9. Otherwise use random others. The vehicle spawns with extras 5-9 if driven by a gang member ped." },
+    { type:"meta", hex:"—", bit:17,  name:"extras_convertible",                      desc:"Folded down roof = extra 1, roofs = extras 2-4. The vehicle cycles between extras 1-3 at random. If extra1 is on and 2/3 are off, front windows are removed." },
+    { type:"meta", hex:"—", bit:18,  name:"extras_taxi",                             desc:"Must have a taxi light, one of extras 5-8. The vehicle cycles between extras 5, 6, and 9 at random." },
+    { type:"meta", hex:"—", bit:19,  name:"extras_rare",                             desc:"Lower chance of picking any extra. The vehicle can spawn with extras toggled on, but rarely." },
+    { type:"meta", hex:"—", bit:20,  name:"extras_require",                          desc:"Must pick one of available extras. The vehicle always spawns with at least 1 extra toggled on." },
+    { type:"meta", hex:"—", bit:21,  name:"extras_strong",                           desc:"Extras won't break off. Prevents extras from breaking off during collisions." },
+    { type:"meta", hex:"—", bit:22,  name:"extras_only_break_when_destroyed",        desc:"Extras won't break off until the vehicle is blown up. Extras can only break off once the vehicle is completely destroyed (e.g. by explosions)." },
+    { type:"meta", hex:"—", bit:23,  name:"extras_script",                           desc:"Script only extras 5-8. The vehicle has extras that will never spawn at random and must be toggled on through script." },
+    { type:"meta", hex:"—", bit:24,  name:"extras_all",                              desc:"All suitable extras should be turned on (e.g. all non-gang extras if non-gang car). The vehicle always spawns with all extras toggled on." },
+    { type:"meta", hex:"—", bit:25,  name:"extras_match_livery",                     desc:"Uses the livery with same index as the extra (e.g. extra_1 forces livery 1)." },
+    { type:"meta", hex:"—", bit:26,  name:"dont_rotate_tail_rotor",                  desc:"This vehicle should not have a rotated tail rotor. Prevents the helicopter's tail rotor from rotating." },
+    { type:"meta", hex:"—", bit:27,  name:"parking_sensors",                         desc:"This vehicle has parking sensors." },
+    { type:"meta", hex:"—", bit:28,  name:"peds_can_stand_on_top",                   desc:"Peds can stand on top of this vehicle. Allows the player and AI peds to stand on top without ragdolling off." },
+    { type:"meta", hex:"—", bit:29,  name:"tailgate_type_boot",                      desc:"This vehicle has a tailgate type boot (it opens down and back)." },
+    { type:"meta", hex:"—", bit:30,  name:"gen_navmesh",                             desc:"This vehicle should generate a nav mesh. Typically used on boats, trailers, and train cars." },
+    { type:"meta", hex:"—", bit:31,  name:"law_enforcement",                         desc:"Is the vehicle a law enforcement vehicle." },
+    { type:"meta", hex:"—", bit:32,  name:"emergency_service",                       desc:"Is an emergency service vehicle." },
+    { type:"meta", hex:"—", bit:33,  name:"driver_no_drive_by",                      desc:"Driver of this vehicle can't do drive-bys. Prevents the driver from using any weapons in the vehicle." },
+    { type:"meta", hex:"—", bit:34,  name:"no_respray",                              desc:"Vehicle is not allowed to be resprayed at garages. Removes the respray option in Los Santos Customs." },
+    { type:"meta", hex:"—", bit:35,  name:"ignore_on_side_check",                    desc:"Vehicle can be entered if its on its side." },
+    { type:"meta", hex:"—", bit:36,  name:"rich_car",                                desc:"Rich car — indicates what peds can be used as drivers. Rich NPCs may be seen driving the vehicle in traffic." },
+    { type:"meta", hex:"—", bit:37,  name:"average_car",                             desc:"Average car — indicates what peds can be used as drivers. Average NPCs may be seen driving the vehicle in traffic." },
+    { type:"meta", hex:"—", bit:38,  name:"poor_car",                                desc:"Poor car — indicates what peds can be used as drivers. Poor NPCs may be seen driving the vehicle in traffic." },
+    { type:"meta", hex:"—", bit:39,  name:"allows_rappel",                           desc:"This vehicle allows people to rappel out of it." },
+    { type:"meta", hex:"—", bit:40,  name:"dont_close_door_upon_exit",               desc:"Vehicle prevents peds from closing door when exiting." },
+    { type:"meta", hex:"—", bit:41,  name:"use_higher_door_torque",                  desc:"Make the doors open/close faster." },
+    { type:"meta", hex:"—", bit:42,  name:"disable_through_windscreen",              desc:"Prevent peds in this vehicle from being thrown from windscreen. Prevents the player and AI peds from being ejected through the windshield during a crash." },
+    { type:"meta", hex:"—", bit:43,  name:"is_electric",                             desc:"Vehicle doesn't have a petrol tank." },
+    { type:"meta", hex:"—", bit:44,  name:"no_broken_down_scenario",                 desc:"Explicitly disable broken down car scenarios on this vehicle. The vehicle will never spawn as part of a WORLD_VEHICLE_BROKEN_DOWN scenario." },
+    { type:"meta", hex:"—", bit:45,  name:"is_jetski",                               desc:"This vehicle is a jetski." },
+    { type:"meta", hex:"—", bit:46,  name:"dampen_stickbomb_damage",                 desc:"Whether or not we should dampen the total damage of attached stickybombs. The vehicle takes less damage from explosions caused by a sticky bomb." },
+    { type:"meta", hex:"—", bit:47,  name:"dont_spawn_in_cargen",                    desc:"Stops the vehicle from being spawned by cargens (i.e. parked). The vehicle will never spawn during world car generation." },
+    { type:"meta", hex:"—", bit:48,  name:"is_offroad_vehicle",                      desc:"Flags the vehicle as an offroad only vehicle." },
+    { type:"meta", hex:"—", bit:49,  name:"increase_ped_comments",                   desc:"Peds will have a bigger probability of commenting on this vehicle." },
+    { type:"meta", hex:"—", bit:50,  name:"explode_on_contact",                      desc:"Whether or not a bullet/projectile will force the vehicle to explode." },
+    { type:"meta", hex:"—", bit:51,  name:"use_fat_interior_light",                  desc:"Vehicle needs a bigger interior light. Increases the size and intensity of the vehicle's interior light." },
+    { type:"meta", hex:"—", bit:52,  name:"headlights_use_actual_bone_pos",          desc:"Vehicle uses actual bone position for headlight positioning." },
+    { type:"meta", hex:"—", bit:53,  name:"fake_extralights",                        desc:"Vehicle's extra lights don't cast light but are turned on/off when headlights are. Causes extralights to behave as normal headlights." },
+    { type:"meta", hex:"—", bit:54,  name:"cannot_be_modded",                        desc:"Stops the vehicle from being modded. Prevents the vehicle from entering Los Santos Customs." },
+    { type:"meta", hex:"—", bit:55,  name:"dont_spawn_as_ambient",                   desc:"Stops the vehicle from spawning in the ambient population." },
+    { type:"meta", hex:"—", bit:56,  name:"is_bulky",                                desc:"Vehicle is bulky (vans, SUVs, etc.) and will be preferred for cargen spawns." },
+    { type:"meta", hex:"—", bit:57,  name:"block_from_attractor_scenario",           desc:"Stops the vehicle from being attracted by vehicle scenarios. The vehicle will never spawn as part of a WORLD_VEHICLE_ATTRACTOR scenario." },
+    { type:"meta", hex:"—", bit:58,  name:"is_bus",                                  desc:"This vehicle is a bus." },
+    { type:"meta", hex:"—", bit:59,  name:"use_steering_param_for_lean",             desc:"Pass the steering move param rather than the lean." },
+    { type:"meta", hex:"—", bit:60,  name:"cannot_be_driven_by_player",              desc:"Player can't drive this vehicle." },
+    { type:"meta", hex:"—", bit:61,  name:"spray_petrol_before_explosion",           desc:"Whether or not to play a spraying petrol VFX before explosion. The vehicle will spill gasoline before exploding." },
+    { type:"meta", hex:"—", bit:62,  name:"attach_trailer_on_highway",               desc:"Allows attachment of trailers on highway." },
+    { type:"meta", hex:"—", bit:63,  name:"attach_trailer_in_city",                  desc:"Allows attachment of trailers in the city (i.e. non-highway roads but still no narrow ones)." },
+    { type:"meta", hex:"—", bit:64,  name:"has_no_roof",                             desc:"Vehicle doesn't have a roof, at all. Allows the player to jump over the door on entry." },
+    { type:"meta", hex:"—", bit:65,  name:"allow_targeting_of_occupants",            desc:"Allow locking on to vehicle occupants." },
+    { type:"meta", hex:"—", bit:66,  name:"recessed_headlight_coronas",              desc:"Head light coronas are recessed inside vehicle body (corona visibility is restricted)." },
+    { type:"meta", hex:"—", bit:67,  name:"recessed_taillight_coronas",              desc:"Tail light coronas are recessed inside vehicle body (corona visibility is restricted)." },
+    { type:"meta", hex:"—", bit:68,  name:"is_tracked_for_trails",                   desc:"This vehicle is tracked by the EntityTrackerManager for purposes of making trails in the world (i.e. grass)." },
+    { type:"meta", hex:"—", bit:69,  name:"headlights_on_landinggear",               desc:"The headlights are attached to the landing gears." },
+    { type:"meta", hex:"—", bit:70,  name:"considered_for_vehicle_entry_when_stood_on", desc:"If stood on this vehicle, we'll try to enter it. The player and AI peds will prioritize entering the vehicle when standing on top of it." },
+    { type:"meta", hex:"—", bit:71,  name:"give_scuba_gear_on_exit",                 desc:"The player receives scuba gear when exiting the vehicle." },
+    { type:"meta", hex:"—", bit:72,  name:"is_digger",                               desc:"Not well defined." },
+    { type:"meta", hex:"—", bit:73,  name:"is_tank",                                 desc:"Makes the vehicle fireproof. AI peds will react to it as they would towards a tank." },
+    { type:"meta", hex:"—", bit:74,  name:"use_coverbound_info_for_covergen",        desc:"Not well defined." },
+    { type:"meta", hex:"—", bit:75,  name:"can_be_driven_on",                        desc:"This allows other vehicles to drive on this without the wheels ignoring impacts due to the chassis hitting the vehicle first." },
+    { type:"meta", hex:"—", bit:76,  name:"has_bulletproof_glass",                   desc:"Prevents the glass from breaking, essentially making it behave as static glass found on buildings around the map." },
+    { type:"meta", hex:"—", bit:77,  name:"cannot_take_cover_when_stood_on",         desc:"Prevents the player and AI peds from taking cover while standing on top of the vehicle." },
+    { type:"meta", hex:"—", bit:78,  name:"interior_blocked_by_boot",                desc:"Has a hollow interior enterable by a boot door mechanism." },
+    { type:"meta", hex:"—", bit:79,  name:"dont_timeslice_wheels",                   desc:"Turn off wheel timeslicing optimisation for this vehicle. Prevents the vehicle wheels from producing the time slicing effect when rotating at higher speed." },
+    { type:"meta", hex:"—", bit:80,  name:"flee_from_combat",                        desc:"If in this vehicle when entering combat, peds will flee instead of fight. The AI driver will always drive away from the area during combat." },
+    { type:"meta", hex:"—", bit:81,  name:"driver_should_be_female",                 desc:"This vehicle should use only female drivers (only support for scenarios, initially)." },
+    { type:"meta", hex:"—", bit:82,  name:"driver_should_be_male",                   desc:"This vehicle should use only male drivers (only support for scenarios, initially)." },
+    { type:"meta", hex:"—", bit:83,  name:"count_as_facebook_driven",                desc:"This vehicle counts towards all vehicle driven post to Facebook. Used to track progress of Legendary Motorsport vehicles. Unused on PS4/PC/XB1 due to removal of Facebook integration." },
+    { type:"meta", hex:"—", bit:84,  name:"bike_clamp_pickup_lean_rate",             desc:"This smooths out the pickup of bikes with luggage outside the rear wheel." },
+    { type:"meta", hex:"—", bit:85,  name:"plane_wear_alternative_helmet",           desc:"If set then we use an alternative helmet for these vehicles." },
+    { type:"meta", hex:"—", bit:86,  name:"use_stricter_exit_collision_tests",       desc:"If vehicle is parked sideways on a slope we check against the vehicle to prevent getting stuck or walking through it." },
+    { type:"meta", hex:"—", bit:87,  name:"two_doors_one_seat",                      desc:"Not well defined." },
+    { type:"meta", hex:"—", bit:88,  name:"use_lighting_interior_override",          desc:"If vehicle can have passengers inside in MP, override the lighting when there is no view to the outside. Keeps interiorlight node active even when vehicle engine is off/player is not inside." },
+    { type:"meta", hex:"—", bit:89,  name:"use_restricted_driveby_height",           desc:"Don't blend in the high sweep during drive-bys. Restricts how high the player can aim their weapon inside the vehicle." },
+    { type:"meta", hex:"—", bit:90,  name:"can_honk_when_fleeing",                   desc:"This vehicle can, under certain conditions, honk its horn while fleeing. The AI peds will use the horn when trying to flee the area." },
+    { type:"meta", hex:"—", bit:91,  name:"peds_inside_can_be_set_on_fire_mp",       desc:"Allows peds inside the vehicle to be set on fire in MP (take damage)." },
+    { type:"meta", hex:"—", bit:92,  name:"report_crime_if_standing_on",             desc:"Standing on this vehicle as a player will get a crime reported." },
+    { type:"meta", hex:"—", bit:93,  name:"heli_uses_fixups_on_open_door",           desc:"Perform fixups on AlignToEnterSeat and OpenDoor task states (because the anims don't use climb_up)." },
+    { type:"meta", hex:"—", bit:94,  name:"force_enable_chassis_collision",          desc:"Prevents InitCompositeBounds in CVehicle from removing most collision include flags for non-BVH chassis bounds." },
+    { type:"meta", hex:"—", bit:95,  name:"cannot_be_pickup_by_cargobob",            desc:"If set, it cannot be picked up by the Cargobob's grappling hook gadgets." },
+    { type:"meta", hex:"—", bit:96,  name:"can_have_neons",                          desc:"If set, this car can spawn in the ambient population with neons on." },
+    { type:"meta", hex:"—", bit:97,  name:"has_interior_extras",                     desc:"If set, this vehicle will treat extras 10, 11, and 12 as special interior extras which always have a chance of spawning." },
+    { type:"meta", hex:"—", bit:98,  name:"has_turret_seat_on_vehicle",              desc:"Vehicle has a turret seat." },
+    { type:"meta", hex:"—", bit:99,  name:"allow_object_low_lod_collision",          desc:"This vehicle allows certain objects to collide with the low-LOD chassis rather than the regular chassis." },
+    { type:"meta", hex:"—", bit:100, name:"disable_auto_vault_on_vehicle",           desc:"Prevents the player and AI peds from automatically climbing on top of the vehicle." },
+    { type:"meta", hex:"—", bit:101, name:"use_turret_relative_aim_calculation",     desc:"Returns the turret matrix computed from the aim heading only." },
+    { type:"meta", hex:"—", bit:102, name:"use_full_anims_for_mp_warp_entry_points", desc:"Force full animations to play on vehicle entry points marked as MPWarpInOut (if available)." },
+    { type:"meta", hex:"—", bit:103, name:"has_directional_shuffles",                desc:"Not well defined." },
+    { type:"meta", hex:"—", bit:104, name:"disable_weapon_wheel_in_first_person",    desc:"This vehicle prevents the weapon wheel from displaying if in first person." },
+    { type:"meta", hex:"—", bit:105, name:"use_pilot_helmet",                        desc:"Forces the player and AI peds to put on a pilot helmet when inside the vehicle." },
+    { type:"meta", hex:"—", bit:106, name:"use_weapon_wheel_without_helmet",         desc:"Not well defined." },
+    { type:"meta", hex:"—", bit:107, name:"prefer_enter_turret_after_driver",        desc:"If this vehicle already has a driver, prefer entering the turret seats." },
+    { type:"meta", hex:"—", bit:108, name:"use_smaller_open_door_ratio_tolerance",   desc:"Consider doors of this vehicle to be open with a smaller open door ratio." },
+    { type:"meta", hex:"—", bit:109, name:"use_heading_only_in_turret_matrix",       desc:"Returns the turret matrix computed from the aim heading only." },
+    { type:"meta", hex:"—", bit:110, name:"dont_stop_when_going_to_climb_up_point",  desc:"Not well defined." },
+    { type:"meta", hex:"—", bit:111, name:"has_rear_mounted_turret",                 desc:"Vehicle has a rear mounted turret." },
+    { type:"meta", hex:"—", bit:112, name:"disable_busting",                         desc:"Don't allow cops to bust a player in this vehicle." },
+    { type:"meta", hex:"—", bit:113, name:"ignore_rwindow_collision",                desc:"Ignore bullet collision with the vehicle if shooting through rear windscreen." },
+    { type:"meta", hex:"—", bit:114, name:"has_gull_wing_doors",                     desc:"The doors of this vehicle open upwards instead of outwards." },
+    { type:"meta", hex:"—", bit:115, name:"cargobob_hook_up_chassis",                desc:"Uses chassis bounding box to compute the offset for Cargobob's grappling hook attachment." },
+    { type:"meta", hex:"—", bit:116, name:"use_five_anim_throw_fp",                  desc:"Allow vehicle to use wider throw animations, but only in first person." },
+    { type:"meta", hex:"—", bit:117, name:"allow_hats_no_roof",                      desc:"Ensures hats don't get hidden in CPed::SetPedInVehicle if the vehicle has FLAG_NO_ROOF. Allows the player and AI peds to keep wearing their hats if the vehicle has no roof." },
+    { type:"meta", hex:"—", bit:118, name:"has_rear_seat_activities",                desc:"Rear seat has activities. Used for allowing rear seat entry." },
+    { type:"meta", hex:"—", bit:119, name:"has_lowrider_hydraulics",                 desc:"Vehicle has lowrider hydraulics. Sets up hydraulic mod on vehicle in CVehicle::SetModelId." },
+    { type:"meta", hex:"—", bit:120, name:"has_bullet_resistant_glass",              desc:"Glass on this vehicle has a health bar; won't smash until health gets below 0. Collision ID for windows must be set to ID 122 (strong glass/windshield) for the flag to have an effect." },
+    { type:"meta", hex:"—", bit:121, name:"has_increased_ramming_force",             desc:"Vehicle is armoured and can ram roadblocks/other cars much easier." },
+    { type:"meta", hex:"—", bit:122, name:"has_capped_explosion_damage",             desc:"Damage from an explosion is capped, allowing the vehicle to take one hit from an explosion without instantly exploding." },
+    { type:"meta", hex:"—", bit:123, name:"has_lowrider_donk_hydraulics",            desc:"Vehicle has lowrider donk hydraulics. The vehicle cannot 'hop' and only shifts in the direction the hydraulics are used." },
+    { type:"meta", hex:"—", bit:124, name:"helicopter_with_landing_gear",            desc:"Vehicle is a helicopter that has landing gears like planes (that can be lowered or raised)." },
+    { type:"meta", hex:"—", bit:125, name:"jumping_car",                             desc:"Vehicle can perform a jump. The jump force can be modified through handling files." },
+    { type:"meta", hex:"—", bit:126, name:"has_rocket_boost",                        desc:"Vehicle has a rechargeable rocket boost. The power and duration can be modified through handling files." },
+    { type:"meta", hex:"—", bit:127, name:"ramming_scoop",                           desc:"Vehicle has a scoop in front that can ram other cars to the side." },
+    { type:"meta", hex:"—", bit:128, name:"has_parachute",                           desc:"Vehicle has a parachute." },
+    { type:"meta", hex:"—", bit:129, name:"ramp",                                    desc:"Vehicle can be used as a ramp. The vehicle is able to eject other vehicles while driving under them." },
+    { type:"meta", hex:"—", bit:130, name:"has_extra_shuffle_seat_on_vehicle",       desc:"Vehicle has extra shuffle seats that can be manually moved between (similar to some functionality of the turret seats)." },
+    { type:"meta", hex:"—", bit:131, name:"front_boot",                              desc:"Vehicle has its boot at the front. Allows the 'boot' bone to fall off at high speeds when opened, similarly to how the 'bonnet' bone does." },
+    { type:"meta", hex:"—", bit:132, name:"half_track",                              desc:"Vehicle has normal wheels at the front but tracks at the rear." },
+    { type:"meta", hex:"—", bit:133, name:"reset_turret_seat_heading",               desc:"The turret heading should be reset when there is no one using it." },
+    { type:"meta", hex:"—", bit:134, name:"turret_mods_on_roof",                     desc:"The roof mods are used to store the turret mod." },
+    { type:"meta", hex:"—", bit:135, name:"update_weapon_battery_bones",             desc:"The weapon battery bones need to be updated." },
+    { type:"meta", hex:"—", bit:136, name:"dont_hold_low_gears_when_engine_under_load", desc:"The gearbox should change up as soon as it reaches the change up point even when the engine is under load." },
+    { type:"meta", hex:"—", bit:137, name:"has_glider",                              desc:"The vehicle is equipped with a glider." },
+    { type:"meta", hex:"—", bit:138, name:"increase_low_speed_torque",               desc:"Torque is increased at low speed to aid getting up hills." },
+    { type:"meta", hex:"—", bit:139, name:"use_aircraft_style_weapon_targeting",     desc:"Does the same behaviour as aircraft for targeting (only locks onto players and hostile targets) and reticules (renders along weapon probe)." },
+    { type:"meta", hex:"—", bit:140, name:"keep_all_turrets_synchronised",           desc:"Makes sure all turret base and barrel bones have the same rotation." },
+    { type:"meta", hex:"—", bit:141, name:"set_wanted_for_attached_veh",             desc:"If player inside this vehicle gets a wanted level, this flag will also give the same wanted level to any peds inside attached vehicles (like trailer) and vice versa." },
+    { type:"meta", hex:"—", bit:142, name:"turret_entry_attach_to_driver_seat",      desc:"Force attach ped to the driver seat when entering a turret seat that can rotate, in order to correctly calculate align positions." },
+    { type:"meta", hex:"—", bit:143, name:"use_standard_flight_helmet",              desc:"Force the standard flight helmet to be used instead of the PV_FLAG_PILOT_HELMET, even if the vehicle seat has weapons." },
+    { type:"meta", hex:"—", bit:144, name:"second_turret_mod",                       desc:"Has a secondary turret mod." },
+    { type:"meta", hex:"—", bit:145, name:"third_turret_mod",                        desc:"Has a third turret mod." },
+    { type:"meta", hex:"—", bit:146, name:"has_ejector_seats",                       desc:"Hey, what does this button do?" },
+    { type:"meta", hex:"—", bit:147, name:"turret_mods_on_chassis",                  desc:"Has turret mods in the chassis mod slot." },
+    { type:"meta", hex:"—", bit:148, name:"has_jato_boost_mod",                      desc:"Has a JATO rocket boost to assist takeoff, uses the exhaust mod slot. The JATO boost is hardcoded to the VMT_EXHAUST category." },
+    { type:"meta", hex:"—", bit:149, name:"ignore_trapped_hull_check",               desc:"Will not do shape tests to see if we're trapped in convex hull. This will make ped always go to climb up point directly." },
+    { type:"meta", hex:"—", bit:150, name:"hold_to_shuffle",                         desc:"Will make shuffling between seats be on hold rather than tap." },
+    { type:"meta", hex:"—", bit:151, name:"turret_mod_with_no_stock_turret",         desc:"The vehicle does not have a turret as stock, but ones should be activated with an appropriate mod." },
+    { type:"meta", hex:"—", bit:152, name:"equip_unarmed_on_enter",                  desc:"Forces unarmed weapon to be equipped when entering the vehicle rather than calling EquipBestWeapon." },
+    { type:"meta", hex:"—", bit:153, name:"disable_camera_push_beyond",              desc:"Disables camera behaviour that pushes the camera beyond this entity during spawning, useful for very large vehicles." },
+    { type:"meta", hex:"—", bit:154, name:"has_vertical_flight_mode",                desc:"Has a vertical flight mode." },
+    { type:"meta", hex:"—", bit:155, name:"has_outrigger_legs",                      desc:"Has outrigger legs that need to be deployed." },
+    { type:"meta", hex:"—", bit:156, name:"can_navigate_to_on_vehicle_entry",        desc:"Flags standard vehicles as having on-vehicle entry points to navigate towards when standing on the vehicle. Aquatic vehicles and planes use this behaviour by default." },
+    { type:"meta", hex:"—", bit:157, name:"drop_suspension_when_stopped",            desc:"Suspension lowers when the vehicle is stopped. The vehicle has air suspension — raises while driving, drops when stopped. Default suspension height in handling must be the same as when driving normally." },
+    { type:"meta", hex:"—", bit:158, name:"dont_crash_abandoned_near_ground",        desc:"Don't crash the vehicle near ground if everyone exited it." },
+    { type:"meta", hex:"—", bit:159, name:"use_interior_red_light",                  desc:"Vehicle needs a special red interior light." },
+    { type:"meta", hex:"—", bit:160, name:"has_heli_strafe_mode",                    desc:"It is a helicopter with a special strafe handling mode." },
+    { type:"meta", hex:"—", bit:161, name:"has_vertical_rocket_boost",               desc:"Has a rocket boost, or rocket boost mod, that works vertically." },
+    { type:"meta", hex:"—", bit:162, name:"create_weapon_manager_on_spawn",          desc:"Creates vehicle weapon manager on spawn instead of entering a seat with a vehicle weapon. Already done for tanks and some vehicles with turret seats automatically." },
+    { type:"meta", hex:"—", bit:163, name:"use_root_as_base_lockon_pos",             desc:"Makes lock-on position be the root of the vehicle instead of center position of the bounding box." },
+    { type:"meta", hex:"—", bit:164, name:"headlights_on_tap_only",                  desc:"Makes headlights only toggle on tap of a button, not a hold." },
+    { type:"meta", hex:"—", bit:165, name:"check_warp_task_flag_during_enter",       desc:"Checks warp task flag during vehicle entry." },
+    { type:"meta", hex:"—", bit:166, name:"use_restricted_driveby_height_high",      desc:"Don't blend in the low sweep during drive-bys. Restricts how high the player can aim. The limit is higher than the default flag." },
+    { type:"meta", hex:"—", bit:167, name:"increase_camber_with_suspension_mod",     desc:"Increases the front wheel camber when a suspension mod is applied." },
+    { type:"meta", hex:"—", bit:168, name:"no_heavy_brake_animation",                desc:"Prevents heavy brake animation from being applied (due to low roof, etc.)." },
+    { type:"meta", hex:"—", bit:169, name:"has_two_bonnet_bones",                    desc:"Vehicle has two linked bonnet bones. The vehicle will use the 'bonnet' and 'cargodoor' bones simultaneously when opening the hood." },
+    { type:"meta", hex:"—", bit:170, name:"dont_link_boot2",                         desc:"Vehicle the special linked door bone shouldn't be linked." },
+    { type:"meta", hex:"—", bit:171, name:"has_increased_ramming_force_with_chassis_mod", desc:"If the vehicle has the best chassis mod then it will have increased ramming force." },
+    { type:"meta", hex:"—", bit:172, name:"has_increased_ramming_force_vs_all_vehicles", desc:"The increased ramming force is applied against all vehicles not just police ones." },
+    { type:"meta", hex:"—", bit:173, name:"has_extended_collision_mods",             desc:"Any of the mod bones can be used to enable or disable collision." },
+    { type:"meta", hex:"—", bit:174, name:"has_nitrous_mod",                         desc:"The vehicle has mods that can enable nitrous. The nitro mod boost is hardcoded to the VMT_ENGINEBAY2 category." },
+    { type:"meta", hex:"—", bit:175, name:"has_jump_mod",                            desc:"The vehicle has a jump boost modification. The jump boost modification is hardcoded to the VMT_ENGINEBAY3 category." },
+    { type:"meta", hex:"—", bit:176, name:"has_ramming_scoop_mod",                   desc:"The vehicle has a ramming scoop modification. Hardcoded to VMT_CHASSIS2 and requires scoop_1mod, scoop_2mod, and scoop_3mod collision bones." },
+    { type:"meta", hex:"—", bit:177, name:"has_super_brakes_mod",                    desc:"The vehicle has mods that enable it to stop very quickly." },
+    { type:"meta", hex:"—", bit:178, name:"crushes_other_vehicles",                  desc:"The vehicle crushes other vehicles when it drives over them. Does more damage to any vehicle it drives on top of." },
+    { type:"meta", hex:"—", bit:179, name:"has_weapon_blade_mods",                   desc:"The vehicle has sawblade modifications. The player and AI peds will be killed on contact with the sawblade collision." },
+    { type:"meta", hex:"—", bit:180, name:"has_weapon_spike_mods",                   desc:"The vehicle has spike modifications. The player and AI peds will be killed if they run into the spike collision." },
+    { type:"meta", hex:"—", bit:181, name:"force_bonnet_camera_instead_of_pov",      desc:"Will always use bonnet camera instead of POV camera, ignoring pause menu option." },
+    { type:"meta", hex:"—", bit:182, name:"ramp_mod",                                desc:"Vehicle can be used as a ramp if the mod is enabled." },
+    { type:"meta", hex:"—", bit:183, name:"has_tombstone",                           desc:"Has a breakable off bumper mod. The vehicle has a very heavy and solid 'tombstone' part that can be ejected to stop pursuing vehicles." },
+    { type:"meta", hex:"—", bit:184, name:"has_side_shunt",                          desc:"Has a side shunt mod — uses mod slot VMT_ENGINEBAY2. The vehicle is able to shunt vehicles out the way." },
+    { type:"meta", hex:"—", bit:185, name:"has_front_spike_mod",                     desc:"Has front spike mods." },
+    { type:"meta", hex:"—", bit:186, name:"has_ramming_bar_mod",                     desc:"Has front ramming bar mods. The ramming bar mod is hardcoded to VMT_CHASSIS2 and requires ram_1mod, ram_2mod, and ram_3mod collision bones." },
+    { type:"meta", hex:"—", bit:187, name:"turret_mods_on_chassis5",                 desc:"Uses the same turret mod setup as FLAG_TURRET_MODS_ON_ROOF but they are on CHASSIS5. Enables turret mods on the VMT_CHASSIS5 category." },
+    { type:"meta", hex:"—", bit:188, name:"has_supercharger",                        desc:"The vehicle model looks like it has a supercharger. Currently only affects the gauges. Permanently enables the vacuum and blower/boost dials on the vehicle." },
+    { type:"meta", hex:"—", bit:189, name:"is_tank_with_flame_damage",               desc:"The vehicle is a tank that can take fire damage. Similar to FLAG_IS_TANK, except the vehicle is not fireproof." },
+    { type:"meta", hex:"—", bit:190, name:"disable_deformation",                     desc:"The vehicle doesn't deform." },
+    { type:"meta", hex:"—", bit:191, name:"allow_rappel_ai_only",                    desc:"Allow AI peds to rappel from vehicles that don't support it." },
+    { type:"meta", hex:"—", bit:192, name:"use_restricted_driveby_height_mid_only",  desc:"Don't blend high or low sweeps during drive-bys." },
+    { type:"meta", hex:"—", bit:193, name:"force_auto_vault_on_vehicle_when_stuck",  desc:"Will force auto vault scan when stuck on top of this vehicle." },
+    { type:"meta", hex:"—", bit:194, name:"spoiler_mod_doesnt_increase_grip",        desc:"The mod that has been allocated the spoiler slot should not increase downforce." },
+    { type:"meta", hex:"—", bit:195, name:"no_reversing_animation",                  desc:"Prevents reversing animation from being applied (due to low roof, etc.). The player and AI peds do not play a 'look back' animation when reversing." },
+    { type:"meta", hex:"—", bit:196, name:"is_quadbike_using_bike_animations",       desc:"Identifying trike vehicles of type VEHICLE_TYPE_QUADBIKE (created as CAutomobile) that use bike animations / layouts." },
+    { type:"meta", hex:"—", bit:197, name:"is_formula_vehicle",                      desc:"Marks vehicle as a Formula vehicle, currently used to warp out of the vehicle when on its side. Changes the tire mark texture from standard tires to slick tires." },
+    { type:"meta", hex:"—", bit:198, name:"latch_all_joints",                        desc:"Latches all the joints when the vehicle is created." },
+    { type:"meta", hex:"—", bit:199, name:"reject_entry_to_vehicle_when_stood_on",   desc:"If stood on this vehicle, don't consider it for entry. The player will not attempt to pathfind to the nearest vehicle door to enter and will not warp inside." },
+    { type:"meta", hex:"—", bit:200, name:"check_if_driver_seat_is_closer_than_turrets_with_on_board_enter", desc:"Checks if the driver seat is closer than found turret seat when entering while stood on the vehicle." },
+    { type:"meta", hex:"—", bit:201, name:"render_wheels_with_zero_compression",     desc:"Even if a vehicle has suspension just render the wheels as if they have none. Prevents the wheels and suspension from visually moving." },
+    { type:"meta", hex:"—", bit:202, name:"use_length_of_vehicle_bounds_for_player_lockon_pos", desc:"Dynamically adjusts player's lock on position using the vehicle bounds." },
+    { type:"meta", hex:"—", bit:203, name:"prefer_front_seat",                       desc:"Prefer the front seat rather than rear seats in this vehicle (Boss peds normally go for rear seats)." },
+  ];
+
+  // =====================================================
+  // BUILD THE FLAGS DATABASE
+  // =====================================================
+
+  const BADGE_CLASS = {
+    model:    "fr-badge-model",
+    handling: "fr-badge-handling",
+    damage:   "fr-badge-damage",
+    advanced: "fr-badge-advanced",
+    meta:     "fr-badge-meta",
+  };
+
+  function escHTML(str) {
+    return String(str)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  let currentFilter = "all";
+  let currentSearch = "";
+
+  function renderTable() {
+    const q = currentSearch.toLowerCase().trim();
+    const body = document.getElementById("frDbBody");
+    const countEl = document.getElementById("frDbCount");
+
+    const filtered = FLAGS.filter(f => {
+      if (currentFilter !== "all" && f.type !== currentFilter) return false;
+      if (q) {
+        return f.name.toLowerCase().includes(q) ||
+               f.desc.toLowerCase().includes(q) ||
+               f.hex.toLowerCase().includes(q);
+      }
+      return true;
+    });
+
+    countEl.textContent = filtered.length + " flag" + (filtered.length !== 1 ? "s" : "") + " shown";
+
+    if (filtered.length === 0) {
+      body.innerHTML = `<tr><td colspan="4" class="fr-no-results">No flags match your search.</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = filtered.map(f => `
+      <tr>
+        <td><span class="fr-flag-type-badge ${escHTML(BADGE_CLASS[f.type])}">${escHTML(f.type)}</span></td>
+        <td><span class="fr-flag-hex">${escHTML(f.hex)}</span></td>
+        <td><span class="fr-flag-name">${escHTML(f.name)}</span></td>
+        <td class="fr-flag-desc">${f.desc.includes("Currently undefined") || f.desc.includes("Not well defined")
+          ? `<em>${escHTML(f.desc)}</em>` : escHTML(f.desc)}</td>
+      </tr>
+    `).join("");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    renderTable();
+
+    document.getElementById("frDbSearch").addEventListener("input", function () {
+      currentSearch = this.value;
+      renderTable();
+    });
+
+    document.querySelectorAll(".fr-filter-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".fr-filter-btn").forEach(b => b.classList.remove("active"));
+        this.classList.add("active");
+        currentFilter = this.dataset.type;
+        renderTable();
+      });
+    });
+  });
+
+  // =====================================================
+  // DECODER TOOL
+  // =====================================================
+
+  let decodeType = "model";
+
+  function buildBitGrid() {
+    const grid = document.getElementById("frBitGrid");
+    const labels = document.getElementById("frBitLabels");
+    grid.innerHTML = "";
+    labels.innerHTML = "";
+    for (let i = 31; i >= 0; i--) {
+      const cell = document.createElement("div");
+      cell.className = "fr-bit-cell";
+      cell.id = "frBit" + i;
+      cell.title = "Bit " + i + " (0x" + (1 << (i % 32) >>> 0).toString(16).toUpperCase().padStart(8,"0") + ")";
+      cell.textContent = i;
+      grid.appendChild(cell);
+      const lbl = document.createElement("div");
+      lbl.className = "fr-bit-label";
+      lbl.textContent = i;
+      labels.appendChild(lbl);
+    }
+  }
+
+  function getNamedFlagsForType(type) {
+    const map = {};
+    FLAGS.filter(f => f.type === type).forEach(f => { map[f.bit] = f; });
+    return map;
+  }
+
+  function decodeFlags() {
+    const rawInput = document.getElementById("frDecodeInput").value.trim().replace(/^0x/i,"");
+    const num = parseInt(rawInput, 16);
+    const resultsEl = document.getElementById("frDecodedFlags");
+
+    if (!rawInput || isNaN(num)) {
+      resultsEl.innerHTML = "<p>Invalid hex value. Enter e.g. <code>20006</code></p>";
+      for (let i = 0; i < 32; i++) {
+        const c = document.getElementById("frBit" + i);
+        if (c) c.className = "fr-bit-cell";
+      }
+      return;
+    }
+
+    const namedMap = getNamedFlagsForType(decodeType);
+    const activeBits = [];
+
+    for (let i = 0; i < 32; i++) {
+      const isOn = (num >>> i) & 1;
+      const cell = document.getElementById("frBit" + i);
+      if (!cell) continue;
+      if (isOn) {
+        activeBits.push(i);
+        cell.className = "fr-bit-cell on" + (namedMap[i] ? " named" : "");
+      } else {
+        cell.className = "fr-bit-cell";
+      }
+    }
+
+    if (activeBits.length === 0) {
+      resultsEl.innerHTML = "<p>No flags active (value is 0).</p>";
+      return;
+    }
+
+    resultsEl.innerHTML = activeBits.map(bit => {
+      const flagInfo = namedMap[bit];
+      const hexVal = "0x" + (1 << bit >>> 0).toString(16).toUpperCase().padStart(8,"0");
+      if (flagInfo) {
+        return `<div class="fr-decoded-item">
+          <div class="fr-decoded-hex">${hexVal}</div>
+          <div>
+            <div class="fr-decoded-name">${escHTML(flagInfo.name)}</div>
+            <div class="fr-decoded-desc">${escHTML(flagInfo.desc)}</div>
+          </div>
+        </div>`;
+      } else {
+        return `<div class="fr-decoded-item">
+          <div class="fr-decoded-hex">${hexVal}</div>
+          <div class="fr-decoded-unknown">Bit ${bit} — unknown flag</div>
+        </div>`;
+      }
+    }).join("");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    buildBitGrid();
+
+    document.getElementById("frDecodeBtn").addEventListener("click", decodeFlags);
+    document.getElementById("frDecodeInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") decodeFlags();
+    });
+
+    document.querySelectorAll(".fr-type-tab").forEach(btn => {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".fr-type-tab").forEach(b => b.classList.remove("active"));
+        this.classList.add("active");
+        decodeType = this.dataset.decodeType;
+        buildBitGrid();
+        decodeFlags();
+      });
+    });
+  });
+  </script>
+
+  <script src="js/shared/siteshell.js"></script>
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/accountnav.js"></script>
+</body>
+</html>
