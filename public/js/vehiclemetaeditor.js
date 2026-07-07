@@ -1294,6 +1294,31 @@ const vehicleMetaEditor = (() => {
     exportSingleVehicleXml,
     exportJson,
     copyXml,
-    saveToCloud
+    saveToCloud,
+
+    // Cloud Projects API (used by vehicle-meta-cloud-save.js)
+    hasContent: () => Boolean(state.xmlDoc),
+    getCloudPayload: () => {
+      if (!state.xmlDoc) return null;
+      return {
+        format: "gta-traffic-vehicle-meta-cloud-project",
+        version: 1,
+        savedAt: new Date().toISOString(),
+        projectType: "vehicle-meta",
+        dlcName: state.dlcName || "",
+        fileName: state.fileName || "vehicles.meta",
+        xmlText: serializeXml(),
+        vehicleCount: state.vehicles.length,
+        vehicleNames: state.vehicles.map(v => v.modelName)
+      };
+    },
+    applyCloudProject: (data) => {
+      if (!data?.xmlText) throw new Error("Cloud project has no XML content.");
+      parseVehicles(data.xmlText, data.fileName || "vehicles.meta", {
+        dlcName: data.dlcName || "",
+        projectId: data.projectId || "",
+        createdAt: data.createdAt || ""
+      });
+    }
   };
 })();

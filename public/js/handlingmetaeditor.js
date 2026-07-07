@@ -1796,6 +1796,29 @@ const handlingMetaEditor = (() => {
     exportSingleVehicleXml,
     exportJson,
     copyXml,
-    openProfile
+    openProfile,
+
+    // Cloud Projects API (used by handling-meta-cloud-save.js)
+    hasContent: () => Boolean(state.xmlDoc),
+    getCloudPayload: () => {
+      if (!state.xmlDoc) return null;
+      return {
+        format: "gta-traffic-handling-meta-cloud-project",
+        version: 1,
+        savedAt: new Date().toISOString(),
+        projectType: "handling-meta",
+        dlcName: state.dlcName || "",
+        fileName: state.fileName || "handling.meta",
+        xmlText: serializeXml(),
+        profileCount: state.entries.length,
+        profileNames: state.entries.map(e => e.key || e.handlingName || "")
+      };
+    },
+    applyCloudProject: (data) => {
+      if (!data?.xmlText) throw new Error("Cloud project has no XML content.");
+      parseHandling(data.xmlText, data.fileName || "handling.meta", {
+        dlcName: data.dlcName || ""
+      });
+    }
   };
 })();
