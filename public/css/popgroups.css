@@ -112,6 +112,72 @@
   margin-top: 0 !important;
 }
 
+/* Toolbar buttons now pull from design-tokens.css (the site's shared
+   palette) instead of the old bespoke btn-orange/btn-green/secondary
+   browns and blues from style.css. Scoped to this toolbar only so
+   other pages still using those classes elsewhere are unaffected. */
+.pg-editor-toolbar button {
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semi);
+  font-size: var(--text-sm);
+  transition: background var(--transition-fast), box-shadow var(--transition-fast), color var(--transition-fast);
+}
+
+.pg-editor-toolbar button:hover {
+  filter: none;
+}
+
+.pg-editor-toolbar .btn-orange {
+  background: var(--color-brand);
+  color: var(--color-text-inverse);
+  border-color: var(--color-brand-dark);
+}
+.pg-editor-toolbar .btn-orange:hover {
+  background: var(--color-brand-light);
+  box-shadow: var(--shadow-brand);
+}
+
+.pg-editor-toolbar .btn-green {
+  background: var(--color-success-subtle);
+  color: var(--color-success-light);
+  border-color: var(--color-success-border);
+}
+.pg-editor-toolbar .btn-green:hover {
+  background: rgba(34, 197, 94, 0.20);
+}
+
+.pg-editor-toolbar .secondary {
+  background: var(--color-bg-raised);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+.pg-editor-toolbar .secondary:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* Vehicles / Peds section tabs - highlight whichever one is active
+   (toggled by showSection() in popgroups.js), instead of Vehicles
+   staying permanently highlighted regardless of the selected tab. */
+.pg-editor-toolbar .pg-section-tab {
+  background: var(--color-bg-raised);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+.pg-editor-toolbar .pg-section-tab:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+.pg-editor-toolbar .pg-section-tab.active {
+  background: var(--color-brand);
+  color: var(--color-text-inverse);
+  border-color: var(--color-brand-dark);
+}
+.pg-editor-toolbar .pg-section-tab.active:hover {
+  background: var(--color-brand-light);
+  box-shadow: var(--shadow-brand);
+}
+
 .pg-wide-main-layout,
 #mainLayout.pg-wide-main-layout {
   display: grid;

@@ -119,6 +119,11 @@ function parseSection(xml, xmlTag, targetKey) {
 function showSection(section) {
   currentSection = section;
   els.sectionTitle.textContent = section === "vehicles" ? "Vehicles" : "Peds";
+
+  document.querySelectorAll(".pg-section-tab").forEach(button => {
+    button.classList.toggle("active", button.dataset.section === section);
+  });
+
   renderSection(section);
 
   if (typeof schedulePopgroupsProjectSave === "function") {

@@ -2,15 +2,28 @@
 // [MODULE: POPCYCLE_VISUAL_AREA_MAP]
 // Interactive visual map system for the Popcycle Editor.
 //
+// 2026-07-06: Simplified to a single shared reference map
+// (assets/area-maps/gta5map2-1600.jpg) instead of the old
+// multi-layer transform-matrix system. Area pins are plain
+// pixel coordinates on that one image. Added "Edit Positions"
+// mode so a marker can be dragged into a better spot by hand
+// (auto-calibrated positions from real popcycle coordinates
+// are a close starting point, not pixel-perfect against a
+// hand-drawn community map). Adjusted positions save to this
+// browser's local storage immediately and can be exported as
+// JSON to fold back into popcycleareamapdata.js permanently.
+//
 // Features:
-// - Automatic city/county map selection
-// - Full San Andreas, city district, regional, and patrol maps
-// - Mouse-wheel and button zoom
-// - Click-and-drag panning
-// - Reset, fit, focus-selected, and fullscreen controls
+// - Mouse-wheel and button zoom, click-and-drag panning
 // - Schedule markers that select the matching left-column item
 // - Manual schedule-to-area overrides through the dropdown
-// - Saved map layer, zoom, and pan state
+// - Edit Positions: drag any marker to correct its spot, or click
+//   empty map space to add a brand new custom-named dot
+// - Draw Outline: trace a highlight shape over a neighborhood's
+//   visible border for the selected schedule
+// - Export Positions: download adjusted coordinates, custom dots,
+//   and outlines as JSON
+// - Saved zoom/pan, marker-position, and outline state
 // =====================================================
 
 const POPCYCLE_AREA_KEY_OVERRIDES = {
@@ -35,15 +48,22 @@ const POPCYCLE_AREA_KEY_OVERRIDES = {
   CHUMASH: "NORTH_CHUMASH"
 };
 
+const POPCYCLE_MARKER_OVERRIDES_KEY = "gtaTrafficPopcycleMarkerOverrides_v1";
+const POPCYCLE_CUSTOM_MARKERS_KEY = "gtaTrafficPopcycleCustomMarkers_v1";
+const POPCYCLE_AREA_OUTLINES_KEY = "gtaTrafficPopcycleAreaOutlines_v1";
+
 const popcycleAreaMapState = {
   areas: [],
   layers: [],
   layersById: {},
   images: {},
   imageReady: {},
-  areaImages: {},
-  areaImageReady: {},
+  markerOverrides: {},
+  areaOutlines: {},
+  editMode: false,
+  outlineDraft: null,
   selectedAreaId: "",
+  lastAutoFocusedAreaId: "",
   currentMatchType: "none",
   actualLayerId: "full",
   lastRender: null,
@@ -54,7 +74,9 @@ const popcycleAreaMapState = {
     startY: 0,
     startPanX: 0,
     startPanY: 0,
-    moved: false
+    moved: false,
+    marker: null,
+    markerMoved: false
   },
   drawRequest: null,
   workspaceSaveTimer: null
@@ -91,19 +113,21 @@ function initializePopcycleAreaMap() {
       ])
     );
 
+  loadMarkerOverridesFromStorage();
+  loadCustomMarkersFromStorage();
+  loadAreaOutlinesFromStorage();
   ensurePopcycleMapState();
   populatePopcycleAreaSelect();
-  renderPopcycleMapLayerButtons();
+  renderPopcycleMapToolButtons();
   bindPopcycleMapEvents();
   loadPopcycleMapImages();
-  loadFocusedAreaMapImages(areaData.imagePaths || {});
 }
 
 function ensurePopcycleMapState() {
   if (!popcycleState.mapLayer) {
     popcycleState.mapLayer =
       window.GTATrafficVisualMapConfig
-        ?.defaultLayer || "auto";
+        ?.defaultLayer || "full";
   }
 
   if (!popcycleState.mapViews) {
@@ -111,8 +135,6 @@ function ensurePopcycleMapState() {
   }
 
   popcycleAreaMapState.layers.forEach(layer => {
-    if (layer.dynamic) return;
-
     if (!popcycleState.mapViews[layer.id]) {
       popcycleState.mapViews[layer.id] = {
         zoom: 1,
@@ -144,18 +166,6 @@ function loadPopcycleMapImages() {
     };
 
     image.src = layer.source;
-  });
-}
-
-
-function loadFocusedAreaMapImages(imagePaths) {
-  ["city", "county"].forEach(key => {
-    const source = imagePaths[key];
-    if (!source) return;
-    const image = new Image();
-    image.onload = () => { popcycleAreaMapState.areaImages[key] = image; popcycleAreaMapState.areaImageReady[key] = true; requestPopcycleMapDraw(); };
-    image.onerror = () => { popcycleAreaMapState.areaImageReady[key] = false; console.error(`Could not load focused Popcycle map image: ${source}`); requestPopcycleMapDraw(); };
-    image.src = source;
   });
 }
 
@@ -225,6 +235,377 @@ function bindPopcycleMapEvents() {
 }
 
 // [END SECTION: VISUAL_MAP_INITIALIZATION]
+
+// =====================================================
+// [SECTION: MARKER_POSITION_OVERRIDES]
+// Lets a marker be dragged to a better spot by hand. Saved to
+// this browser's local storage immediately, and exportable as
+// JSON so the adjusted positions can be committed permanently.
+// =====================================================
+
+function loadMarkerOverridesFromStorage() {
+  try {
+    const raw = localStorage.getItem(POPCYCLE_MARKER_OVERRIDES_KEY);
+    popcycleAreaMapState.markerOverrides = raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.warn("Could not load saved marker positions.", error);
+    popcycleAreaMapState.markerOverrides = {};
+  }
+}
+
+function saveMarkerOverridesToStorage() {
+  try {
+    localStorage.setItem(
+      POPCYCLE_MARKER_OVERRIDES_KEY,
+      JSON.stringify(popcycleAreaMapState.markerOverrides)
+    );
+  } catch (error) {
+    console.warn("Could not save marker positions.", error);
+  }
+}
+
+function toggleMapEditPositions() {
+  popcycleAreaMapState.editMode = !popcycleAreaMapState.editMode;
+
+  if (!popcycleAreaMapState.editMode) {
+    cancelOutlineDraft();
+  }
+
+  renderPopcycleMapToolButtons();
+  requestPopcycleMapDraw();
+
+  const canvas = document.getElementById("popcycleVisualMapCanvas");
+  if (canvas) {
+    canvas.style.cursor = popcycleAreaMapState.editMode ? "grab" : "";
+  }
+}
+
+function resetAllMarkerPositions() {
+  if (!confirm("Reset every marker back to its calculated default position? This clears all manual adjustments saved in this browser.")) {
+    return;
+  }
+  popcycleAreaMapState.markerOverrides = {};
+  saveMarkerOverridesToStorage();
+  requestPopcycleMapDraw();
+  renderPopcycleWorkspaceStatus?.("All marker positions reset to defaults.");
+}
+
+function exportPopcycleMapPositions() {
+  const overrides = popcycleAreaMapState.markerOverrides || {};
+  const overrideCount = Object.keys(overrides).length;
+  const customCount = popcycleAreaMapState.areas.filter(a => a.custom).length;
+  const outlineCount = Object.keys(popcycleAreaMapState.areaOutlines || {}).length;
+
+  if (!overrideCount && !customCount && !outlineCount) {
+    alert("Nothing to export yet. Drag a marker, add a custom dot, or draw an outline in Edit Positions mode first.");
+    return;
+  }
+
+  const areasWithPositions = popcycleAreaMapState.areas.map(area => ({
+    id: area.id,
+    name: area.name,
+    custom: Boolean(area.custom),
+    popcycle: area.popcycle || [],
+    pin: overrides[area.id]
+      ? [Math.round(overrides[area.id][0] * 100) / 100, Math.round(overrides[area.id][1] * 100) / 100]
+      : area.pin,
+    adjusted: Boolean(overrides[area.id]),
+    outline: popcycleAreaMapState.areaOutlines[area.id] || null
+  }));
+
+  const payload = {
+    format: "gta-traffic-popcycle-map-positions",
+    exportedAt: new Date().toISOString(),
+    referenceImage: popcycleAreaMapState.layers[0]?.source || "",
+    adjustedCount: overrideCount,
+    customDotCount: customCount,
+    outlineCount,
+    areas: areasWithPositions
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `popcycle_map_positions_${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+
+  renderPopcycleWorkspaceStatus?.(
+    `Exported ${overrideCount} adjusted position${overrideCount === 1 ? "" : "s"}, ${customCount} custom dot${customCount === 1 ? "" : "s"}, ${outlineCount} outline${outlineCount === 1 ? "" : "s"}.`
+  );
+}
+
+// Opens a file picker and applies a previously exported positions JSON
+// (from exportPopcycleMapPositions above) onto this browser's map data.
+// NOTE: this is a plain client-side import for now - anyone with the map
+// open can use it. Planned: gate this behind an admin-only check before
+// it's exposed on the public site.
+function importPopcycleMapPositions() {
+  let input = document.getElementById("popcyclePositionsImportInput");
+
+  if (!input) {
+    input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.id = "popcyclePositionsImportInput";
+    input.style.display = "none";
+    input.addEventListener("change", handlePopcycleImportFileChosen);
+    document.body.appendChild(input);
+  }
+
+  input.value = "";
+  input.click();
+}
+
+function handlePopcycleImportFileChosen(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    try {
+      applyImportedPopcycleMapPositions(
+        JSON.parse(reader.result)
+      );
+    } catch (error) {
+      console.warn("Could not import map positions.", error);
+      alert("That file couldn't be read as a map positions export. Make sure it's an unmodified JSON file from the Export Positions button.");
+    }
+  };
+
+  reader.onerror = () => {
+    alert("Could not read that file.");
+  };
+
+  reader.readAsText(file);
+}
+
+function applyImportedPopcycleMapPositions(payload) {
+  if (!payload || payload.format !== "gta-traffic-popcycle-map-positions" || !Array.isArray(payload.areas)) {
+    alert("That file doesn't look like a Popcycle map positions export.");
+    return;
+  }
+
+  let appliedOverrides = 0;
+  let appliedCustom = 0;
+  let appliedOutlines = 0;
+
+  payload.areas.forEach(entry => {
+    if (!entry || !entry.id) return;
+
+    const existing = popcycleAreaMapState.areas.find(a => a.id === entry.id);
+
+    if (entry.custom && !existing) {
+      popcycleAreaMapState.areas.push({
+        id: entry.id,
+        name: entry.name || entry.id,
+        county: "Custom",
+        category: "Custom Marker",
+        map: "full",
+        custom: true,
+        pin: Array.isArray(entry.pin) ? entry.pin : [0, 0],
+        popcycle: entry.popcycle || [],
+        popgroups: [],
+        landmarks: [],
+        notes: "Custom marker imported from a positions export file."
+      });
+      appliedCustom++;
+    } else if (entry.custom && existing) {
+      if (Array.isArray(entry.pin)) existing.pin = entry.pin;
+      appliedCustom++;
+    } else if (entry.adjusted && Array.isArray(entry.pin) && existing) {
+      popcycleAreaMapState.markerOverrides[entry.id] = entry.pin;
+      appliedOverrides++;
+    }
+
+    if (Array.isArray(entry.outline) && entry.outline.length >= 3) {
+      popcycleAreaMapState.areaOutlines[entry.id] = entry.outline;
+      appliedOutlines++;
+    }
+  });
+
+  saveMarkerOverridesToStorage();
+  saveCustomMarkersToStorage();
+  saveAreaOutlinesToStorage();
+  populatePopcycleAreaSelect();
+  renderPopcycleMapToolButtons();
+  requestPopcycleMapDraw();
+
+  renderPopcycleWorkspaceStatus?.(
+    `Imported ${appliedOverrides} adjusted position${appliedOverrides === 1 ? "" : "s"}, ${appliedCustom} custom dot${appliedCustom === 1 ? "" : "s"}, ${appliedOutlines} outline${appliedOutlines === 1 ? "" : "s"}.`
+  );
+
+  alert(`Import complete: ${appliedOverrides} position(s), ${appliedCustom} custom dot(s), ${appliedOutlines} outline(s) applied.`);
+}
+
+// [END SECTION: MARKER_POSITION_OVERRIDES]
+
+// =====================================================
+// [SECTION: CUSTOM_MARKERS]
+// Lets a brand new labeled dot be dropped anywhere on the map
+// in Edit Positions mode (click empty space, away from any
+// existing marker). Custom dots behave exactly like the
+// computed ones - draggable, clickable, and they'll select a
+// schedule automatically if their label matches one.
+// =====================================================
+
+function loadCustomMarkersFromStorage() {
+  let customAreas = [];
+  try {
+    const raw = localStorage.getItem(POPCYCLE_CUSTOM_MARKERS_KEY);
+    customAreas = raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    console.warn("Could not load saved custom markers.", error);
+    customAreas = [];
+  }
+
+  // Remove any custom areas from a previous load (e.g. hot reload) before re-adding.
+  popcycleAreaMapState.areas = popcycleAreaMapState.areas.filter(a => !a.custom);
+  popcycleAreaMapState.areas.push(...customAreas);
+}
+
+function saveCustomMarkersToStorage() {
+  const customAreas = popcycleAreaMapState.areas.filter(a => a.custom);
+  try {
+    localStorage.setItem(POPCYCLE_CUSTOM_MARKERS_KEY, JSON.stringify(customAreas));
+  } catch (error) {
+    console.warn("Could not save custom markers.", error);
+  }
+}
+
+function slugifyPopcycleCustomId(label) {
+  const base = normalizePopcycleAreaKey(label) || "CUSTOM";
+  let id = `CUSTOM_${base}`;
+  let suffix = 2;
+  const existingIds = new Set(popcycleAreaMapState.areas.map(a => a.id));
+  while (existingIds.has(id)) {
+    id = `CUSTOM_${base}_${suffix++}`;
+  }
+  return id;
+}
+
+function addCustomMarkerAt(x, y) {
+  const label = prompt("Name for this new marker (matches a schedule name if it lines up):");
+  if (!label || !label.trim()) return;
+
+  const trimmed = label.trim();
+
+  const newArea = {
+    id: slugifyPopcycleCustomId(trimmed),
+    name: trimmed,
+    county: "Custom",
+    category: "Custom Marker",
+    map: "full",
+    custom: true,
+    pin: [Math.round(x * 100) / 100, Math.round(y * 100) / 100],
+    popcycle: [trimmed],
+    popgroups: [],
+    landmarks: [],
+    notes: "Custom marker added from the map's Edit Positions mode."
+  };
+
+  popcycleAreaMapState.areas.push(newArea);
+  saveCustomMarkersToStorage();
+  populatePopcycleAreaSelect();
+  renderPopcycleMapToolButtons();
+  requestPopcycleMapDraw();
+  renderPopcycleWorkspaceStatus?.(`Added custom marker "${trimmed}".`);
+}
+
+function removeCustomMarker(areaId) {
+  popcycleAreaMapState.areas = popcycleAreaMapState.areas.filter(a => a.id !== areaId);
+  delete popcycleAreaMapState.markerOverrides[areaId];
+  delete popcycleAreaMapState.areaOutlines[areaId];
+  saveCustomMarkersToStorage();
+  saveMarkerOverridesToStorage();
+  saveAreaOutlinesToStorage();
+  populatePopcycleAreaSelect();
+  requestPopcycleMapDraw();
+}
+
+// [END SECTION: CUSTOM_MARKERS]
+
+// =====================================================
+// [SECTION: AREA_OUTLINES]
+// Lets the user trace a polygon over a neighborhood's visible
+// border on the map for the currently selected schedule. Shown
+// as a highlighted overlay whenever that schedule is selected.
+// =====================================================
+
+function loadAreaOutlinesFromStorage() {
+  try {
+    const raw = localStorage.getItem(POPCYCLE_AREA_OUTLINES_KEY);
+    popcycleAreaMapState.areaOutlines = raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.warn("Could not load saved area outlines.", error);
+    popcycleAreaMapState.areaOutlines = {};
+  }
+}
+
+function saveAreaOutlinesToStorage() {
+  try {
+    localStorage.setItem(
+      POPCYCLE_AREA_OUTLINES_KEY,
+      JSON.stringify(popcycleAreaMapState.areaOutlines)
+    );
+  } catch (error) {
+    console.warn("Could not save area outlines.", error);
+  }
+}
+
+function toggleOutlineDrawing() {
+  if (popcycleAreaMapState.outlineDraft) {
+    cancelOutlineDraft();
+    return;
+  }
+
+  const area = getSelectedPopcycleArea();
+  if (!area) {
+    alert("Select a schedule with a mapped area first, then draw its outline.");
+    return;
+  }
+
+  popcycleAreaMapState.outlineDraft = { areaId: area.id, points: [] };
+  renderPopcycleMapToolButtons();
+  requestPopcycleMapDraw();
+}
+
+function cancelOutlineDraft() {
+  if (!popcycleAreaMapState.outlineDraft) return;
+  popcycleAreaMapState.outlineDraft = null;
+  renderPopcycleMapToolButtons();
+  requestPopcycleMapDraw();
+}
+
+function finishOutlineDraft() {
+  const draft = popcycleAreaMapState.outlineDraft;
+  if (!draft) return;
+
+  if (draft.points.length < 3) {
+    alert("Click at least 3 points along the border before finishing the outline.");
+    return;
+  }
+
+  popcycleAreaMapState.areaOutlines[draft.areaId] = draft.points;
+  popcycleAreaMapState.outlineDraft = null;
+  saveAreaOutlinesToStorage();
+  renderPopcycleMapToolButtons();
+  requestPopcycleMapDraw();
+  renderPopcycleWorkspaceStatus?.("Outline saved for the selected area.");
+}
+
+function clearSelectedAreaOutline() {
+  const area = getSelectedPopcycleArea();
+  if (!area) return;
+  delete popcycleAreaMapState.areaOutlines[area.id];
+  saveAreaOutlinesToStorage();
+  renderPopcycleMapToolButtons();
+  requestPopcycleMapDraw();
+}
+
+// [END SECTION: AREA_OUTLINES]
 
 // =====================================================
 // [SECTION: AREA_NAME_MATCHING]
@@ -455,10 +836,11 @@ function resetPopcycleAreaOverride() {
 
 // =====================================================
 // [SECTION: MAP_LAYER_CONTROLS]
-// Layer selection, zoom buttons, reset, focus, and fullscreen.
+// One shared reference map, plus Edit/Export/Reset tools and
+// zoom/pan/fullscreen controls.
 // =====================================================
 
-function renderPopcycleMapLayerButtons() {
+function renderPopcycleMapToolButtons() {
   const host =
     document.getElementById(
       "popcycleMapLayerButtons"
@@ -466,59 +848,89 @@ function renderPopcycleMapLayerButtons() {
 
   if (!host) return;
 
-  host.innerHTML =
-    popcycleAreaMapState.layers
-      .map(layer => `
+  const overrideCount = Object.keys(popcycleAreaMapState.markerOverrides || {}).length;
+  const outlineCount = Object.keys(popcycleAreaMapState.areaOutlines || {}).length;
+  const draft = popcycleAreaMapState.outlineDraft;
+  const selectedArea = getSelectedPopcycleArea();
+  const selectedHasOutline = Boolean(selectedArea && popcycleAreaMapState.areaOutlines[selectedArea.id]);
+
+  host.innerHTML = `
+    <button
+      type="button"
+      class="pc-map-layer-button ${popcycleAreaMapState.editMode ? "active" : ""}"
+      onclick="toggleMapEditPositions()"
+      title="Drag a marker to correct its position, or click empty map space to add a new labeled dot"
+    >
+      ${popcycleAreaMapState.editMode ? "✓ Editing Positions" : "✏ Edit Positions"}
+    </button>
+
+    ${popcycleAreaMapState.editMode ? `
+      <button
+        type="button"
+        class="pc-map-layer-button ${draft ? "active" : ""}"
+        onclick="${draft ? "cancelOutlineDraft" : "toggleOutlineDrawing"}()"
+        title="${selectedArea ? "Click points along the neighborhood's border, then Finish Outline" : "Select a mapped schedule first"}"
+        ${selectedArea ? "" : "disabled"}
+      >
+        ${draft ? "✕ Cancel Outline" : "🖉 Draw Outline"}
+      </button>
+
+      ${draft ? `
         <button
           type="button"
-          class="pc-map-layer-button ${
-            popcycleState.mapLayer === layer.id
-              ? "active"
-              : ""
-          }"
-          onclick="setPopcycleMapLayer('${layer.id}')"
-          title="${escapePopcycleAttribute(layer.description || layer.title)}"
+          class="pc-map-layer-button"
+          onclick="finishOutlineDraft()"
+          title="Close the shape and save it (need at least 3 points)"
         >
-          ${escapePopcycleHTML(layer.shortTitle || layer.title)}
+          ✓ Finish Outline (${draft.points.length} pt${draft.points.length === 1 ? "" : "s"})
         </button>
-      `)
-      .join("");
+      ` : ""}
+
+      ${!draft && selectedHasOutline ? `
+        <button
+          type="button"
+          class="pc-map-layer-button"
+          onclick="clearSelectedAreaOutline()"
+          title="Remove the saved outline for the selected schedule"
+        >
+          🗑 Clear Outline
+        </button>
+      ` : ""}
+    ` : ""}
+
+    <button
+      type="button"
+      class="pc-map-layer-button"
+      onclick="exportPopcycleMapPositions()"
+      title="Download adjusted positions, custom dots, and outlines as JSON"
+    >
+      ⬇ Export Positions${overrideCount || outlineCount ? ` (${overrideCount + outlineCount})` : ""}
+    </button>
+
+    <button
+      type="button"
+      class="pc-map-layer-button"
+      onclick="importPopcycleMapPositions()"
+      title="Load a previously exported positions JSON file into this map (temporary - admin-only gating planned)"
+    >
+      ⬆ Import Positions
+    </button>
+
+    ${overrideCount ? `
+      <button
+        type="button"
+        class="pc-map-layer-button"
+        onclick="resetAllMarkerPositions()"
+        title="Clear all manually adjusted marker positions"
+      >
+        ↺ Reset Adjustments
+      </button>
+    ` : ""}
+  `;
 }
 
-function setPopcycleMapLayer(layerId) {
-  if (!popcycleAreaMapState.layersById[layerId]) {
-    return;
-  }
-
-  popcycleState.mapLayer = layerId;
-  renderPopcycleMapLayerButtons();
-  renderPopcycleAreaMap();
-  schedulePopcycleWorkspaceSave?.();
-}
-
-function getActualPopcycleMapLayer(area = null) {
-  const requested =
-    popcycleState.mapLayer || "auto";
-
-  if (requested !== "auto") {
-    return popcycleAreaMapState.layersById[
-      requested
-    ] ||
-      popcycleAreaMapState.layersById.full;
-  }
-
-  const selectedArea =
-    area || getSelectedPopcycleArea();
-
-  const automaticId =
-    selectedArea?.map === "city"
-      ? "districts"
-      : "full";
-
-  return popcycleAreaMapState.layersById[
-    automaticId
-  ] ||
-    popcycleAreaMapState.layersById.full;
+function getActualPopcycleMapLayer() {
+  return popcycleAreaMapState.layers[0] || null;
 }
 
 function getPopcycleMapView(layerId) {
@@ -539,7 +951,7 @@ function zoomPopcycleMap(factor, sourceEvent = null) {
   const layer =
     getActualPopcycleMapLayer();
 
-  if (!layer || layer.dynamic) return;
+  if (!layer) return;
 
   const view =
     getPopcycleMapView(layer.id);
@@ -617,7 +1029,7 @@ function resetPopcycleMapView() {
   const layer =
     getActualPopcycleMapLayer();
 
-  if (!layer || layer.dynamic) return;
+  if (!layer) return;
 
   popcycleState.mapViews[layer.id] = {
     zoom: 1,
@@ -638,17 +1050,14 @@ function focusPopcycleMapOnSelected() {
     getSelectedPopcycleArea();
 
   const layer =
-    getActualPopcycleMapLayer(area);
+    getActualPopcycleMapLayer();
 
-  if (!area || !layer || layer.dynamic) {
+  if (!area || !layer) {
     return;
   }
 
   const marker =
-    getAreaMarkerForLayer(
-      area,
-      layer
-    );
+    getAreaMarkerPosition(area);
 
   if (!marker) return;
 
@@ -665,10 +1074,7 @@ function focusPopcycleMapOnSelected() {
   const view =
     getPopcycleMapView(layer.id);
 
-  view.zoom =
-    layer.id === "districts"
-      ? 1.8
-      : 2.25;
+  view.zoom = 2.25;
 
   const fitScale = Math.min(
     rect.width / layer.width,
@@ -737,7 +1143,7 @@ function schedulePopcycleMapWorkspaceSave() {
 
 // =====================================================
 // [SECTION: MAP_RENDERING]
-// Renders map details, the selected layer, and schedule markers.
+// Renders the map, the selected layer, and schedule markers.
 // =====================================================
 
 function renderPopcycleAreaMap() {
@@ -758,7 +1164,7 @@ function renderPopcycleAreaMap() {
     match.type;
 
   const layer =
-    getActualPopcycleMapLayer(area);
+    getActualPopcycleMapLayer();
 
   popcycleAreaMapState.actualLayerId =
     layer?.id || "full";
@@ -781,8 +1187,30 @@ function renderPopcycleAreaMap() {
     layer
   );
 
-  renderPopcycleMapLayerButtons();
+  renderPopcycleMapToolButtons();
   requestPopcycleMapDraw();
+  maybeAutoFocusSelectedArea(area);
+}
+
+// Jumps the map to the selected schedule's marker whenever the
+// selection actually changes (not on every redraw - e.g. while
+// dragging a marker in Edit Positions mode). Uses whatever
+// position is current for that area, including manual
+// Edit Positions adjustments.
+function maybeAutoFocusSelectedArea(area) {
+  const areaId = area?.id || "";
+
+  if (areaId === popcycleAreaMapState.lastAutoFocusedAreaId) {
+    return;
+  }
+
+  popcycleAreaMapState.lastAutoFocusedAreaId = areaId;
+
+  if (!areaId) {
+    return;
+  }
+
+  requestAnimationFrame(() => focusPopcycleMapOnSelected());
 }
 
 function updatePopcycleMapSummary(
@@ -843,7 +1271,7 @@ function updatePopcycleMapSummary(
     `;
   }
 
-  if (zoomLabel && layer && !layer.dynamic) {
+  if (zoomLabel && layer) {
     const view =
       getPopcycleMapView(layer.id);
 
@@ -878,6 +1306,11 @@ function renderPopcycleAreaDetails(
       "popcycleAreaDetails"
     );
 
+  const caption =
+    document.getElementById(
+      "popcycleFocusedMapCaption"
+    );
+
   if (!host) return;
 
   if (!scheduleName) {
@@ -886,6 +1319,7 @@ function renderPopcycleAreaDetails(
         Select a schedule to view its map reference.
       </div>
     `;
+    if (caption) caption.textContent = "Select a mapped schedule to view its details.";
     return;
   }
 
@@ -901,7 +1335,12 @@ function renderPopcycleAreaDetails(
         </p>
       </div>
     `;
+    if (caption) caption.textContent = `${scheduleName} · no area reference assigned.`;
     return;
+  }
+
+  if (caption) {
+    caption.textContent = `${area.name} · ${area.county}`;
   }
 
   const matchLabel = {
@@ -979,6 +1418,18 @@ function renderPopcycleAreaDetails(
           .join("")}
       </div>
     </div>
+
+    ${area.custom ? `
+      <div class="pc-area-custom-actions">
+        <button
+          type="button"
+          class="pc-area-remove-custom"
+          onclick="if(confirm('Remove this custom marker?')) removeCustomMarker('${escapePopcycleAttribute(area.id)}')"
+        >
+          🗑 Remove This Custom Marker
+        </button>
+      </div>
+    ` : ""}
   `;
 }
 
@@ -993,7 +1444,6 @@ function requestPopcycleMapDraw() {
     requestAnimationFrame(() => {
       popcycleAreaMapState.drawRequest = null;
       drawPopcycleVisualMap();
-      drawPopcycleFocusedMap();
     });
 }
 
@@ -1061,13 +1511,10 @@ function drawPopcycleVisualMap() {
     cssHeight
   );
 
-  const area =
-    getSelectedPopcycleArea();
-
   const layer =
-    getActualPopcycleMapLayer(area);
+    getActualPopcycleMapLayer();
 
-  if (!layer || layer.dynamic) {
+  if (!layer) {
     drawPopcycleMapMessage(
       context,
       cssWidth,
@@ -1128,6 +1575,8 @@ function drawPopcycleVisualMap() {
     drawHeight
   );
 
+  drawPopcycleAreaOutlines(context, drawX, drawY, scale);
+
   const markers =
     buildPopcycleMapMarkers(
       layer,
@@ -1141,6 +1590,14 @@ function drawPopcycleVisualMap() {
     markers,
     view.zoom || 1
   );
+
+  if (popcycleAreaMapState.editMode) {
+    context.save();
+    context.fillStyle = "rgba(249,115,22,.92)";
+    context.font = "700 12px Segoe UI, Arial";
+    context.fillText("Edit Positions: drag any marker to correct it", 14, cssHeight - 14);
+    context.restore();
+  }
 
   popcycleAreaMapState.lastRender = {
     layerId: layer.id,
@@ -1158,6 +1615,65 @@ function drawPopcycleVisualMap() {
   updatePopcycleMapZoomLabel(
     layer.id
   );
+}
+
+function outlinePointToCanvas(point, drawX, drawY, scale) {
+  return {
+    x: drawX + point[0] * scale,
+    y: drawY + point[1] * scale
+  };
+}
+
+function drawPopcycleAreaOutlines(context, drawX, drawY, scale) {
+  const selectedArea = getSelectedPopcycleArea();
+  const savedOutline = selectedArea
+    ? popcycleAreaMapState.areaOutlines[selectedArea.id]
+    : null;
+
+  if (savedOutline && savedOutline.length >= 3) {
+    context.save();
+    context.beginPath();
+    savedOutline.forEach((point, index) => {
+      const p = outlinePointToCanvas(point, drawX, drawY, scale);
+      if (index === 0) context.moveTo(p.x, p.y);
+      else context.lineTo(p.x, p.y);
+    });
+    context.closePath();
+    context.fillStyle = "rgba(249,115,22,.22)";
+    context.fill();
+    context.strokeStyle = "#f97316";
+    context.lineWidth = 3;
+    context.stroke();
+    context.restore();
+  }
+
+  const draft = popcycleAreaMapState.outlineDraft;
+  if (draft && draft.points.length) {
+    context.save();
+    context.beginPath();
+    draft.points.forEach((point, index) => {
+      const p = outlinePointToCanvas(point, drawX, drawY, scale);
+      if (index === 0) context.moveTo(p.x, p.y);
+      else context.lineTo(p.x, p.y);
+    });
+    context.strokeStyle = "#38bdf8";
+    context.lineWidth = 2;
+    context.setLineDash([6, 4]);
+    context.stroke();
+    context.setLineDash([]);
+
+    draft.points.forEach(point => {
+      const p = outlinePointToCanvas(point, drawX, drawY, scale);
+      context.beginPath();
+      context.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      context.fillStyle = "#38bdf8";
+      context.fill();
+      context.strokeStyle = "#fff";
+      context.lineWidth = 1;
+      context.stroke();
+    });
+    context.restore();
+  }
 }
 
 function drawPopcycleMapMessage(
@@ -1199,27 +1715,13 @@ function buildPopcycleMapMarkers(
   drawY,
   scale
 ) {
-  if (layer.markerMode === "none") {
-    return [];
-  }
-
   const selectedAreaId =
     popcycleAreaMapState.selectedAreaId;
 
   return popcycleAreaMapState.areas
-    .filter(area => {
-      if (layer.markerMode === "city") {
-        return area.map === "city";
-      }
-
-      return true;
-    })
     .map(area => {
       const position =
-        getAreaMarkerForLayer(
-          area,
-          layer
-        );
+        getAreaMarkerPosition(area);
 
       if (!position) return null;
 
@@ -1247,66 +1749,19 @@ function buildPopcycleMapMarkers(
     .filter(Boolean);
 }
 
-function getAreaMarkerForLayer(
-  area,
-  layer
-) {
+function getAreaMarkerPosition(area) {
   const override =
-    layer.markerOverrides
-      ?.[area.id];
+    popcycleAreaMapState.markerOverrides?.[area.id];
 
-  if (
-    Array.isArray(override) &&
-    override.length >= 2
-  ) {
-    return {
-      x: Number(override[0]),
-      y: Number(override[1])
-    };
+  if (Array.isArray(override) && override.length >= 2) {
+    return { x: Number(override[0]), y: Number(override[1]) };
   }
 
-  const matrix =
-    layer.transforms
-      ?.[area.map];
-
-  if (!matrix || !area.pin) {
-    return null;
+  if (Array.isArray(area.pin) && area.pin.length >= 2) {
+    return { x: Number(area.pin[0]), y: Number(area.pin[1]) };
   }
 
-  return applyPopcycleMapMatrix(
-    matrix,
-    area.pin[0],
-    area.pin[1]
-  );
-}
-
-function applyPopcycleMapMatrix(
-  matrix,
-  sourceX,
-  sourceY
-) {
-  const denominator =
-    matrix[2][0] * sourceX +
-    matrix[2][1] * sourceY +
-    matrix[2][2];
-
-  if (!denominator) return null;
-
-  return {
-    x:
-      (
-        matrix[0][0] * sourceX +
-        matrix[0][1] * sourceY +
-        matrix[0][2]
-      ) / denominator,
-
-    y:
-      (
-        matrix[1][0] * sourceX +
-        matrix[1][1] * sourceY +
-        matrix[1][2]
-      ) / denominator
-  };
+  return null;
 }
 
 function drawPopcycleMapMarkers(
@@ -1320,6 +1775,16 @@ function drawPopcycleMapMarkers(
         ? 9
         : 5;
 
+    if (popcycleAreaMapState.editMode) {
+      context.beginPath();
+      context.arc(marker.canvasX, marker.canvasY, radius + 6, 0, Math.PI * 2);
+      context.strokeStyle = "rgba(249,115,22,.75)";
+      context.lineWidth = 1.5;
+      context.setLineDash([3, 3]);
+      context.stroke();
+      context.setLineDash([]);
+    }
+
     context.beginPath();
     context.arc(
       marker.canvasX,
@@ -1332,9 +1797,7 @@ function drawPopcycleMapMarkers(
     context.fillStyle =
       marker.selected
         ? "#ef4444"
-        : marker.area.map === "city"
-          ? "#38bdf8"
-          : "#4ade80";
+        : "#4ade80";
 
     context.fill();
 
@@ -1419,7 +1882,8 @@ function drawPopcycleMarkerLabel(
 
 // =====================================================
 // [SECTION: MAP_POINTER_INTERACTIONS]
-// Wheel zoom, drag pan, and marker click schedule selection.
+// Wheel zoom, drag pan, marker-drag repositioning (Edit
+// Positions mode), and marker click schedule selection.
 // =====================================================
 
 function handlePopcycleMapWheel(event) {
@@ -1433,11 +1897,55 @@ function handlePopcycleMapWheel(event) {
   );
 }
 
+function findMarkerNearPoint(clickX, clickY, maxDistance = 22) {
+  const render = popcycleAreaMapState.lastRender;
+  if (!render?.markers?.length) return null;
+
+  let nearest = null;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  render.markers.forEach(marker => {
+    const distance = Math.hypot(clickX - marker.canvasX, clickY - marker.canvasY);
+    if (distance < nearestDistance) {
+      nearest = marker;
+      nearestDistance = distance;
+    }
+  });
+
+  return nearest && nearestDistance <= maxDistance ? nearest : null;
+}
+
 function handlePopcycleMapPointerDown(event) {
   const layer =
     getActualPopcycleMapLayer();
 
-  if (!layer || layer.dynamic) return;
+  if (!layer) return;
+
+  const rect = event.currentTarget.getBoundingClientRect();
+  const clickX = event.clientX - rect.left;
+  const clickY = event.clientY - rect.top;
+
+  if (popcycleAreaMapState.editMode && !popcycleAreaMapState.outlineDraft) {
+    const marker = findMarkerNearPoint(clickX, clickY);
+
+    if (marker) {
+      popcycleAreaMapState.drag = {
+        active: true,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startPanX: 0,
+        startPanY: 0,
+        moved: false,
+        marker,
+        markerMoved: false
+      };
+
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.currentTarget.classList.add("is-dragging");
+      return;
+    }
+  }
 
   const view =
     getPopcycleMapView(layer.id);
@@ -1449,7 +1957,9 @@ function handlePopcycleMapPointerDown(event) {
     startY: event.clientY,
     startPanX: view.panX || 0,
     startPanY: view.panY || 0,
-    moved: false
+    moved: false,
+    marker: null,
+    markerMoved: false
   };
 
   event.currentTarget.setPointerCapture(
@@ -1475,7 +1985,7 @@ function handlePopcycleMapPointerMove(event) {
   const layer =
     getActualPopcycleMapLayer();
 
-  if (!layer || layer.dynamic) return;
+  if (!layer) return;
 
   const deltaX =
     event.clientX - drag.startX;
@@ -1488,6 +1998,29 @@ function handlePopcycleMapPointerMove(event) {
     Math.abs(deltaY) > 3
   ) {
     drag.moved = true;
+  }
+
+  if (drag.marker) {
+    if (!drag.moved) return;
+    drag.markerMoved = true;
+
+    const render = popcycleAreaMapState.lastRender;
+    if (!render) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const canvasX = event.clientX - rect.left;
+    const canvasY = event.clientY - rect.top;
+
+    const imageX = (canvasX - render.drawX) / render.scale;
+    const imageY = (canvasY - render.drawY) / render.scale;
+
+    popcycleAreaMapState.markerOverrides[drag.marker.area.id] = [
+      Math.round(imageX * 100) / 100,
+      Math.round(imageY * 100) / 100
+    ];
+
+    requestPopcycleMapDraw();
+    return;
   }
 
   const view =
@@ -1525,10 +2058,24 @@ function handlePopcycleMapPointerUp(event) {
     // Pointer capture may already have been released.
   }
 
+  const wasMarkerDrag = Boolean(drag.marker);
+  const markerMoved = drag.markerMoved;
   const moved = drag.moved;
 
   popcycleAreaMapState.drag.active = false;
   popcycleAreaMapState.drag.pointerId = null;
+  popcycleAreaMapState.drag.marker = null;
+
+  if (wasMarkerDrag) {
+    if (markerMoved) {
+      saveMarkerOverridesToStorage();
+      renderPopcycleMapToolButtons();
+    } else {
+      // A click on a marker while in Edit mode with no drag - still select it.
+      handlePopcycleMapClick(event);
+    }
+    return;
+  }
 
   if (!moved) {
     handlePopcycleMapClick(event);
@@ -1541,13 +2088,6 @@ function handlePopcycleMapClick(event) {
   const canvas =
     event.currentTarget;
 
-  const render =
-    popcycleAreaMapState.lastRender;
-
-  if (!render?.markers?.length) {
-    return;
-  }
-
   const rect =
     canvas.getBoundingClientRect();
 
@@ -1557,29 +2097,33 @@ function handlePopcycleMapClick(event) {
   const clickY =
     event.clientY - rect.top;
 
-  let nearest = null;
-  let nearestDistance =
-    Number.POSITIVE_INFINITY;
+  const render = popcycleAreaMapState.lastRender;
 
-  render.markers.forEach(marker => {
-    const distance = Math.hypot(
-      clickX - marker.canvasX,
-      clickY - marker.canvasY
-    );
+  if (popcycleAreaMapState.outlineDraft && render) {
+    const imageX = (clickX - render.drawX) / render.scale;
+    const imageY = (clickY - render.drawY) / render.scale;
+    popcycleAreaMapState.outlineDraft.points.push([
+      Math.round(imageX * 100) / 100,
+      Math.round(imageY * 100) / 100
+    ]);
+    renderPopcycleMapToolButtons();
+    requestPopcycleMapDraw();
+    return;
+  }
 
-    if (distance < nearestDistance) {
-      nearest = marker;
-      nearestDistance = distance;
-    }
-  });
+  const nearest = findMarkerNearPoint(clickX, clickY);
 
-  if (
-    nearest &&
-    nearestDistance <= 22
-  ) {
+  if (nearest) {
     selectPopcycleScheduleFromArea(
       nearest.area
     );
+    return;
+  }
+
+  if (popcycleAreaMapState.editMode && render) {
+    const imageX = (clickX - render.drawX) / render.scale;
+    const imageY = (clickY - render.drawY) / render.scale;
+    addCustomMarkerAt(imageX, imageY);
   }
 }
 
@@ -1760,35 +2304,5 @@ function clearPopcycleScheduleFilters() {
 }
 
 // [END SECTION: MAP_SCHEDULE_SELECTION]
-
-
-
-// =====================================================
-// [SECTION: FOCUSED_AREA_MAP_RENDERING]
-// Draws the selected city/county area with outline-only emphasis.
-// =====================================================
-function drawPopcycleFocusedMap(){
-  const canvas=document.getElementById("popcycleFocusedMapCanvas");
-  const caption=document.getElementById("popcycleFocusedMapCaption");
-  if(!canvas)return;
-  const context=canvas.getContext("2d");
-  const rect=canvas.getBoundingClientRect();
-  const cssWidth=Math.max(300,rect.width||520),cssHeight=Math.max(360,rect.height||430),dpr=Math.min(2,window.devicePixelRatio||1);
-  const targetWidth=Math.round(cssWidth*dpr),targetHeight=Math.round(cssHeight*dpr);
-  if(canvas.width!==targetWidth||canvas.height!==targetHeight){canvas.width=targetWidth;canvas.height=targetHeight}
-  context.setTransform(dpr,0,0,dpr,0,0);context.clearRect(0,0,cssWidth,cssHeight);context.fillStyle="#06111d";context.fillRect(0,0,cssWidth,cssHeight);
-  const scheduleName=popcycleState.selectedScheduleName,area=getSelectedPopcycleArea();
-  if(!area){drawPopcycleMapMessage(context,cssWidth,"Select or map a schedule to view its local area.");if(caption)caption.textContent="No focused area is currently assigned.";return}
-  const image=popcycleAreaMapState.areaImages[area.map];
-  if(!image){drawPopcycleMapMessage(context,cssWidth,popcycleAreaMapState.areaImageReady[area.map]===false?"Focused map image could not be loaded.":"Loading focused area map...");return}
-  const focus=Array.isArray(area.focus)&&area.focus.length>=4?area.focus:[0,0,image.naturalWidth||image.width,image.naturalHeight||image.height];
-  const [sourceX,sourceY,sourceWidth,sourceHeight]=focus,padding=12,scale=Math.min((cssWidth-padding*2)/sourceWidth,(cssHeight-padding*2)/sourceHeight),drawWidth=sourceWidth*scale,drawHeight=sourceHeight*scale,drawX=(cssWidth-drawWidth)/2,drawY=(cssHeight-drawHeight)/2;
-  context.imageSmoothingEnabled=true;context.imageSmoothingQuality="high";context.drawImage(image,sourceX,sourceY,sourceWidth,sourceHeight,drawX,drawY,drawWidth,drawHeight);
-  if(Array.isArray(area.box)&&area.box.length>=4){const [boxX,boxY,boxWidth,boxHeight]=area.box,outlineX=drawX+(boxX-sourceX)*scale,outlineY=drawY+(boxY-sourceY)*scale,outlineWidth=boxWidth*scale,outlineHeight=boxHeight*scale;context.save();context.fillStyle="rgba(249,115,22,.055)";context.strokeStyle="#f97316";context.lineWidth=4;context.setLineDash([13,7]);context.fillRect(outlineX,outlineY,outlineWidth,outlineHeight);context.strokeRect(outlineX,outlineY,outlineWidth,outlineHeight);context.restore();const markerX=outlineX+outlineWidth/2,markerY=outlineY+outlineHeight/2;context.beginPath();context.arc(markerX,markerY,8,0,Math.PI*2);context.fillStyle="#ef4444";context.fill();context.lineWidth=3;context.strokeStyle="#fff";context.stroke()}
-  drawFocusedMapTitle(context,area,scheduleName,cssWidth);
-  if(caption)caption.textContent=`${area.name} · ${area.county} · ${area.map==="city"?"Los Santos street map":"County reference map"}`;
-}
-function drawFocusedMapTitle(context,area,scheduleName,canvasWidth){const title=scheduleName||area.name,subtitle=area.name===title?`${area.county} · ${area.category}`:`${area.name} · ${area.county}`,boxWidth=Math.min(420,canvasWidth-24);context.fillStyle="rgba(2,6,23,.88)";context.fillRect(12,12,boxWidth,58);context.strokeStyle="rgba(56,189,248,.65)";context.lineWidth=1.5;context.strokeRect(12,12,boxWidth,58);context.fillStyle="#f8fafc";context.font="800 18px Segoe UI, Arial";context.fillText(title,25,38);context.fillStyle="#cbd5e1";context.font="600 11px Segoe UI, Arial";context.fillText(subtitle,25,58)}
-// [END SECTION: FOCUSED_AREA_MAP_RENDERING]
 
 // [END MODULE: POPCYCLE_VISUAL_AREA_MAP]

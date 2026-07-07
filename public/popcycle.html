@@ -350,7 +350,7 @@
               <div
                 id="popcycleMapLayerButtons"
                 class="pc-map-layer-buttons"
-                aria-label="Map layers"
+                aria-label="Map tools"
               ></div>
 
               <div class="pc-map-control-buttons">
@@ -415,8 +415,8 @@
               <section class="pc-main-map-column">
                 <div class="pc-map-column-heading">
                   <div>
-                    <h3>San Andreas Overview</h3>
-                    <p>Click a schedule marker to select it. Zoom and drag the map without changing the focused reference panel.</p>
+                    <h3>GTA V Neighborhood Map</h3>
+                    <p>Click a marker to select its schedule. Zoom and drag to navigate. Use "Edit Positions" above to drag any marker into a better spot - adjustments save in this browser and can be exported as JSON.</p>
                   </div>
                 </div>
                 <div class="pc-visual-map-stage pc-main-map-stage">
@@ -427,17 +427,10 @@
               <aside class="pc-focused-map-column">
                 <div class="pc-map-column-heading">
                   <div>
-                    <h3>Focused Area</h3>
-                    <p id="popcycleFocusedMapCaption">Select a mapped schedule to view its local area.</p>
+                    <h3>Area Details</h3>
+                    <p id="popcycleFocusedMapCaption">Select a mapped schedule to view its details.</p>
                   </div>
                   <button type="button" class="secondary" onclick="focusPopcycleMapOnSelected()">Focus Main Map</button>
-                </div>
-                <div class="pc-focused-map-stage">
-                  <canvas id="popcycleFocusedMapCanvas" width="760" height="560" aria-label="Focused local Popcycle area map"></canvas>
-                  <div class="pc-focused-map-legend">
-                    <span><i class="pc-outline-sample pc-outline-selected"></i>Approximate selected area</span>
-                    <span><i class="pc-marker-sample"></i>Schedule location</span>
-                  </div>
                 </div>
                 <div class="pc-area-map-controls">
                   <label>Manual area override

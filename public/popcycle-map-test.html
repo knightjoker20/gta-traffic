@@ -62,6 +62,7 @@
       cursor: crosshair;
     }
     canvas { position: absolute; top: 0; left: 0; }
+    #cvMap   { z-index: 0; }
     #cvGrid  { z-index: 1; }
     #cvZones { z-index: 2; }
     #cvHover { z-index: 3; pointer-events: none; }
@@ -129,6 +130,14 @@
     <input type="range" id="opacitySlider" min="10" max="95" value="55">
   </label>
 
+  <label><input type="checkbox" id="showMap" checked> Underlay</label>
+  <label>Map opacity
+    <input type="range" id="mapOpacitySlider" min="10" max="100" value="100">
+  </label>
+  <label>Map X <input type="number" id="mapOffX" value="0" step="10" style="width:56px"></label>
+  <label>Map Y <input type="number" id="mapOffY" value="0" step="10" style="width:56px"></label>
+  <label>Map scale <input type="number" id="mapScale" value="1" step="0.01" min="0.5" max="2" style="width:56px"></label>
+
   <label>Time slot
     <select id="timeSlot">
       <option value="0">12 AM</option>
@@ -156,7 +165,7 @@
   </label>
 
   <label><input type="checkbox" id="showGrid" checked> Grid</label>
-  <label><input type="checkbox" id="showLabels" checked> Labels</label>
+  <label><input type="checkbox" id="showLabels"> Labels</label>
 
   <button id="btnFit">Fit all</button>
   <span id="coordDisplay">X — &nbsp; Y —</span>
@@ -164,6 +173,7 @@
 
 <div class="layout">
   <div class="map-wrap" id="mapWrap">
+    <canvas id="cvMap"></canvas>
     <canvas id="cvGrid"></canvas>
     <canvas id="cvZones"></canvas>
     <canvas id="cvHover"></canvas>
@@ -196,12 +206,24 @@ let vpScale = 1, vpX = 0, vpY = 0;
 let dragging = false, dragStart = null, vpAtDrag = null;
 
 const wrap    = document.getElementById('mapWrap');
+const cvMap   = document.getElementById('cvMap');
 const cvGrid  = document.getElementById('cvGrid');
 const cvZones = document.getElementById('cvZones');
 const cvHover = document.getElementById('cvHover');
+const ctxMap   = cvMap.getContext('2d');
 const ctxGrid  = cvGrid.getContext('2d');
 const ctxZones = cvZones.getContext('2d');
 const ctxHover = cvHover.getContext('2d');
+
+// ── Underlay map image (real-world neighborhood/jurisdiction map) ────────
+// Drawn stretched across the full WORLD bounds, then nudged with the
+// calibration controls since fan-made map images are rarely pixel-perfect
+// against the game's actual coordinate space.
+const underlayImg = new Image();
+let underlayLoaded = false;
+underlayImg.onload = () => { underlayLoaded = true; drawAll(); };
+underlayImg.onerror = () => { console.warn('Underlay map image failed to load: assets/area-maps/gta5map3.png'); };
+underlayImg.src = 'assets/area-maps/gta5map2-1600.jpg';
 
 let zones    = [];
 let popData  = {};
@@ -241,7 +263,7 @@ function canvasToWorld(cx, cy) {
 // ── Resize ────────────────────────────────────────────────────────────
 function resizeCanvases() {
   const w = wrap.clientWidth, h = wrap.clientHeight;
-  [cvGrid, cvZones, cvHover].forEach(cv => { cv.width = w; cv.height = h; });
+  [cvMap, cvGrid, cvZones, cvHover].forEach(cv => { cv.width = w; cv.height = h; });
   drawAll();
 }
 
@@ -252,6 +274,42 @@ function fitAll() {
   vpX = (cw - BASE_W * vpScale) / 2;
   vpY = (ch - BASE_H * vpScale) / 2;
   drawAll();
+}
+
+// ── Underlay map calibration ──────────────────────────────────────────────
+// gta5map2.jpg is a hand-drawn community map (TreeFitty/igta), not a precise
+// render of the game's coordinate space, so it doesn't fill the WORLD bounds
+// edge-to-edge like the zone data does. These numbers were derived by matching
+// known zone landmarks (Paleto Bay, El Gordo Lighthouse, Pacific Bluffs, LS
+// Airport, the mainland coastline bounding box, etc.) to their pixel positions
+// in the image, then solving for the base-space rectangle the image should
+// occupy so its content lines up with the zone rectangles. It's a close fit,
+// not pixel-perfect - hand-drawn maps have some internal warping - so the
+// Map X/Y/scale controls remain as fine-tune nudges on top of this baseline.
+const MAP_CALIBRATION = { bx: 81.4, by: 100.1, bw: 803.3, bh: 1052.1 };
+
+function drawMap() {
+  const cw = cvMap.width, ch = cvMap.height;
+  ctxMap.setTransform(1, 0, 0, 1, 0, 0);
+  ctxMap.clearRect(0, 0, cw, ch);
+  if (!underlayLoaded || !document.getElementById('showMap').checked) return;
+
+  const opacity = document.getElementById('mapOpacitySlider').value / 100;
+  const offX    = parseFloat(document.getElementById('mapOffX').value) || 0;
+  const offY    = parseFloat(document.getElementById('mapOffY').value) || 0;
+  const scale   = parseFloat(document.getElementById('mapScale').value) || 1;
+
+  // Start from the calibrated rectangle, then let the nudge controls fine-tune it
+  // (scale grows/shrinks around the rectangle's own center, not the whole canvas).
+  const bw = MAP_CALIBRATION.bw * scale;
+  const bh = MAP_CALIBRATION.bh * scale;
+  const bx = MAP_CALIBRATION.bx - (bw - MAP_CALIBRATION.bw) / 2 + offX;
+  const by = MAP_CALIBRATION.by - (bh - MAP_CALIBRATION.bh) / 2 + offY;
+
+  const tl = baseToCanvas(bx, by);
+  ctxMap.globalAlpha = opacity;
+  ctxMap.drawImage(underlayImg, tl.x, tl.y, bw * vpScale, bh * vpScale);
+  ctxMap.globalAlpha = 1;
 }
 
 // ── Grid ──────────────────────────────────────────────────────────────
@@ -417,7 +475,7 @@ function drawHover() {
   });
 }
 
-function drawAll() { drawGrid(); drawZones(); drawHover(); }
+function drawAll() { drawMap(); drawGrid(); drawZones(); drawHover(); }
 
 // ── Hit test ──────────────────────────────────────────────────────────
 function zoneAt(cx, cy) {
@@ -526,6 +584,11 @@ window.addEventListener('mouseup', e => {
 // ── Control wiring ────────────────────────────────────────────────────
 document.getElementById('btnFit').addEventListener('click', fitAll);
 document.getElementById('opacitySlider').addEventListener('input', drawZones);
+document.getElementById('showMap').addEventListener('change', drawMap);
+document.getElementById('mapOpacitySlider').addEventListener('input', drawMap);
+document.getElementById('mapOffX').addEventListener('input', drawMap);
+document.getElementById('mapOffY').addEventListener('input', drawMap);
+document.getElementById('mapScale').addEventListener('input', drawMap);
 document.getElementById('timeSlot').addEventListener('change', () => { renderPanel(selected); drawZones(); });
 document.getElementById('colorMode').addEventListener('change', drawZones);
 document.getElementById('showGrid').addEventListener('change', drawGrid);

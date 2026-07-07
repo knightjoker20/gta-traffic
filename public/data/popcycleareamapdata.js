@@ -2,16 +2,29 @@
 // [DATA: POPCYCLE_AREA_MAP_DATA]
 // Area Explorer records recalibrated for the dedicated
 // South Los Santos and North Country Popcycle maps.
-// Approximate visual boxes are references, not official
-// Rockstar Popcycle polygons.
+// Approximate visual pin positions are references, not
+// official Rockstar Popcycle polygons.
+//
+// 2026-07-06: The original popcycle-city-south.jpg /
+// popcycle-north-country.jpg reference images were missing
+// from the repo (this is why the "Focused Area" panel showed
+// "Focused map image could not be loaded."). Both city and
+// county now point at the same single full-island reference
+// map (gta5map2-1600.jpg). Each area's "pin" was recalculated
+// from real popcycle zone world coordinates against that image.
+// The focused panel shows a FIXED north/south crop (see
+// POPCYCLE_FIXED_FOCUS in popcycleareamap.js) with a dot at the
+// pin - not a per-area zoom - since auto-zoomed boxes drifted
+// noticeably for smaller areas. This is a visual approximation,
+// good enough to show roughly where a schedule sits on the map.
 // =====================================================
 
 window.GTATrafficAreaMapData = {
-  "version": "2.0-integrated",
+  "version": "2.2-fixed-focus-dot-marker",
   "imagePaths": {
-    "overview": "assets/area-maps/popcycle-city-south.jpg",
-    "city": "assets/area-maps/popcycle-city-south.jpg",
-    "county": "assets/area-maps/popcycle-north-country.jpg"
+    "overview": "assets/area-maps/gta5map2-1600.jpg",
+    "city": "assets/area-maps/gta5map2-1600.jpg",
+    "county": "assets/area-maps/gta5map2-1600.jpg"
   },
   "areas": [
     {
@@ -21,20 +34,8 @@ window.GTATrafficAreaMapData = {
       "category": "Central Blaine",
       "map": "county",
       "pin": [
-        933.881,
-        570.459
-      ],
-      "focus": [
-        689.881,
-        302.238,
-        585.628,
-        308.931
-      ],
-      "box": [
-        860.694,
-        383.55,
-        244.011,
-        121.951
+        1011.6,
+        471.89
       ],
       "popcycle": [
         "ALAMO_SEA"
@@ -58,20 +59,8 @@ window.GTATrafficAreaMapData = {
       "category": "Central Blaine",
       "map": "county",
       "pin": [
-        1047.702,
-        765.482
-      ],
-      "focus": [
-        852.515,
-        489.183,
-        569.326,
-        325.127
-      ],
-      "box": [
-        982.653,
-        570.471,
-        268.395,
-        138.187
+        1131.69,
+        616.77
       ],
       "popcycle": [
         "GRAND_SENORA_DESERT",
@@ -96,20 +85,8 @@ window.GTATrafficAreaMapData = {
       "category": "Central Blaine",
       "map": "county",
       "pin": [
-        1198.212,
-        468.963
-      ],
-      "focus": [
-        1055.891,
-        131.693,
-        422.975,
-        341.408
-      ],
-      "box": [
-        1169.763,
-        245.498,
-        162.688,
-        154.436
+        1066.18,
+        365.43
       ],
       "popcycle": [
         "GRAPESEED"
@@ -132,20 +109,8 @@ window.GTATrafficAreaMapData = {
       "category": "Central Blaine",
       "map": "county",
       "pin": [
-        840.319,
-        789.808
-      ],
-      "focus": [
-        641.062,
-        521.63,
-        439.217,
-        268.232
-      ],
-      "box": [
-        775.271,
-        602.919,
-        130.14,
-        85.345
+        767.38,
+        691.64
       ],
       "popcycle": [
         "HARMONY"
@@ -168,20 +133,8 @@ window.GTATrafficAreaMapData = {
       "category": "Central Blaine",
       "map": "county",
       "pin": [
-        836.281,
-        594.809
-      ],
-      "focus": [
-        689.877,
-        383.502,
-        390.43,
-        268.243
-      ],
-      "box": [
-        803.752,
-        472.919,
-        130.145,
-        97.54
+        701.79,
+        534.7
       ],
       "popcycle": [
         "Hippy"
@@ -205,20 +158,8 @@ window.GTATrafficAreaMapData = {
       "category": "Central Blaine",
       "map": "county",
       "pin": [
-        1059.929,
-        615.178
-      ],
-      "focus": [
-        868.802,
-        375.426,
-        553.07,
-        292.651
-      ],
-      "box": [
-        990.812,
-        448.593,
-        227.736,
-        113.814
+        1011.6,
+        534.35
       ],
       "popcycle": [
         "SANDY_SHORES"
@@ -242,20 +183,8 @@ window.GTATrafficAreaMapData = {
       "category": "East Blaine",
       "map": "county",
       "pin": [
-        1344.554,
-        619.312
-      ],
-      "focus": [
-        1259.163,
-        237.399,
-        374.18,
-        406.357
-      ],
-      "box": [
-        1373.036,
-        343.068,
-        146.428,
-        195.042
+        1117.04,
+        1144.8
       ],
       "popcycle": [
         "SAN_CHIANSKI",
@@ -279,20 +208,8 @@ window.GTATrafficAreaMapData = {
       "category": "Military / Restricted",
       "map": "county",
       "pin": [
-        380.789,
-        822.205
-      ],
-      "focus": [
-        71.686,
-        488.974,
-        479.935,
-        308.894
-      ],
-      "box": [
-        144.901,
-        562.13,
-        195.229,
-        142.25
+        267.5,
+        614.25
       ],
       "popcycle": [
         "ARMY",
@@ -317,20 +234,8 @@ window.GTATrafficAreaMapData = {
       "category": "Mountains / Wilderness",
       "map": "county",
       "pin": [
-        454.016,
-        440.319
-      ],
-      "focus": [
-        299.459,
-        253.361,
-        422.998,
-        268.29
-      ],
-      "box": [
-        380.807,
-        318.401,
-        170.828,
-        105.693
+        374.71,
+        650.89
       ],
       "popcycle": [
         "CULT"
@@ -354,20 +259,8 @@ window.GTATrafficAreaMapData = {
       "category": "Mountains / Wilderness",
       "map": "county",
       "pin": [
-        864.778,
-        387.614
-      ],
-      "focus": [
-        494.681,
-        131.514,
-        699.54,
-        382.136
-      ],
-      "box": [
-        673.639,
-        212.841,
-        292.836,
-        178.865
+        1066.48,
+        181.36
       ],
       "popcycle": [
         "CHILIAD",
@@ -391,20 +284,8 @@ window.GTATrafficAreaMapData = {
       "category": "Mountains / Wilderness",
       "map": "county",
       "pin": [
-        584.131,
-        773.501
-      ],
-      "focus": [
-        258.781,
-        440.266,
-        504.322,
-        382.024
-      ],
-      "box": [
-        397.064,
-        497.187,
-        203.36,
-        178.817
+        383.72,
+        527.29
       ],
       "popcycle": [
         "MOUNT_JOSIAH"
@@ -427,20 +308,8 @@ window.GTATrafficAreaMapData = {
       "category": "Mountains / Wilderness",
       "map": "county",
       "pin": [
-        576.02,
-        525.675
-      ],
-      "focus": [
-        283.188,
-        310.245,
-        471.798,
-        292.669
-      ],
-      "box": [
-        413.342,
-        383.423,
-        187.093,
-        105.692
+        309.06,
+        427.88
       ],
       "popcycle": [
         "RATON_CANYON"
@@ -463,20 +332,8 @@ window.GTATrafficAreaMapData = {
       "category": "North Blaine",
       "map": "county",
       "pin": [
-        791.609,
-        151.926
-      ],
-      "focus": [
-        454.027,
-        33.971,
-        423.006,
-        227.692
-      ],
-      "box": [
-        559.782,
-        70.58,
-        178.967,
-        105.71
+        637.65,
+        196.76
       ],
       "popcycle": [
         "PALETO_BAY"
@@ -499,20 +356,8 @@ window.GTATrafficAreaMapData = {
       "category": "North Blaine",
       "map": "county",
       "pin": [
-        689.916,
-        302.238
-      ],
-      "focus": [
-        380.809,
-        155.86,
-        423.0,
-        227.674
-      ],
-      "box": [
-        510.964,
-        212.79,
-        187.097,
-        105.703
+        558.02,
+        271.57
       ],
       "popcycle": [
         "PALETO_FOREST"
@@ -535,20 +380,8 @@ window.GTATrafficAreaMapData = {
       "category": "West Coast",
       "map": "county",
       "pin": [
-        307.594,
-        529.668
-      ],
-      "focus": [
-        71.681,
-        261.42,
-        406.749,
-        284.545
-      ],
-      "box": [
-        128.63,
-        350.835,
-        187.104,
-        101.636
+        222.41,
+        544.21
       ],
       "popcycle": [
         "CHUMASH",
@@ -573,20 +406,8 @@ window.GTATrafficAreaMapData = {
       "category": "West Coast",
       "map": "county",
       "pin": [
-        494.651,
-        944.1
-      ],
-      "focus": [
-        185.573,
-        732.783,
-        471.761,
-        308.838
-      ],
-      "box": [
-        275.046,
-        814.057,
-        219.614,
-        121.918
+        277.69,
+        790.77
       ],
       "popcycle": [
         "TONGVA_HILLS",
@@ -610,20 +431,8 @@ window.GTATrafficAreaMapData = {
       "category": "Downtown Los Santos",
       "map": "city",
       "pin": [
-        876.986,
-        896.677
-      ],
-      "focus": [
-        686.411,
-        356.41,
-        264.257,
-        239.479
-      ],
-      "box": [
-        738.645,
-        399.399,
-        159.782,
-        135.088
+        615.87,
+        1161.18
       ],
       "popcycle": [
         "DOWN_TOWN",
@@ -650,20 +459,8 @@ window.GTATrafficAreaMapData = {
       "category": "East / Industrial Los Santos",
       "map": "city",
       "pin": [
-        1067.469,
-        1037.902
-      ],
-      "focus": [
-        913.811,
-        669.559,
-        264.261,
-        257.89
-      ],
-      "box": [
-        981.414,
-        755.517,
-        125.983,
-        116.665
+        821.57,
+        1391.12
       ],
       "popcycle": [
         "CYPRESS_FLATS"
@@ -686,20 +483,8 @@ window.GTATrafficAreaMapData = {
       "category": "East / Industrial Los Santos",
       "map": "city",
       "pin": [
-        1104.333,
-        994.949
-      ],
-      "focus": [
-        956.817,
-        626.588,
-        221.252,
-        233.333
-      ],
-      "box": [
-        1030.569,
-        718.691,
-        92.188,
-        98.245
+        926.1,
+        1411.5
       ],
       "popcycle": [
         "EL_BURRO"
@@ -722,20 +507,8 @@ window.GTATrafficAreaMapData = {
       "category": "East / Industrial Los Santos",
       "map": "city",
       "pin": [
-        1015.234,
-        961.163
-      ],
-      "focus": [
-        870.77,
-        497.645,
-        264.274,
-        245.621
-      ],
-      "box": [
-        938.375,
-        571.329,
-        129.061,
-        98.251
+        816.68,
+        1161.42
       ],
       "popcycle": [
         "LA_MESA",
@@ -760,20 +533,8 @@ window.GTATrafficAreaMapData = {
       "category": "East Los Santos",
       "map": "city",
       "pin": [
-        1006.004,
-        850.673
-      ],
-      "focus": [
-        876.862,
-        202.845,
-        264.31,
-        221.117
-      ],
-      "box": [
-        941.404,
-        285.774,
-        129.078,
-        82.919
+        814.87,
+        1136.37
       ],
       "popcycle": [
         "EAST_VINEWOOD"
@@ -797,20 +558,8 @@ window.GTATrafficAreaMapData = {
       "category": "East Los Santos",
       "map": "city",
       "pin": [
-        1030.588,
-        896.717
-      ],
-      "focus": [
-        907.598,
-        251.987,
-        221.282,
-        202.68
-      ],
-      "box": [
-        981.361,
-        347.192,
-        98.347,
-        89.051
+        900.28,
+        1151.72
       ],
       "popcycle": [
         "MIRROR_PARK"
@@ -834,20 +583,8 @@ window.GTATrafficAreaMapData = {
       "category": "Hills / Wealthy Residential",
       "map": "city",
       "pin": [
-        692.682,
-        835.256
-      ],
-      "focus": [
-        403.787,
-        221.329,
-        270.36,
-        221.053
-      ],
-      "box": [
-        471.372,
-        270.463,
-        119.822,
-        107.456
+        392.78,
+        1073.6
       ],
       "popcycle": [
         "RICHMAN"
@@ -870,20 +607,8 @@ window.GTATrafficAreaMapData = {
       "category": "Hills / Wealthy Residential",
       "map": "city",
       "pin": [
-        760.256,
-        853.684
-      ],
-      "focus": [
-        532.794,
-        252.021,
-        264.238,
-        221.062
-      ],
-      "box": [
-        600.387,
-        307.296,
-        125.974,
-        104.388
+        503.49,
+        1023.99
       ],
       "popcycle": [
         "ROCKFORD_HILLS"
@@ -906,20 +631,8 @@ window.GTATrafficAreaMapData = {
       "category": "Hills / Wealthy Residential",
       "map": "city",
       "pin": [
-        833.953,
-        749.352
-      ],
-      "focus": [
-        514.305,
-        80.02,
-        442.466,
-        221.151
-      ],
-      "box": [
-        621.839,
-        141.465,
-        221.228,
-        89.081
+        995.61,
+        916.95
       ],
       "popcycle": [
         "VINEWOOD_HILLS",
@@ -947,20 +660,8 @@ window.GTATrafficAreaMapData = {
       "category": "North/Central Los Santos",
       "map": "city",
       "pin": [
-        913.85,
-        905.894
-      ],
-      "focus": [
-        735.555,
-        325.705,
-        190.517,
-        165.801
-      ],
-      "box": [
-        778.577,
-        374.836,
-        89.113,
-        79.827
+        718.84,
+        1132.16
       ],
       "popcycle": [
         "ALTA"
@@ -985,20 +686,8 @@ window.GTATrafficAreaMapData = {
       "category": "North/Central Los Santos",
       "map": "city",
       "pin": [
-        757.189,
-        872.096
-      ],
-      "focus": [
-        560.464,
-        331.857,
-        184.343,
-        141.225
-      ],
-      "box": [
-        612.694,
-        374.842,
-        73.737,
-        55.26
+        607.62,
+        1080.42
       ],
       "popcycle": [
         "BACKLOT_CITY"
@@ -1021,20 +710,8 @@ window.GTATrafficAreaMapData = {
       "category": "North/Central Los Santos",
       "map": "city",
       "pin": [
-        797.12,
-        878.244
-      ],
-      "focus": [
-        600.391,
-        319.568,
-        258.086,
-        159.656
-      ],
-      "box": [
-        667.986,
-        377.91,
-        104.462,
-        64.473
+        607.62,
+        1080.42
       ],
       "popcycle": [
         "BURTON"
@@ -1060,20 +737,8 @@ window.GTATrafficAreaMapData = {
       "category": "North/Central Los Santos",
       "map": "city",
       "pin": [
-        809.391,
-        807.661
-      ],
-      "focus": [
-        631.072,
-        196.735,
-        264.255,
-        171.969
-      ],
-      "box": [
-        707.889,
-        258.16,
-        104.473,
-        73.699
+        593.61,
+        1025.91
       ],
       "popcycle": [
         "ECLIPSE"
@@ -1098,20 +763,8 @@ window.GTATrafficAreaMapData = {
       "category": "North/Central Los Santos",
       "map": "city",
       "pin": [
-        883.12,
-        841.437
-      ],
-      "focus": [
-        735.536,
-        245.857,
-        276.565,
-        184.246
-      ],
-      "box": [
-        806.215,
-        316.494,
-        113.696,
-        70.626
+        811.78,
+        1098.55
       ],
       "popcycle": [
         "HAWICK"
@@ -1137,20 +790,8 @@ window.GTATrafficAreaMapData = {
       "category": "North/Central Los Santos",
       "map": "city",
       "pin": [
-        846.258,
-        841.429
-      ],
-      "focus": [
-        674.081,
-        202.867,
-        294.997,
-        208.816
-      ],
-      "box": [
-        760.121,
-        276.576,
-        138.278,
-        92.123
+        700.26,
+        1141.73
       ],
       "popcycle": [
         "Downtown_Vinewood",
@@ -1175,20 +816,8 @@ window.GTATrafficAreaMapData = {
       "category": "South / Industrial Los Santos",
       "map": "city",
       "pin": [
-        852.45,
-        1093.06
-      ],
-      "focus": [
-        692.671,
-        792.293,
-        251.914,
-        221.018
-      ],
-      "box": [
-        778.691,
-        878.239,
-        98.306,
-        79.814
+        685.48,
+        1374.17
       ],
       "popcycle": [
         "BANNING"
@@ -1212,20 +841,8 @@ window.GTATrafficAreaMapData = {
       "category": "South / Industrial Los Santos",
       "map": "city",
       "pin": [
-        760.304,
-        1056.208
-      ],
-      "focus": [
-        477.693,
-        755.427,
-        288.739,
-        239.416
-      ],
-      "box": [
-        569.844,
-        841.366,
-        125.935,
-        89.019
+        506.13,
+        1287.07
       ],
       "popcycle": [
         "LA_PUERTA",
@@ -1249,20 +866,8 @@ window.GTATrafficAreaMapData = {
       "category": "South / Industrial Los Santos",
       "map": "city",
       "pin": [
-        692.767,
-        1154.359
-      ],
-      "focus": [
-        318.063,
-        816.763,
-        319.43,
-        331.439
-      ],
-      "box": [
-        385.663,
-        957.909,
-        156.631,
-        141.171
+        572.14,
+        1424.49
       ],
       "popcycle": [
         "LOS_SANTOS_INTERNATIONAL",
@@ -1286,20 +891,8 @@ window.GTATrafficAreaMapData = {
       "category": "South / Industrial Los Santos",
       "map": "city",
       "pin": [
-        913.886,
-        1129.903
-      ],
-      "focus": [
-        797.105,
-        810.728,
-        344.105,
-        306.989
-      ],
-      "box": [
-        864.703,
-        915.087,
-        184.336,
-        147.358
+        799.77,
+        1513.73
       ],
       "popcycle": [
         "ELYSIAN_ISLAND",
@@ -1324,20 +917,8 @@ window.GTATrafficAreaMapData = {
       "category": "South Los Santos",
       "map": "city",
       "pin": [
-        784.862,
-        1007.122
-      ],
-      "focus": [
-        637.339,
-        620.415,
-        239.634,
-        202.606
-      ],
-      "box": [
-        704.929,
-        687.947,
-        98.309,
-        73.676
+        654.17,
+        1309.05
       ],
       "popcycle": [
         "Chamberlain"
@@ -1360,20 +941,8 @@ window.GTATrafficAreaMapData = {
       "category": "South Los Santos",
       "map": "city",
       "pin": [
-        895.439,
-        1025.569
-      ],
-      "focus": [
-        686.495,
-        669.529,
-        251.922,
-        184.197
-      ],
-      "box": [
-        760.228,
-        730.924,
-        79.878,
-        61.398
+        706.57,
+        1321.66
       ],
       "popcycle": [
         "DAVIS"
@@ -1396,20 +965,8 @@ window.GTATrafficAreaMapData = {
       "category": "South Los Santos",
       "map": "city",
       "pin": [
-        815.569,
-        976.447
-      ],
-      "focus": [
-        661.886,
-        534.473,
-        239.649,
-        208.752
-      ],
-      "box": [
-        741.77,
-        614.287,
-        92.173,
-        85.956
+        628.77,
+        1267.76
       ],
       "popcycle": [
         "STRAWBERRY"
@@ -1432,20 +989,8 @@ window.GTATrafficAreaMapData = {
       "category": "West Los Santos",
       "map": "city",
       "pin": [
-        643.558,
-        884.343
-      ],
-      "focus": [
-        293.295,
-        356.428,
-        258.036,
-        221.01
-      ],
-      "box": [
-        348.603,
-        442.381,
-        116.726,
-        95.151
+        470.01,
+        1167.66
       ],
       "popcycle": [
         "DEL_PERRO",
@@ -1471,20 +1016,8 @@ window.GTATrafficAreaMapData = {
       "category": "West Los Santos",
       "map": "city",
       "pin": [
-        772.563,
-        945.749
-      ],
-      "focus": [
-        551.289,
-        448.521,
-        233.496,
-        208.744
-      ],
-      "box": [
-        603.524,
-        519.122,
-        110.596,
-        76.745
+        479.39,
+        1165.87
       ],
       "popcycle": [
         "LITTLE_SEOUL"
@@ -1508,20 +1041,8 @@ window.GTATrafficAreaMapData = {
       "category": "West Los Santos",
       "map": "city",
       "pin": [
-        661.986,
-        890.485
-      ],
-      "focus": [
-        428.395,
-        319.581,
-        233.492,
-        214.892
-      ],
-      "box": [
-        505.198,
-        387.125,
-        98.309,
-        79.814
+        402.58,
+        1098.52
       ],
       "popcycle": [
         "MORNINGWOOD"
@@ -1544,20 +1065,8 @@ window.GTATrafficAreaMapData = {
       "category": "West Los Santos",
       "map": "city",
       "pin": [
-        686.578,
-        976.408
-      ],
-      "focus": [
-        483.767,
-        571.294,
-        221.189,
-        221.001
-      ],
-      "box": [
-        563.634,
-        632.684,
-        76.809,
-        98.22
+        606.06,
+        1304.96
       ],
       "popcycle": [
         "PUERTO_DEL_SOL"
@@ -1579,20 +1088,8 @@ window.GTATrafficAreaMapData = {
       "category": "West Los Santos",
       "map": "city",
       "pin": [
-        662.009,
-        970.264
-      ],
-      "focus": [
-        367.076,
-        559.009,
-        319.462,
-        270.108
-      ],
-      "box": [
-        453.105,
-        694.049,
-        129.011,
-        113.565
+        446.51,
+        1254.09
       ],
       "popcycle": [
         "VESPUCCI",
