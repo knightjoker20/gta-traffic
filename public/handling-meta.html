@@ -66,6 +66,8 @@
           </div>
         </section>
 
+        <div id="hmCloudProjectPanelSlot"></div>
+
         <section class="panel">
           <h2>Saved Files</h2>
           <div id="hmDatabaseStatus" class="hm-database-status warn">Opening local database...</div>
@@ -88,8 +90,6 @@
           </div>
           <p class="small hm-muted">Every original handling field and subhandling block is preserved. The editor changes the loaded XML nodes directly.</p>
         </section>
-
-        <div id="hmCloudProjectPanelSlot"></div>
       </div>
 
       <section class="panel">
@@ -152,7 +152,7 @@
             <button type="button" onclick="handlingMetaEditor.selectVisible(true)">Select Visible</button>
             <button class="secondary" type="button" onclick="handlingMetaEditor.selectVisible(false)">Clear Visible</button>
             <button class="secondary" type="button" onclick="handlingMetaEditor.clearAllSelections()">Clear All</button>
-            <span class="hm-scroll-hint">The table scrolls vertically and sideways. Use − / + to make small numeric adjustments.</span>
+            <span class="hm-scroll-hint">Scroll sideways to see every column. Use − / + to make small numeric adjustments.</span>
           </div>
 
           <div class="hm-table-wrap">
@@ -222,6 +222,28 @@
     </div>
   </main>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var wrap = document.querySelector(".hm-table-wrap");
+      if (!wrap) return;
+      var topBar = document.createElement("div");
+      topBar.className = "hm-scroll-top";
+      var inner = document.createElement("div");
+      inner.className = "hm-scroll-top-inner";
+      topBar.appendChild(inner);
+      wrap.parentNode.insertBefore(topBar, wrap);
+      function syncWidth() { inner.style.width = wrap.scrollWidth + "px"; }
+      var syncing = false;
+      topBar.addEventListener("scroll", function () {
+        if (syncing) return; syncing = true; wrap.scrollLeft = topBar.scrollLeft; syncing = false;
+      });
+      wrap.addEventListener("scroll", function () {
+        if (syncing) return; syncing = true; topBar.scrollLeft = wrap.scrollLeft; syncing = false;
+      });
+      syncWidth();
+      new ResizeObserver(syncWidth).observe(wrap);
+    });
+  </script>
   <script src="/js/shared/siteheader.js"></script>
 <script src="js/shared/siteshell.js"></script>
   <script src="js/handlingmetaeditor.js"></script>

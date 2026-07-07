@@ -240,11 +240,20 @@ body[data-page="handling-meta"] {
 .hm-controls { margin-bottom: 14px; }
 .hm-scroll-hint { margin-left: auto; color: rgba(255, 255, 255, 0.58); font-size: 0.78rem; }
 
+.hm-scroll-top {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 14px;
+  margin-bottom: 2px;
+  border-radius: 4px;
+}
+.hm-scroll-top-inner { height: 1px; }
+
 .hm-table-wrap {
   width: 100%;
   max-width: 100%;
-  max-height: min(72vh, 780px);
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: visible;
   scrollbar-gutter: stable both-edges;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.11);
