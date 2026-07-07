@@ -576,6 +576,7 @@ const handlingMetaEditor = window.handlingMetaEditor = (() => {
             <td><input type="checkbox" data-hm-select-index="${index}" ${selected ? "checked" : ""}></td>
             <td><button class="hm-edit-profile" type="button" data-hm-edit-index="${index}">Edit</button></td>
             <td>${tableInput(entry, "handlingName")}</td>
+            <td>${tableAiSelect(entry)}</td>
             <td>${tableInput(entry, "fMass")}</td>
             <td>${tableInput(entry, "fDriveBiasFront")}</td>
             <td>${tableInput(entry, "nInitialDriveGears")}</td>
@@ -586,7 +587,6 @@ const handlingMetaEditor = window.handlingMetaEditor = (() => {
             <td>${tableInput(entry, "fTractionCurveMax")}</td>
             <td>${tableInput(entry, "fSuspensionForce")}</td>
             <td>${tableInput(entry, "fDeformationDamageMult")}</td>
-            <td>${tableAiSelect(entry)}</td>
           </tr>`;
       }).join("");
     }

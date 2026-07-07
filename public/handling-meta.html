@@ -54,6 +54,12 @@
             <input id="hmDlcName" type="text" maxlength="80" placeholder="Example: police_replacement">
             <small>Used for organization. Export filename: <strong id="hmExportNamePreview">handling.meta</strong></small>
           </div>
+
+          <div class="hm-export-actions" style="margin-top:12px">
+            <button id="hmExportXmlButton" class="btn-green" type="button" onclick="handlingMetaEditor.exportXml()">Export Full handling.meta</button>
+            <button class="btn-orange" type="button" onclick="handlingMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
+            <button class="secondary" type="button" onclick="handlingMetaEditor.copyXml()">Copy XML</button>
+          </div>
         </section>
 
         <section class="panel">
@@ -80,16 +86,6 @@
           <p class="small hm-muted">Files autosave in this browser after imports and edits. Clearing browser site data can remove them, so export finished files normally.</p>
         </section>
 
-        <section class="panel">
-          <h2>Export</h2>
-          <div class="hm-export-actions">
-            <button id="hmExportXmlButton" class="btn-green" type="button" onclick="handlingMetaEditor.exportXml()">Export Full handling.meta</button>
-            <button class="btn-orange" type="button" onclick="handlingMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
-            <button type="button" onclick="handlingMetaEditor.exportJson()">Export JSON Backup</button>
-            <button class="secondary" type="button" onclick="handlingMetaEditor.copyXml()">Copy XML</button>
-          </div>
-          <p class="small hm-muted">Every original handling field and subhandling block is preserved. The editor changes the loaded XML nodes directly.</p>
-        </section>
       </div>
 
       <section class="panel">
@@ -162,6 +158,7 @@
                   <th><input id="hmSelectAllVisible" type="checkbox" title="Select visible rows"></th>
                   <th>Profile</th>
                   <th>handlingName</th>
+                  <th>AI handling</th>
                   <th>mass</th>
                   <th>drive bias</th>
                   <th>gears</th>
@@ -172,7 +169,6 @@
                   <th>traction max</th>
                   <th>suspension</th>
                   <th>deformation</th>
-                  <th>AI handling</th>
                 </tr>
               </thead>
               <tbody id="hmTableBody">
