@@ -8,3 +8,8 @@
 # Local vehicle image upload staging
 vehicle-image-upload/
 vehicle-image-upload.lnk
+
+# Google Drive desktop sync staging folder - not project files,
+# and can contain very large temp files (one hit 73MB and tripped
+# GitHub's file-size warning on a push).
+.tmp.driveupload/
