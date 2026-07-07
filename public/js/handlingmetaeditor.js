@@ -3,7 +3,7 @@
 // Standalone handling profile editor with local autosave.
 // =====================================================
 
-const handlingMetaEditor = (() => {
+const handlingMetaEditor = window.handlingMetaEditor = (() => {
   const TABLE_FIELDS = [
     "handlingName",
     "fMass",

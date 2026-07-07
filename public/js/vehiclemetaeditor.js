@@ -5,7 +5,7 @@
 // existing Popgroups workspace.
 // =====================================================
 
-const vehicleMetaEditor = (() => {
+const vehicleMetaEditor = window.vehicleMetaEditor = (() => {
   const EDITABLE_FIELDS = [
     "modelName",
     "gameName",
