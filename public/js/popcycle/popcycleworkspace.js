@@ -448,7 +448,9 @@ async function restorePopcycleWorkspace() {
       workspace.filter || "all";
 
     popcycleState.mapLayer =
-      workspace.mapLayer || "auto";
+      workspace.mapLayer ||
+      window.GTATrafficVisualMapConfig?.defaultLayer ||
+      "full";
 
     popcycleState.mapViews =
       clonePopcycleModel(
@@ -496,7 +498,9 @@ async function restorePopcycleWorkspace() {
 
     runPopcycleValidation();
     renderAllPopcycleSections();
-    renderPopcycleMapLayerButtons?.();
+    renderPopcycleMapToolButtons?.();
+    renderPopcycleMapStyleButtons?.();
+    switchPopcycleMapLayer?.(popcycleState.mapLayer);
 
     renderPopcycleFileStatus(
       `Restored ${popcycleState.originalFileName}: ${popcycleState.current.order.length} schedules.`

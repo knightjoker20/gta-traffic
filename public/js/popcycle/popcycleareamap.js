@@ -51,6 +51,7 @@ const POPCYCLE_AREA_KEY_OVERRIDES = {
 const POPCYCLE_MARKER_OVERRIDES_KEY = "gtaTrafficPopcycleMarkerOverrides_v1";
 const POPCYCLE_CUSTOM_MARKERS_KEY = "gtaTrafficPopcycleCustomMarkers_v1";
 const POPCYCLE_AREA_OUTLINES_KEY = "gtaTrafficPopcycleAreaOutlines_v1";
+const POPCYCLE_MAP_STYLE_KEY = "gtaTrafficPopcycleMapStyle_v1";
 
 const popcycleAreaMapState = {
   areas: [],
@@ -116,9 +117,11 @@ function initializePopcycleAreaMap() {
   loadMarkerOverridesFromStorage();
   loadCustomMarkersFromStorage();
   loadAreaOutlinesFromStorage();
+  loadMapStyleFromStorage();
   ensurePopcycleMapState();
   populatePopcycleAreaSelect();
   renderPopcycleMapToolButtons();
+  renderPopcycleMapStyleButtons();
   bindPopcycleMapEvents();
   loadPopcycleMapImages();
 }
@@ -152,6 +155,12 @@ function loadPopcycleMapImages() {
     const image = new Image();
 
     image.onload = () => {
+      // Trust the real loaded image size over the config's guess, so
+      // pins/outlines scale correctly onto this layer even if its
+      // actual pixel dimensions differ from what's in the config.
+      layer.width = image.naturalWidth || layer.width;
+      layer.height = image.naturalHeight || layer.height;
+
       popcycleAreaMapState.images[layer.id] = image;
       popcycleAreaMapState.imageReady[layer.id] = true;
       requestPopcycleMapDraw();
@@ -168,6 +177,101 @@ function loadPopcycleMapImages() {
     image.src = layer.source;
   });
 }
+
+// =====================================================
+// [SECTION: MAP_STYLE_SWITCHER]
+// Lets the user swap the map's background image between the
+// configured layers (Atlas / Road Map / Satellite, etc.) without
+// touching any schedule pin, custom dot, or outline data - all of
+// that lives in one shared reference coordinate space (see
+// popcyclevisualmapconfig.js) and is simply rescaled onto
+// whichever image is currently showing.
+// =====================================================
+
+function getPopcycleReferenceDims() {
+  const config = window.GTATrafficVisualMapConfig || {};
+  return {
+    width: config.referenceWidth || 1600,
+    height: config.referenceHeight || 1600
+  };
+}
+
+function getLayerScale(layer) {
+  if (!layer) return { x: 1, y: 1 };
+
+  const ref = getPopcycleReferenceDims();
+
+  return {
+    x: (layer.width || ref.width) / ref.width,
+    y: (layer.height || ref.height) / ref.height
+  };
+}
+
+function loadMapStyleFromStorage() {
+  let savedId = "";
+
+  try {
+    savedId = localStorage.getItem(POPCYCLE_MAP_STYLE_KEY) || "";
+  } catch (error) {
+    savedId = "";
+  }
+
+  const validId =
+    savedId &&
+    popcycleAreaMapState.layers.some(layer => layer.id === savedId)
+      ? savedId
+      : (window.GTATrafficVisualMapConfig?.defaultLayer ||
+          popcycleAreaMapState.layers[0]?.id ||
+          "full");
+
+  popcycleAreaMapState.actualLayerId = validId;
+
+  if (popcycleState) {
+    popcycleState.mapLayer = validId;
+  }
+}
+
+function saveMapStyleToStorage(layerId) {
+  try {
+    localStorage.setItem(POPCYCLE_MAP_STYLE_KEY, layerId);
+  } catch (error) {
+    console.warn("Could not save map style choice.", error);
+  }
+}
+
+function switchPopcycleMapLayer(layerId) {
+  if (!popcycleAreaMapState.layersById[layerId]) return;
+  if (popcycleAreaMapState.actualLayerId === layerId) return;
+
+  popcycleAreaMapState.actualLayerId = layerId;
+  popcycleState.mapLayer = layerId;
+
+  saveMapStyleToStorage(layerId);
+  ensurePopcycleMapState();
+  renderPopcycleMapStyleButtons();
+  requestPopcycleMapDraw();
+  schedulePopcycleWorkspaceSave?.();
+}
+
+function renderPopcycleMapStyleButtons() {
+  const host = document.getElementById("popcycleMapStyleButtons");
+  if (!host) return;
+
+  host.innerHTML = popcycleAreaMapState.layers
+    .map(layer => `
+      <button
+        type="button"
+        class="pc-map-layer-button ${layer.id === popcycleAreaMapState.actualLayerId ? "active" : ""}"
+        onclick="switchPopcycleMapLayer('${layer.id}')"
+        title="${layer.description ? layer.description.replace(/"/g, "&quot;") : ""}"
+      >
+        ${layer.shortTitle || layer.title || layer.id}
+      </button>
+    `)
+    .join("");
+}
+
+// [END SECTION: MAP_STYLE_SWITCHER]
 
 function bindPopcycleMapEvents() {
   const canvas =
@@ -930,7 +1034,11 @@ function renderPopcycleMapToolButtons() {
 }
 
 function getActualPopcycleMapLayer() {
-  return popcycleAreaMapState.layers[0] || null;
+  return (
+    popcycleAreaMapState.layersById[popcycleAreaMapState.actualLayerId] ||
+    popcycleAreaMapState.layers[0] ||
+    null
+  );
 }
 
 function getPopcycleMapView(layerId) {
@@ -1074,6 +1182,8 @@ function focusPopcycleMapOnSelected() {
   const view =
     getPopcycleMapView(layer.id);
 
+  const layerScale = getLayerScale(layer);
+
   view.zoom = 2.25;
 
   const fitScale = Math.min(
@@ -1094,12 +1204,12 @@ function focusPopcycleMapOnSelected() {
 
   view.panX =
     rect.width / 2 -
-    marker.x * scale -
+    marker.x * layerScale.x * scale -
     centeredX;
 
   view.panY =
     rect.height / 2 -
-    marker.y * scale -
+    marker.y * layerScale.y * scale -
     centeredY;
 
   requestPopcycleMapDraw();
@@ -1575,7 +1685,9 @@ function drawPopcycleVisualMap() {
     drawHeight
   );
 
-  drawPopcycleAreaOutlines(context, drawX, drawY, scale);
+  const layerScale = getLayerScale(layer);
+
+  drawPopcycleAreaOutlines(context, drawX, drawY, scale, layerScale);
 
   const markers =
     buildPopcycleMapMarkers(
@@ -1605,6 +1717,7 @@ function drawPopcycleVisualMap() {
     canvasHeight: cssHeight,
     fitScale,
     scale,
+    layerScale,
     drawX,
     drawY,
     drawWidth,
@@ -1617,14 +1730,14 @@ function drawPopcycleVisualMap() {
   );
 }
 
-function outlinePointToCanvas(point, drawX, drawY, scale) {
+function outlinePointToCanvas(point, drawX, drawY, scale, layerScale = { x: 1, y: 1 }) {
   return {
-    x: drawX + point[0] * scale,
-    y: drawY + point[1] * scale
+    x: drawX + point[0] * layerScale.x * scale,
+    y: drawY + point[1] * layerScale.y * scale
   };
 }
 
-function drawPopcycleAreaOutlines(context, drawX, drawY, scale) {
+function drawPopcycleAreaOutlines(context, drawX, drawY, scale, layerScale = { x: 1, y: 1 }) {
   const selectedArea = getSelectedPopcycleArea();
   const savedOutline = selectedArea
     ? popcycleAreaMapState.areaOutlines[selectedArea.id]
@@ -1634,7 +1747,7 @@ function drawPopcycleAreaOutlines(context, drawX, drawY, scale) {
     context.save();
     context.beginPath();
     savedOutline.forEach((point, index) => {
-      const p = outlinePointToCanvas(point, drawX, drawY, scale);
+      const p = outlinePointToCanvas(point, drawX, drawY, scale, layerScale);
       if (index === 0) context.moveTo(p.x, p.y);
       else context.lineTo(p.x, p.y);
     });
@@ -1652,7 +1765,7 @@ function drawPopcycleAreaOutlines(context, drawX, drawY, scale) {
     context.save();
     context.beginPath();
     draft.points.forEach((point, index) => {
-      const p = outlinePointToCanvas(point, drawX, drawY, scale);
+      const p = outlinePointToCanvas(point, drawX, drawY, scale, layerScale);
       if (index === 0) context.moveTo(p.x, p.y);
       else context.lineTo(p.x, p.y);
     });
@@ -1663,7 +1776,7 @@ function drawPopcycleAreaOutlines(context, drawX, drawY, scale) {
     context.setLineDash([]);
 
     draft.points.forEach(point => {
-      const p = outlinePointToCanvas(point, drawX, drawY, scale);
+      const p = outlinePointToCanvas(point, drawX, drawY, scale, layerScale);
       context.beginPath();
       context.arc(p.x, p.y, 4, 0, Math.PI * 2);
       context.fillStyle = "#38bdf8";
@@ -1718,6 +1831,9 @@ function buildPopcycleMapMarkers(
   const selectedAreaId =
     popcycleAreaMapState.selectedAreaId;
 
+  const layerScale = getLayerScale(layer);
+  const ref = getPopcycleReferenceDims();
+
   return popcycleAreaMapState.areas
     .map(area => {
       const position =
@@ -1728,8 +1844,8 @@ function buildPopcycleMapMarkers(
       if (
         position.x < 0 ||
         position.y < 0 ||
-        position.x > layer.width ||
-        position.y > layer.height
+        position.x > ref.width ||
+        position.y > ref.height
       ) {
         return null;
       }
@@ -1739,9 +1855,9 @@ function buildPopcycleMapMarkers(
         imageX: position.x,
         imageY: position.y,
         canvasX:
-          drawX + position.x * scale,
+          drawX + position.x * layerScale.x * scale,
         canvasY:
-          drawY + position.y * scale,
+          drawY + position.y * layerScale.y * scale,
         selected:
           area.id === selectedAreaId
       };
@@ -2011,8 +2127,9 @@ function handlePopcycleMapPointerMove(event) {
     const canvasX = event.clientX - rect.left;
     const canvasY = event.clientY - rect.top;
 
-    const imageX = (canvasX - render.drawX) / render.scale;
-    const imageY = (canvasY - render.drawY) / render.scale;
+    const layerScale = render.layerScale || getLayerScale(layer);
+    const imageX = (canvasX - render.drawX) / render.scale / layerScale.x;
+    const imageY = (canvasY - render.drawY) / render.scale / layerScale.y;
 
     popcycleAreaMapState.markerOverrides[drag.marker.area.id] = [
       Math.round(imageX * 100) / 100,
@@ -2098,10 +2215,11 @@ function handlePopcycleMapClick(event) {
     event.clientY - rect.top;
 
   const render = popcycleAreaMapState.lastRender;
+  const layerScale = render?.layerScale || getLayerScale(getActualPopcycleMapLayer());
 
   if (popcycleAreaMapState.outlineDraft && render) {
-    const imageX = (clickX - render.drawX) / render.scale;
-    const imageY = (clickY - render.drawY) / render.scale;
+    const imageX = (clickX - render.drawX) / render.scale / layerScale.x;
+    const imageY = (clickY - render.drawY) / render.scale / layerScale.y;
     popcycleAreaMapState.outlineDraft.points.push([
       Math.round(imageX * 100) / 100,
       Math.round(imageY * 100) / 100
@@ -2121,8 +2239,8 @@ function handlePopcycleMapClick(event) {
   }
 
   if (popcycleAreaMapState.editMode && render) {
-    const imageX = (clickX - render.drawX) / render.scale;
-    const imageY = (clickY - render.drawY) / render.scale;
+    const imageX = (clickX - render.drawX) / render.scale / layerScale.x;
+    const imageY = (clickY - render.drawY) / render.scale / layerScale.y;
     addCustomMarkerAt(imageX, imageY);
   }
 }

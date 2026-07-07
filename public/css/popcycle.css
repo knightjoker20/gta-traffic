@@ -102,6 +102,77 @@
   top: 70px;
   max-height: calc(100vh - 90px);
   overflow: hidden;
+  transition: width 0.16s ease, min-width 0.16s ease;
+}
+
+.pc-sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pc-sidebar-heading h2 {
+  margin: 0;
+  flex: 1;
+}
+
+.pc-sidebar-collapse-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.16s ease;
+}
+
+/* Collapsed: the column itself shrinks to a slim strip, matching the
+   same pattern used for the Vehicle Library panel on popgroups.html. */
+.pc-workspace.pc-sidebar-collapsed {
+  grid-template-columns: 46px minmax(0, 1fr);
+}
+
+.pc-sidebar.pc-sidebar-collapsed {
+  width: 46px;
+  min-width: 46px;
+  max-height: none;
+  overflow: hidden;
+  padding: 10px 8px;
+}
+
+.pc-sidebar.pc-sidebar-collapsed .pc-sidebar-heading {
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.pc-sidebar.pc-sidebar-collapsed .pc-sidebar-heading h2,
+.pc-sidebar.pc-sidebar-collapsed #pcSidebarBody {
+  display: none;
+}
+
+.pc-sidebar.pc-sidebar-collapsed .pc-sidebar-collapse-btn {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 1050px) {
+  .pc-sidebar.pc-sidebar-collapsed {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pc-workspace.pc-sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
 }
 
 .pc-sidebar-controls {
@@ -1196,6 +1267,22 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+
+.pc-map-style-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 9px;
+  border-right: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.pc-map-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
 }
 
 .pc-map-layer-button {

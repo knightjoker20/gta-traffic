@@ -238,37 +238,49 @@
            Search and filter all population schedules.
            =================================================== -->
       <aside class="panel pc-sidebar">
-        <h2>Schedules</h2>
-
-        <div class="pc-sidebar-controls">
-          <input
-            id="popcycleScheduleSearch"
-            placeholder="Search schedules..."
-          >
-
-          <select id="popcycleScheduleFilter">
-            <option value="all">
-              All schedules
-            </option>
-
-            <option value="modified">
-              Modified only
-            </option>
-
-            <option value="warnings">
-              Warnings
-            </option>
-
-            <option value="redline">
-              Beyond Redline
-            </option>
-          </select>
+        <div class="pc-sidebar-heading">
+          <button
+            id="pcSidebarCollapseToggle"
+            class="pc-sidebar-collapse-btn"
+            type="button"
+            aria-expanded="true"
+            aria-controls="pcSidebarBody"
+            title="Collapse schedules panel"
+          >&#8250;</button>
+          <h2>Schedules</h2>
         </div>
 
-        <div
-          id="popcycleScheduleList"
-          class="pc-schedule-list"
-        ></div>
+        <div id="pcSidebarBody">
+          <div class="pc-sidebar-controls">
+            <input
+              id="popcycleScheduleSearch"
+              placeholder="Search schedules..."
+            >
+
+            <select id="popcycleScheduleFilter">
+              <option value="all">
+                All schedules
+              </option>
+
+              <option value="modified">
+                Modified only
+              </option>
+
+              <option value="warnings">
+                Warnings
+              </option>
+
+              <option value="redline">
+                Beyond Redline
+              </option>
+            </select>
+          </div>
+
+          <div
+            id="popcycleScheduleList"
+            class="pc-schedule-list"
+          ></div>
+        </div>
       </aside>
       <!-- [END SECTION: POPCYCLE_SCHEDULE_BROWSER] -->
 
@@ -347,6 +359,15 @@
             ></div>
 
             <div class="pc-map-toolbar">
+              <div class="pc-map-style-group">
+                <span class="pc-map-group-label">Map:</span>
+                <div
+                  id="popcycleMapStyleButtons"
+                  class="pc-map-layer-buttons"
+                  aria-label="Map style"
+                ></div>
+              </div>
+
               <div
                 id="popcycleMapLayerButtons"
                 class="pc-map-layer-buttons"
