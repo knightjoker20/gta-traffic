@@ -54,6 +54,12 @@
             <input id="vmDlcName" type="text" maxlength="80" placeholder="Example: ccpack2">
             <small>Used only for organization. Export filename: <strong id="vmExportNamePreview">vehicles.meta</strong></small>
           </div>
+
+          <div class="vm-export-actions" style="margin-top:12px">
+            <button id="vmExportXmlButton" class="btn-green" type="button" onclick="vehicleMetaEditor.exportXml()">Export Full vehicles.meta</button>
+            <button class="btn-orange" type="button" onclick="vehicleMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
+            <button class="secondary" type="button" onclick="vehicleMetaEditor.copyXml()">Copy XML</button>
+          </div>
         </section>
 
         <section class="panel">
@@ -80,18 +86,6 @@
           <p class="small vm-muted">Files autosave in this browser after imports and edits. Clearing browser site data can remove them, so export finished files normally.</p>
         </section>
 
-        <section class="panel">
-          <h2>Export</h2>
-          <div class="vm-export-actions">
-            <button id="vmExportXmlButton" class="btn-green" type="button" onclick="vehicleMetaEditor.exportXml()">Export Full vehicles.meta</button>
-            <button class="btn-orange" type="button" onclick="vehicleMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
-            <button type="button" onclick="vehicleMetaEditor.exportJson()">Export JSON Backup</button>
-            <button class="secondary" type="button" onclick="vehicleMetaEditor.copyXml()">Copy XML</button>
-            <button id="vmSaveCloudBtn" class="btn-green" type="button" onclick="vehicleMetaEditor.saveToCloud()">&#9729; Save to Cloud</button>
-          </div>
-          <div id="vmCloudSaveStatus" class="vm-cloud-save-status" hidden></div>
-          <p class="small vm-muted">The editor modifies loaded XML nodes directly — original structure is preserved. "Export This Vehicle Only" creates a single-entry file safe to use as a standalone vehicles.meta. "Save to Cloud" stores the full pack in R2 so it auto-loads next visit.</p>
-        </section>
       </div>
 
       <section class="panel">
