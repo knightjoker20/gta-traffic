@@ -90,26 +90,26 @@
       <h2>Popcycle File Controls</h2>
 
       <div class="pc-control-row">
-        <button
-          class="btn-orange"
-          type="button"
-          onclick="loadStockTrafficBase()"
-        >
-          Load Stock Traffic
-        </button>
+        <div class="pc-btn-group">
+          <button
+            class="btn-orange"
+            type="button"
+            onclick="loadStockTrafficBase()"
+          >
+            Load Stock Traffic
+          </button>
+          <a class="pc-vanilla-link" href="/assets/vanilla/popcycle.dat" download>↓ Download vanilla popcycle.dat</a>
+        </div>
 
-        <label>
-          <span class="small">
-            Load custom popcycle.dat
-          </span>
-
+        <div class="pc-btn-group">
+          <span class="small">Load custom popcycle.dat</span>
           <input
             id="popcycleFilePicker"
             class="pc-file-picker"
             type="file"
             accept=".dat,.txt"
           >
-        </label>
+        </div>
 
         <button
           class="btn-green"

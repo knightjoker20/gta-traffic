@@ -40,9 +40,23 @@
 .pc-control-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
 }
+
+.pc-btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pc-vanilla-link {
+  font-size: 0.78rem;
+  color: rgba(255, 177, 91, 0.85);
+  text-decoration: none;
+  padding: 2px 0;
+}
+.pc-vanilla-link:hover { color: #ffb15b; text-decoration: underline; }
 
 .pc-file-picker {
   max-width: 360px;
