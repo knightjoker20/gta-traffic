@@ -63,6 +63,34 @@ async function submitAuthForm(event) {
   }
 }
 
+const GOOGLE_AUTH_ERROR_MESSAGES = {
+  google_denied: "Google sign-in was cancelled.",
+  google_state: "That Google sign-in link expired. Please try again.",
+  google_not_configured: "Google sign-in is not set up on this site yet.",
+  google_token: "Google sign-in failed. Please try again.",
+  google_profile: "Could not read your Google profile. Please try again.",
+  google_unverified_email: "Your Google account's email is not verified.",
+  google_email: "Your Google account does not have a usable email address.",
+  account_disabled: "This account has been disabled. Contact support."
+};
+
+function showGoogleAuthErrorFromUrl() {
+  const errorCode = new URLSearchParams(window.location.search).get("error");
+  if (!errorCode) {
+    return;
+  }
+
+  setAuthStatus(
+    GOOGLE_AUTH_ERROR_MESSAGES[errorCode] || "Sign-in failed. Please try again.",
+    "danger"
+  );
+
+  const url = new URL(window.location.href);
+  url.searchParams.delete("error");
+  window.history.replaceState({}, "", url.toString());
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("authForm")?.addEventListener("submit", submitAuthForm);
+  showGoogleAuthErrorFromUrl();
 });

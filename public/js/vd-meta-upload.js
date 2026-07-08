@@ -164,6 +164,13 @@
         });
       }
 
+      // 3. Mirror the update into the local browser library so the page
+      //    reflects the new data immediately (cloud save alone doesn't
+      //    touch the local IndexedDB copy that this page reads from).
+      if (window.vehicleLibraryStore) {
+        await window.vehicleLibraryStore.saveVehicle(match);
+      }
+
       const count = records.length;
       setZoneState("vdVehiclesMetaZone", "success",
         `✓ Saved — ${count} vehicle${count !== 1 ? "s" : ""} stored from ${file.name}`);
@@ -222,6 +229,15 @@
           originalFilename: file.name,
           entryNames
         });
+      }
+
+      // 3. Mirror the update into the local browser library so the page
+      //    reflects the new data immediately (cloud save alone doesn't
+      //    touch the local IndexedDB copy that this page reads from).
+      if (window.vehicleLibraryStore) {
+        await window.vehicleLibraryStore.putHandlingProfiles([
+          { ...match, id: window.vehicleLibraryStore.normalizeId(match.handlingName) }
+        ]);
       }
 
       const count = profiles.length;

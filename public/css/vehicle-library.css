@@ -44,6 +44,83 @@ body.vl-library-page {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
+  transition: width 0.16s ease, min-width 0.16s ease;
+}
+
+.vl-sidebar-body {
+  display: grid;
+  gap: 14px;
+}
+
+.vl-sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vl-sidebar-heading h2 {
+  margin: 0;
+  flex: 1;
+  font-size: 1rem;
+  color: #ff9a31;
+}
+
+.vl-sidebar-collapse-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.16s ease;
+}
+
+/* Collapsed: the sidebar itself shrinks to a slim strip, same
+   pattern used for the Vehicle Library panel on popgroups.html
+   and the Schedules sidebar on popcycle.html. */
+.vl-layout.vl-sidebar-collapsed {
+  grid-template-columns: 46px minmax(0, 1fr);
+}
+
+.vl-sidebar.vl-sidebar-collapsed {
+  width: 46px;
+  min-width: 46px;
+  max-height: none;
+  overflow: hidden;
+  padding: 10px 8px;
+}
+
+.vl-sidebar.vl-sidebar-collapsed .vl-sidebar-heading {
+  flex-direction: column;
+}
+
+.vl-sidebar.vl-sidebar-collapsed .vl-sidebar-heading h2,
+.vl-sidebar.vl-sidebar-collapsed .vl-sidebar-body {
+  display: none;
+}
+
+.vl-sidebar.vl-sidebar-collapsed .vl-sidebar-collapse-btn {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 900px) {
+  .vl-sidebar.vl-sidebar-collapsed {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .vl-layout.vl-sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
 }
 
 .vl-sidebar .panel,
@@ -354,6 +431,11 @@ body.vl-library-page {
 .vl-browser-header p,
 .vd-section-heading p { margin: -5px 0 0; font-size: .83rem; color: rgba(255,255,255,.58); line-height: 1.4; }
 .vl-header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#vlBulkPackModeToggle.active {
+  background: linear-gradient(180deg, #ea580c, #9a3412);
+  border-color: rgba(251,146,60,.6);
+  color: #fff7ed;
+}
 
 .vl-search-row { margin: 16px 0; }
 .vl-search-box {
@@ -483,6 +565,32 @@ body.vl-library-page {
   font-size: 1.1rem;
 }
 .vl-favorite-button.active { color: #ffb020; }
+
+.vl-bulk-select-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(3,6,13,.72);
+  border: 1px solid rgba(255,255,255,.2);
+  cursor: pointer;
+}
+.vl-bulk-select-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #f97316;
+  cursor: pointer;
+}
+.vl-vehicle-card.vl-bulk-selected {
+  border-color: rgba(249,115,22,.75);
+  box-shadow: 0 0 0 2px rgba(249,115,22,.28);
+}
 .vl-card-source-dots {
   position: absolute;
   left: 8px;
@@ -521,6 +629,7 @@ body.vl-library-page {
 }
 .vl-badge.ai { background: rgba(168,85,247,.17); color: #d3a8ff; }
 .vl-badge.install { background: rgba(34,197,94,.16); color: #8ff0b9; }
+.vl-badge.pack { background: rgba(249,115,22,.17); color: #fdba74; }
 .vl-card-actions { display: flex; gap: 8px; margin-top: 11px; }
 .vl-card-actions a {
   flex: 1;
@@ -665,7 +774,6 @@ body.vl-library-page {
 .vd-detail-item-editable.vd-detail-item-customized { border-color: rgba(255,176,32,.4); background: rgba(255,176,32,.06); }
 .vd-edit-toggle { flex: 0 0 auto; }
 .vd-edit-toggle.active { color: #ff8a1f; border-color: rgba(249,115,22,.7); background: rgba(249,115,22,.12); }
-.vd-handling-row.vd-handling-row-customized-static { padding: 3px 5px; margin: -3px -5px; border-radius: 6px; background: rgba(255,176,32,.06); }
 .vd-customized-badge {
   display: inline-block;
   margin-left: 6px;
@@ -719,23 +827,6 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
 .vd-handling-row { display: flex; justify-content: space-between; gap: 12px; font-size: .78rem; }
 .vd-handling-row span { color: rgba(255,255,255,.52); }
 .vd-handling-row strong { color: #fff; text-align: right; overflow-wrap: anywhere; }
-.vd-handling-row-editable {
-  padding: 7px 8px;
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 7px;
-  background: rgba(255,255,255,.02);
-}
-.vd-handling-row-editable > span {
-  display: block;
-  margin-bottom: 4px;
-  color: rgba(255,255,255,.52);
-  font-size: .72rem;
-}
-.vd-handling-row-editable.vd-handling-row-customized {
-  border-color: rgba(255,176,32,.4);
-  background: rgba(255,176,32,.06);
-}
-.vd-handling-row-editable .vd-detail-input { font-size: .78rem; padding: 4px 6px; }
 .vd-no-data { padding: 18px; border: 1px dashed rgba(255,255,255,.14); border-radius: 10px; color: rgba(255,255,255,.55); }
 
 .vd-group-list { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -1244,6 +1335,50 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
   font-weight: 800;
 }
 
+.vl-bulk-pack-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 100px;
+  transform: translateX(-50%);
+  z-index: 41;
+  width: min(720px, calc(100% - 32px));
+}
+
+.vl-bulk-pack-bar-inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(249,115,22,.4);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(10,17,30,.96), rgba(5,9,18,.98));
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 48px rgba(0,0,0,.4);
+}
+
+.vl-bulk-pack-bar-inner #vlBulkPackCount {
+  color: #fdba74;
+  font-size: .8rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.vl-bulk-pack-bar-inner input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.vl-bulk-pack-bar-inner button {
+  flex-shrink: 0;
+}
+
+.vl-bulk-pack-bar-inner #vlBulkPackAssign:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
 .vl-compare-open {
   border: 1px solid rgba(245,158,11,.45);
   border-radius: 999px;
@@ -1444,4 +1579,6 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
   .vl-compare-label-col { width: 120px; }
   .vl-compare-slot-image { max-width: 140px; }
   .vl-compare-tray-inner { flex-direction: column; align-items: stretch; }
+  .vl-bulk-pack-bar { bottom: 160px; }
+  .vl-bulk-pack-bar-inner { flex-direction: column; align-items: stretch; }
 }

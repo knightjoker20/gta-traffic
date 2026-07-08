@@ -63,10 +63,7 @@ const state = {
   fieldEdits: {},
   fieldEditsLoggedIn: false,
   fieldCatalogs: null,
-  handlingFieldEdits: {},
-  handlingFieldEditsLoggedIn: false,
-  metaEditMode: false,
-  handlingEditMode: false
+  metaEditMode: false
 };
 
 // Fields with a matching column in the shared `vehicles` table — these are
@@ -95,45 +92,6 @@ const VEHICLE_META_FIELDS = [
 // list of distinct hash strings, it lists vehicles by name so picking one
 // borrows that vehicle's sound.
 const VEHICLE_META_CATALOG_FIELDS = ["vehicleClass", "vehicleType", "layout", "swankness"];
-
-// Handling fields that can carry a personal edit (see EDITABLE_HANDLING_FIELDS
-// in src/index.js — keep in sync). handling.meta profiles are shared by
-// handling_name across many vehicles, so an edit here isn't scoped to just
-// this vehicle — it applies everywhere this handling profile is used, same
-// as it would if you edited the real handling.meta file.
-const HANDLING_EDITABLE_FIELD_TYPES = {
-  AIHandling: "text",
-  fDriveBiasFront: "number",
-  nInitialDriveGears: "number",
-  fMass: "number",
-  fInitialDriveForce: "number",
-  fDriveInertia: "number",
-  fInitialDriveMaxFlatVel: "number",
-  fInitialDragCoeff: "number",
-  fBrakeForce: "number",
-  fBrakeBiasFront: "number",
-  fHandBrakeForce: "number",
-  fSteeringLock: "number",
-  fClutchChangeRateScaleUpShift: "number",
-  fClutchChangeRateScaleDownShift: "number",
-  fTractionCurveMax: "number",
-  fTractionCurveMin: "number",
-  fTractionCurveLateral: "number",
-  fTractionBiasFront: "number",
-  fLowSpeedTractionLossMult: "number",
-  fTractionLossMult: "number",
-  fSuspensionForce: "number",
-  fSuspensionCompDamp: "number",
-  fSuspensionReboundDamp: "number",
-  fSuspensionRaise: "number",
-  fAntiRollBarForce: "number",
-  fRollCentreHeightFront: "number",
-  fRollCentreHeightRear: "number",
-  fCollisionDamageMult: "number",
-  fWeaponDamageMult: "number",
-  fDeformationDamageMult: "number",
-  fEngineDamageMult: "number"
-};
 
 // Fields shown read-only because there's no dedicated column to save them
 // against yet (they only live inside raw_record_json today).
@@ -509,212 +467,65 @@ const el = id => document.getElementById(id);
     });
   }
 
-  async function loadHandlingFieldEdits(handlingName) {
-    state.handlingFieldEdits = {};
-    state.handlingFieldEditsLoggedIn = false;
-
-    if (!handlingName || !window.vehicleCloud?.getHandlingFieldEdits) {
-      return;
-    }
-
-    try {
-      const result = await window.vehicleCloud.getHandlingFieldEdits(handlingName);
-      state.handlingFieldEdits = result.edits || {};
-      state.handlingFieldEditsLoggedIn = Boolean(result.loggedIn);
-    } catch (error) {
-      console.warn("Personal handling edits could not be loaded.", error);
-    }
-  }
-
-  async function saveHandlingFieldEditValue(field, value) {
-    if (!window.vehicleCloud?.saveHandlingFieldEdit) return;
-    const handlingName = state.handling?.handlingName;
-    if (!handlingName) return;
-
-    try {
-      const result = await window.vehicleCloud.saveHandlingFieldEdit(handlingName, field, value);
-
-      if (result.restored) {
-        delete state.handlingFieldEdits[field];
-        setStatus(`${field} matches vanilla — no personal handling edit saved.`, "good");
-      } else {
-        state.handlingFieldEdits[field] = {
-          vanillaValue: result.vanillaValue,
-          editedValue: result.editedValue
-        };
-        setStatus(`Saved your personal handling edit for ${field}.`, "good");
-      }
-
-      renderHandling();
-    } catch (error) {
-      console.error(error);
-      setStatus(error.message || `${field} could not be saved.`, "bad");
-    }
-  }
-
-  async function restoreHandlingFieldValue(field) {
-    if (!window.vehicleCloud?.restoreHandlingField) return;
-    const handlingName = state.handling?.handlingName;
-    if (!handlingName) return;
-
-    try {
-      await window.vehicleCloud.restoreHandlingField(handlingName, field);
-      delete state.handlingFieldEdits[field];
-      renderHandling();
-      setStatus(`Restored ${field} to the vanilla handling value.`, "good");
-    } catch (error) {
-      console.error(error);
-      setStatus(error.message || `${field} could not be restored.`, "bad");
-    }
-  }
-
-  function bindHandlingEditHandlers() {
-    const host = el("vdHandlingSummary");
-    if (!host) return;
-
-    host.addEventListener("change", event => {
-      const input = event.target.closest("[data-handling-field]");
-      if (!input) return;
-      saveHandlingFieldEditValue(input.dataset.handlingField, input.value);
-    });
-
-    host.addEventListener("click", event => {
-      const button = event.target.closest("[data-restore-handling-field]");
-      if (!button) return;
-      restoreHandlingFieldValue(button.dataset.restoreHandlingField);
-    });
-  }
-
-  function effectiveHandlingValue(field) {
-    const override = state.handlingFieldEdits[field];
-    return override ? override.editedValue : state.handling?.[field];
-  }
-
-  function staticHandlingRow(field, label) {
-    const handling = state.handling;
-    const override = state.handlingFieldEdits[field];
-    const vanillaValue = handling[field];
-    const currentValue = override ? override.editedValue : formatValue(vanillaValue);
-    const isCustomized = Boolean(override);
-
-    return `
-      <div class="vd-handling-row${isCustomized ? " vd-handling-row-customized-static" : ""}">
-        <span>${escapeHTML(label)}${isCustomized ? '<em class="vd-customized-badge">customized</em>' : ""}</span>
-        <strong>${escapeHTML(currentValue)}</strong>
-      </div>
-    `;
-  }
-
-  function handlingEditableRow(field, label) {
-    if (!state.handlingEditMode) {
-      return staticHandlingRow(field, label);
-    }
-
-    const handling = state.handling;
-    const override = state.handlingFieldEdits[field];
-    const vanillaValue = handling[field];
-    const currentValue = override ? override.editedValue : formatValue(vanillaValue, "");
-    const isCustomized = Boolean(override);
-    const disabledAttr = state.handlingFieldEditsLoggedIn ? "" : ' disabled title="Log in to customize this field"';
-    const inputType = HANDLING_EDITABLE_FIELD_TYPES[field] === "text" ? "text" : "number";
-    const stepAttr = inputType === "number" ? ' step="any"' : "";
-
-    return `
-      <div class="vd-handling-row-editable${isCustomized ? " vd-handling-row-customized" : ""}">
-        <span>${escapeHTML(label)}${isCustomized ? '<em class="vd-customized-badge">customized</em>' : ""}</span>
-        <div class="vd-detail-edit-row">
-          <input
-            type="${inputType}"${stepAttr}
-            class="vd-detail-input"
-            data-handling-field="${escapeHTML(field)}"
-            value="${escapeHTML(currentValue)}"
-            ${disabledAttr}
-          >${isCustomized ? `<button type="button" class="vd-restore-btn" data-restore-handling-field="${escapeHTML(field)}" title="Restore to vanilla value: ${escapeHTML(formatValue(vanillaValue))}">&#8635;</button>` : ""}
-        </div>
-      </div>
-    `;
-  }
-
   function renderHandling() {
     const handling = state.handling;
     if (!handling) {
       const handlingId = state.vehicle.vehiclesMeta?.handlingId || "this vehicle";
-      el("vdHandlingSummary").innerHTML = `<div class="vd-no-data">No imported handling.meta profile matches <strong>${escapeHTML(handlingId)}</strong>. Import the correct handling.meta file from the Vehicle Library page.</div>`;
-
-      const toggle = el("vdHandlingEditToggle");
-      if (toggle) {
-        toggle.disabled = true;
-        toggle.textContent = "Edit";
-        toggle.classList.remove("active");
-      }
-
+      el("vdHandlingSummary").innerHTML = `<div class="vd-no-data">No imported handling.meta profile matches <strong>${escapeHTML(handlingId)}</strong>. Import the correct handling.meta file from the Vehicle Library page, or drop it in below.</div>`;
       return;
     }
 
     const groups = [
       ["Identity & Drivetrain", [
         handlingRow("handlingName", handling.handlingName),
-        handlingEditableRow("AIHandling", "AIHandling"),
-        handlingRow("Drive type", driveType(effectiveHandlingValue("fDriveBiasFront"))),
-        handlingEditableRow("fDriveBiasFront", "Drive bias front"),
-        handlingEditableRow("nInitialDriveGears", "Forward gears"),
+        handlingRow("AIHandling", handling.AIHandling),
+        handlingRow("Drive type", driveType(handling.fDriveBiasFront)),
+        handlingRow("Drive bias front", handling.fDriveBiasFront),
+        handlingRow("Forward gears", handling.nInitialDriveGears),
         handlingRow("Subhandling", (handling.subHandlingTypes || []).join(", "))
       ]],
       ["Power & Speed", [
-        handlingEditableRow("fMass", "Mass (kg)"),
-        handlingEditableRow("fInitialDriveForce", "Drive force"),
-        handlingEditableRow("fDriveInertia", "Drive inertia"),
-        handlingEditableRow("fInitialDriveMaxFlatVel", "Top-gear redline value"),
-        handlingRow("Estimated speed", `${estimatedSpeed(effectiveHandlingValue("fInitialDriveMaxFlatVel"), "mph")} / ${estimatedSpeed(effectiveHandlingValue("fInitialDriveMaxFlatVel"), "kph")}`),
-        handlingEditableRow("fInitialDragCoeff", "Initial drag")
+        handlingRow("Mass (kg)", handling.fMass),
+        handlingRow("Drive force", handling.fInitialDriveForce),
+        handlingRow("Drive inertia", handling.fDriveInertia),
+        handlingRow("Top-gear redline value", handling.fInitialDriveMaxFlatVel),
+        handlingRow("Estimated speed", `${estimatedSpeed(handling.fInitialDriveMaxFlatVel, "mph")} / ${estimatedSpeed(handling.fInitialDriveMaxFlatVel, "kph")}`),
+        handlingRow("Initial drag", handling.fInitialDragCoeff)
       ]],
       ["Braking & Steering", [
-        handlingEditableRow("fBrakeForce", "Brake force"),
-        handlingEditableRow("fBrakeBiasFront", "Brake bias front"),
-        handlingEditableRow("fHandBrakeForce", "Handbrake force"),
-        handlingEditableRow("fSteeringLock", "Steering lock"),
-        handlingEditableRow("fClutchChangeRateScaleUpShift", "Up-shift rate"),
-        handlingEditableRow("fClutchChangeRateScaleDownShift", "Down-shift rate")
+        handlingRow("Brake force", handling.fBrakeForce),
+        handlingRow("Brake bias front", handling.fBrakeBiasFront),
+        handlingRow("Handbrake force", handling.fHandBrakeForce),
+        handlingRow("Steering lock", handling.fSteeringLock),
+        handlingRow("Up-shift rate", handling.fClutchChangeRateScaleUpShift),
+        handlingRow("Down-shift rate", handling.fClutchChangeRateScaleDownShift)
       ]],
       ["Traction", [
-        handlingEditableRow("fTractionCurveMax", "Traction curve max"),
-        handlingEditableRow("fTractionCurveMin", "Traction curve min"),
-        handlingEditableRow("fTractionCurveLateral", "Lateral curve"),
-        handlingEditableRow("fTractionBiasFront", "Traction bias front"),
-        handlingEditableRow("fLowSpeedTractionLossMult", "Low-speed loss"),
-        handlingEditableRow("fTractionLossMult", "Surface loss multiplier")
+        handlingRow("Traction curve max", handling.fTractionCurveMax),
+        handlingRow("Traction curve min", handling.fTractionCurveMin),
+        handlingRow("Lateral curve", handling.fTractionCurveLateral),
+        handlingRow("Traction bias front", handling.fTractionBiasFront),
+        handlingRow("Low-speed loss", handling.fLowSpeedTractionLossMult),
+        handlingRow("Surface loss multiplier", handling.fTractionLossMult)
       ]],
       ["Suspension & Roll", [
-        handlingEditableRow("fSuspensionForce", "Suspension force"),
-        handlingEditableRow("fSuspensionCompDamp", "Compression damping"),
-        handlingEditableRow("fSuspensionReboundDamp", "Rebound damping"),
-        handlingEditableRow("fSuspensionRaise", "Suspension raise"),
-        handlingEditableRow("fAntiRollBarForce", "Anti-roll force"),
-        handlingEditableRow("fRollCentreHeightFront", "Roll center front"),
-        handlingEditableRow("fRollCentreHeightRear", "Roll center rear")
+        handlingRow("Suspension force", handling.fSuspensionForce),
+        handlingRow("Compression damping", handling.fSuspensionCompDamp),
+        handlingRow("Rebound damping", handling.fSuspensionReboundDamp),
+        handlingRow("Suspension raise", handling.fSuspensionRaise),
+        handlingRow("Anti-roll force", handling.fAntiRollBarForce),
+        handlingRow("Roll center front", handling.fRollCentreHeightFront),
+        handlingRow("Roll center rear", handling.fRollCentreHeightRear)
       ]],
       ["Damage", [
-        handlingEditableRow("fCollisionDamageMult", "Collision multiplier"),
-        handlingEditableRow("fWeaponDamageMult", "Weapon multiplier"),
-        handlingEditableRow("fDeformationDamageMult", "Deformation multiplier"),
-        handlingEditableRow("fEngineDamageMult", "Engine multiplier")
+        handlingRow("Collision multiplier", handling.fCollisionDamageMult),
+        handlingRow("Weapon multiplier", handling.fWeaponDamageMult),
+        handlingRow("Deformation multiplier", handling.fDeformationDamageMult),
+        handlingRow("Engine multiplier", handling.fEngineDamageMult)
       ]]
     ];
 
-    const toggle = el("vdHandlingEditToggle");
-    if (toggle) {
-      toggle.disabled = false;
-      toggle.textContent = state.handlingEditMode ? "Done" : "Edit";
-      toggle.classList.toggle("active", state.handlingEditMode);
-    }
-
-    const hint = !state.handlingEditMode
-      ? ""
-      : state.handlingFieldEditsLoggedIn
-        ? `<p class="vd-meta-hint">Editing values here creates your personal override for the <strong>${escapeHTML(handling.handlingName)}</strong> handling profile — it applies to every vehicle that shares this handling.meta entry, just like in-game.</p>`
-        : `<p class="vd-meta-hint">Log in to save your own personal handling overrides. Edits apply to every vehicle sharing this handling profile, and the vanilla data stays untouched for everyone else.</p>`;
-
-    el("vdHandlingSummary").innerHTML = `${hint}<div class="vd-handling-groups">${groups.map(([title, rows]) => `
+    el("vdHandlingSummary").innerHTML = `<div class="vd-handling-groups">${groups.map(([title, rows]) => `
       <div class="vd-handling-group"><h3>${escapeHTML(title)}</h3><div class="vd-handling-list">${rows.join("")}</div></div>
     `).join("")}</div>`;
   }
@@ -1449,7 +1260,6 @@ async function loadVehicle(modelName) {
   await loadPackMemberships(vehicle.modelName);
   await loadAppearanceMetadata(vehicle.modelName);
   await loadFieldEdits(vehicle.modelName);
-  await loadHandlingFieldEdits(state.handling?.handlingName || "");
 
   el("vdPage").hidden = false;
 
@@ -1478,16 +1288,10 @@ async function loadVehicle(modelName) {
 
   function bindEvents() {
     bindVehicleMetaEditHandlers();
-    bindHandlingEditHandlers();
 
     el("vdMetaEditToggle")?.addEventListener("click", () => {
       state.metaEditMode = !state.metaEditMode;
       renderVehicleMeta();
-    });
-
-    el("vdHandlingEditToggle")?.addEventListener("click", () => {
-      state.handlingEditMode = !state.handlingEditMode;
-      renderHandling();
     });
 
     el("vdVehicleSelect").addEventListener("change", event => {

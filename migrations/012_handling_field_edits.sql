@@ -10,7 +10,7 @@
 -- Vanilla handling_profiles rows are never modified by this table — edits
 -- are deltas that merge in at read time, same pattern as vehicle_field_edits.
 
-CREATE TABLE handling_field_edits (
+CREATE TABLE IF NOT EXISTS handling_field_edits (
   id TEXT PRIMARY KEY,
 
   user_id TEXT NOT NULL,
@@ -30,8 +30,8 @@ CREATE TABLE handling_field_edits (
   UNIQUE(user_id, handling_name, field_name)
 );
 
-CREATE INDEX idx_handling_field_edits_user
+CREATE INDEX IF NOT EXISTS idx_handling_field_edits_user
   ON handling_field_edits(user_id);
 
-CREATE INDEX idx_handling_field_edits_lookup
+CREATE INDEX IF NOT EXISTS idx_handling_field_edits_lookup
   ON handling_field_edits(user_id, handling_name);

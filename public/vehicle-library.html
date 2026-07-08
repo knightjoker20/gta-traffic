@@ -37,6 +37,19 @@
   <main class="vehicle-library-main">
     <div class="vl-layout">
       <aside class="vl-sidebar">
+        <div class="vl-sidebar-heading">
+          <button
+            id="vlSidebarCollapseToggle"
+            class="vl-sidebar-collapse-btn"
+            type="button"
+            aria-expanded="true"
+            aria-controls="vlSidebarBody"
+            title="Collapse sidebar"
+          >&#8250;</button>
+          <h2>Library Tools</h2>
+        </div>
+
+        <div id="vlSidebarBody" class="vl-sidebar-body">
         <div id="vlStatus" class="vl-status warn">Opening the local vehicle database...</div>
 
         <section class="panel">
@@ -110,6 +123,9 @@
             <label>AI Handling
               <select id="vlAiFilter"><option value="">All AI profiles</option></select>
             </label>
+            <label>Source Pack
+              <select id="vlPackFilter"><option value="">All packs</option></select>
+            </label>
             <label>Installed Status
               <select id="vlInstalledFilter">
                 <option value="">All vehicles</option>
@@ -145,6 +161,7 @@
           </div>
           <p class="small vl-muted">Records and uploaded images remain in this browser until you clear site data. Export a backup periodically.</p>
         </section>
+        </div>
       </aside>
 
       <section class="panel vl-browser-panel">
@@ -154,6 +171,7 @@
             <p class="vl-muted">Browse every vehicle currently stored in your local database.</p>
           </div>
           <div class="vl-header-actions">
+            <button id="vlBulkPackModeToggle" class="secondary" type="button" title="Select multiple vehicles and assign them all to one Source Pack at once">Bulk Assign Pack</button>
             <button id="vlRandomVehicle" class="btn-orange" type="button">Random Vehicle</button>
           </div>
         </div>
@@ -193,6 +211,7 @@
                 <option value="make-asc">Make A-Z</option>
                 <option value="class-asc">Class A-Z</option>
                 <option value="ai-asc">AI Handling A-Z</option>
+                <option value="pack-asc">Source Pack A-Z</option>
                 <option value="installed-first">Installed First</option>
                 <option value="not-installed-first">Not Installed First</option>
                 <option value="updated-desc">Recently Updated</option>
@@ -242,6 +261,17 @@
       </div>
     </section>
   </main>
+
+  <div id="vlBulkPackBar" class="vl-bulk-pack-bar vl-hidden">
+    <div class="vl-bulk-pack-bar-inner">
+      <span id="vlBulkPackCount">0 selected</span>
+      <input id="vlBulkPackNameInput" type="text" placeholder="Pack name (e.g. Korn Pack)" list="vlBulkPackSuggestions">
+      <datalist id="vlBulkPackSuggestions"></datalist>
+      <button id="vlBulkPackAssign" type="button" class="btn-green">Assign Pack</button>
+      <button id="vlBulkPackClear" type="button" class="vl-compare-clear">Clear Selection</button>
+      <button id="vlBulkPackExit" type="button" class="secondary">Done</button>
+    </div>
+  </div>
 
   <div id="vlCompareTray" class="vl-compare-tray vl-hidden">
     <div class="vl-compare-tray-inner">

@@ -39,11 +39,14 @@ function savePageSize(value) {
     page: 1,
 	pageSize: getSavedPageSize(),
     view: "grid",
+    bulkPackMode: false,
+    bulkSelection: new Set(),
     filters: {
       search: "",
       make: "",
       type: "",
       ai: "",
+      pack: "",
       install: "",
       installed: "",
       favoritesOnly: false,
@@ -1244,22 +1247,48 @@ const importSource =
     return state.handlingMap.get(store.normalizeId(vehicle.vehiclesMeta?.handlingId || "")) || null;
   }
 
+  function getVehiclePack(vehicle) {
+    return String(vehicle.custom?.sourcePack || "").trim();
+  }
+
+  function packCounts() {
+    const counts = new Map();
+    state.vehicles.forEach(vehicle => {
+      const pack = getVehiclePack(vehicle);
+      if (!pack) return;
+      counts.set(pack, (counts.get(pack) || 0) + 1);
+    });
+    return counts;
+  }
+
   function populateFilters() {
     const makes = [...new Set(state.vehicles.map(v => v.vehiclesMeta?.vehicleMakeName).filter(Boolean))].sort();
     const types = [...new Set(state.vehicles.map(v => v.vehiclesMeta?.vehicleType).filter(Boolean))].sort();
     const aiValues = [...new Set(state.vehicles.map(v => linkedHandling(v)?.AIHandling).filter(Boolean))].sort();
+    const packs = [...packCounts().keys()].sort((a, b) => a.localeCompare(b));
     const makeFilter = el("vlMakeFilter");
     const typeFilter = el("vlTypeFilter");
     const aiFilter = el("vlAiFilter");
+    const packFilter = el("vlPackFilter");
     const currentMake = makeFilter.value;
     const currentType = typeFilter.value;
     const currentAi = aiFilter.value;
+    const currentPack = packFilter ? packFilter.value : "";
     makeFilter.innerHTML = `<option value="">All makes</option>${makes.map(value => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`).join("")}`;
     typeFilter.innerHTML = `<option value="">All types</option>${types.map(value => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`).join("")}`;
     aiFilter.innerHTML = `<option value="">All AI profiles</option>${aiValues.map(value => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`).join("")}`;
+    if (packFilter) {
+      packFilter.innerHTML = `<option value="">All packs</option>${packs.map(value => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`).join("")}`;
+    }
     if (makes.includes(currentMake)) makeFilter.value = currentMake;
     if (types.includes(currentType)) typeFilter.value = currentType;
     if (aiValues.includes(currentAi)) aiFilter.value = currentAi;
+    if (packFilter && packs.includes(currentPack)) packFilter.value = currentPack;
+
+    const suggestions = el("vlBulkPackSuggestions");
+    if (suggestions) {
+      suggestions.innerHTML = packs.map(value => `<option value="${escapeHTML(value)}"></option>`).join("");
+    }
   }
 
   function categoryCounts() {
@@ -1399,6 +1428,7 @@ const importSource =
       if (state.filters.make && vehicle.vehiclesMeta?.vehicleMakeName !== state.filters.make) return false;
       if (state.filters.type && vehicle.vehiclesMeta?.vehicleType !== state.filters.type) return false;
       if (state.filters.ai && handling?.AIHandling !== state.filters.ai) return false;
+      if (state.filters.pack && getVehiclePack(vehicle) !== state.filters.pack) return false;
       if (state.filters.install && inferInstallType(vehicle) !== state.filters.install) return false;
       if (state.filters.installed === "installed" && !isInstalled(vehicle)) return false;
       if (state.filters.installed === "not-installed" && isInstalled(vehicle)) return false;
@@ -1414,6 +1444,7 @@ const importSource =
       "make-asc": (a, b) => (a.vehiclesMeta?.vehicleMakeName || "").localeCompare(b.vehiclesMeta?.vehicleMakeName || "") || displayTitle(a).localeCompare(displayTitle(b)),
       "class-asc": (a, b) => (a.vehiclesMeta?.vehicleClass || "").localeCompare(b.vehiclesMeta?.vehicleClass || "") || displayTitle(a).localeCompare(displayTitle(b)),
       "ai-asc": (a, b) => (linkedHandling(a)?.AIHandling || "").localeCompare(linkedHandling(b)?.AIHandling || "") || displayTitle(a).localeCompare(displayTitle(b)),
+      "pack-asc": (a, b) => getVehiclePack(a).localeCompare(getVehiclePack(b)) || displayTitle(a).localeCompare(displayTitle(b)),
       "installed-first": (a, b) => Number(isInstalled(b)) - Number(isInstalled(a)) || displayTitle(a).localeCompare(displayTitle(b)),
       "not-installed-first": (a, b) => Number(isInstalled(a)) - Number(isInstalled(b)) || displayTitle(a).localeCompare(displayTitle(b)),
       "updated-desc": (a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""))
@@ -1591,6 +1622,8 @@ function cardHtml(vehicle) {
   const image = vehicle.custom?.imageDataUrl;
   const classLabel = cleanClassName(vehicle.vehiclesMeta?.vehicleClass);
   const installType = inferInstallType(vehicle);
+  const pack = getVehiclePack(vehicle);
+  const isSelected = state.bulkSelection.has(store.normalizeId(vehicle.modelName));
   const installTypeTag =
     installType !== "Unknown"
       ? `<span class="vl-image-install-tag ${escapeHTML(installTypeClass(installType))}">${escapeHTML(installTypeTagLabel(installType))}</span>`
@@ -1600,7 +1633,7 @@ function cardHtml(vehicle) {
     : `<img data-vl-static-model="${escapeHTML(vehicle.modelName.toLowerCase())}" data-vl-initials="${escapeHTML(initials(title))}" src="images/${encodeURIComponent(vehicle.modelName.toLowerCase())}.jpg" alt="${escapeHTML(title)}">`;
 
   return `
-    <article class="vl-vehicle-card" data-model="${escapeHTML(vehicle.modelName)}">
+    <article class="vl-vehicle-card ${isSelected ? "vl-bulk-selected" : ""}" data-model="${escapeHTML(vehicle.modelName)}">
       <div class="vl-vehicle-card-image">
         <div class="vl-vehicle-photo-wrap">
           ${imageHtml}
@@ -1608,7 +1641,13 @@ function cardHtml(vehicle) {
 
         ${installTypeTag}
 
-        <button class="vl-favorite-button ${vehicle.custom?.favorite ? "active" : ""}" type="button" data-favorite="${escapeHTML(vehicle.modelName)}" title="Toggle favorite">${vehicle.custom?.favorite ? "★" : "☆"}</button>
+        ${state.bulkPackMode ? `
+          <label class="vl-bulk-select-check" title="Select for bulk pack assignment">
+            <input type="checkbox" data-bulk-select="${escapeHTML(vehicle.modelName)}" ${isSelected ? "checked" : ""}>
+          </label>
+        ` : `
+          <button class="vl-favorite-button ${vehicle.custom?.favorite ? "active" : ""}" type="button" data-favorite="${escapeHTML(vehicle.modelName)}" title="Toggle favorite">${vehicle.custom?.favorite ? "★" : "☆"}</button>
+        `}
 
         <div class="vl-card-source-dots">
           <span class="vl-source-dot ${vehicle.vehiclesMeta?.modelName ? "ready" : ""}">META</span>
@@ -1630,6 +1669,7 @@ function cardHtml(vehicle) {
           ${handling?.AIHandling ? `<span class="vl-badge ai">${escapeHTML(handling.AIHandling)}</span>` : ""}
           ${isInstalled(vehicle) ? `<span class="vl-badge installed-status">INSTALLED</span>` : ""}
           ${installType !== "Unknown" ? `<span class="vl-badge install">${escapeHTML(installType)}</span>` : ""}
+          ${pack ? `<span class="vl-badge pack" title="Source Pack">${escapeHTML(pack)}</span>` : ""}
         </div>
 
         <div class="vl-card-actions">
@@ -1644,6 +1684,88 @@ function cardHtml(vehicle) {
     </article>
   `;
 }
+
+  // ── Bulk Assign Pack ──────────────────────────────────────────────
+
+  function toggleBulkPackMode() {
+    state.bulkPackMode = !state.bulkPackMode;
+    if (!state.bulkPackMode) {
+      state.bulkSelection.clear();
+    }
+
+    const toggleButton = el("vlBulkPackModeToggle");
+    if (toggleButton) {
+      toggleButton.classList.toggle("active", state.bulkPackMode);
+      toggleButton.textContent = state.bulkPackMode ? "Exit Bulk Assign" : "Bulk Assign Pack";
+    }
+
+    renderGrid();
+  }
+
+  function toggleBulkSelect(modelName) {
+    const id = store.normalizeId(modelName);
+    if (state.bulkSelection.has(id)) {
+      state.bulkSelection.delete(id);
+    } else {
+      state.bulkSelection.add(id);
+    }
+    renderBulkPackBar();
+  }
+
+  function clearBulkSelection() {
+    state.bulkSelection.clear();
+    renderGrid();
+  }
+
+  function getBulkSelectedVehicles() {
+    return state.vehicles.filter(vehicle => state.bulkSelection.has(store.normalizeId(vehicle.modelName)));
+  }
+
+  async function assignPackToSelection(packName) {
+    const cleanName = String(packName || "").trim();
+    if (!cleanName) {
+      setStatus("Enter a pack name before assigning it.", "warn");
+      return;
+    }
+
+    const vehicles = getBulkSelectedVehicles();
+    if (!vehicles.length) {
+      setStatus("Select at least one vehicle first.", "warn");
+      return;
+    }
+
+    const updated = vehicles.map(vehicle => ({
+      ...vehicle,
+      custom: { ...vehicle.custom, sourcePack: cleanName },
+      updatedAt: new Date().toISOString()
+    }));
+
+    await store.putVehicles(updated);
+
+    updated.forEach(vehicle => {
+      const index = state.vehicles.findIndex(candidate => candidate.id === vehicle.id);
+      if (index >= 0) state.vehicles[index] = vehicle;
+    });
+
+    setStatus(`Assigned "${cleanName}" to ${updated.length} vehicle${updated.length === 1 ? "" : "s"}.`, "good");
+
+    state.bulkSelection.clear();
+    populateFilters();
+    renderAll();
+  }
+
+  function renderBulkPackBar() {
+    const bar = el("vlBulkPackBar");
+    const countLabel = el("vlBulkPackCount");
+    if (!bar || !countLabel) return;
+
+    const count = state.bulkSelection.size;
+    bar.classList.toggle("vl-hidden", !state.bulkPackMode);
+    countLabel.textContent = `${count.toLocaleString()} selected`;
+
+    const assignButton = el("vlBulkPackAssign");
+    if (assignButton) assignButton.disabled = count === 0;
+  }
 
   // ── Compare Vehicles ──────────────────────────────────────────────
 
@@ -2013,8 +2135,19 @@ grid.querySelectorAll(
   });
 });
 
+grid.querySelectorAll(
+  "[data-bulk-select]"
+).forEach(checkbox => {
+  checkbox.addEventListener("change", event => {
+    event.stopPropagation();
+    toggleBulkSelect(checkbox.dataset.bulkSelect);
+    checkbox.closest(".vl-vehicle-card")?.classList.toggle("vl-bulk-selected", checkbox.checked);
+  });
+});
+
     renderPagination(totalPages);
     renderCompareTray();
+    renderBulkPackBar();
   }
 
   function renderPagination(totalPages) {
@@ -2062,7 +2195,43 @@ grid.querySelectorAll(
     URL.revokeObjectURL(url);
   }
 
+  const VL_SIDEBAR_COLLAPSE_STORAGE_KEY = "vlSidebarExpanded";
+
+  function setSidebarCollapsed(collapsed) {
+    const sidebar = document.querySelector(".vl-sidebar");
+    const layout = document.querySelector(".vl-layout");
+    const toggle = el("vlSidebarCollapseToggle");
+
+    sidebar?.classList.toggle("vl-sidebar-collapsed", collapsed);
+    layout?.classList.toggle("vl-sidebar-collapsed", collapsed);
+
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+    }
+  }
+
+  function initSidebarCollapse() {
+    const toggle = el("vlSidebarCollapseToggle");
+    if (!toggle) return;
+
+    // Collapsed by default; remembers the user's choice after that -
+    // same behavior as the Vehicle Library panel on popgroups.html
+    // and the Schedules sidebar on popcycle.html.
+    const savedExpanded = localStorage.getItem(VL_SIDEBAR_COLLAPSE_STORAGE_KEY);
+    setSidebarCollapsed(savedExpanded !== "true");
+
+    toggle.addEventListener("click", () => {
+      const sidebar = document.querySelector(".vl-sidebar");
+      const isCollapsed = sidebar?.classList.contains("vl-sidebar-collapsed");
+      setSidebarCollapsed(!isCollapsed);
+      localStorage.setItem(VL_SIDEBAR_COLLAPSE_STORAGE_KEY, String(isCollapsed));
+    });
+  }
+
   function bindEvents() {
+    initSidebarCollapse();
+
     document.querySelectorAll("[data-pick]").forEach(button => {
       button.addEventListener("click", () => el(button.dataset.pick).click());
     });
@@ -2121,6 +2290,11 @@ grid.querySelectorAll(
     });
     el("vlAiFilter").addEventListener("change", event => {
       state.filters.ai = event.target.value;
+      state.page = 1;
+      renderGrid();
+    });
+    el("vlPackFilter")?.addEventListener("change", event => {
+      state.filters.pack = event.target.value;
       state.page = 1;
       renderGrid();
     });
@@ -2207,6 +2381,16 @@ if (pageSizeSelect) {
       await store.clearAll();
       await reloadData();
       setStatus("The Vehicle Library database has been cleared.", "warn");
+    });
+
+    el("vlBulkPackModeToggle")?.addEventListener("click", toggleBulkPackMode);
+    el("vlBulkPackAssign")?.addEventListener("click", () => {
+      assignPackToSelection(el("vlBulkPackNameInput").value);
+      el("vlBulkPackNameInput").value = "";
+    });
+    el("vlBulkPackClear")?.addEventListener("click", clearBulkSelection);
+    el("vlBulkPackExit")?.addEventListener("click", () => {
+      if (state.bulkPackMode) toggleBulkPackMode();
     });
 
     el("vlCompareClear")?.addEventListener("click", () => {

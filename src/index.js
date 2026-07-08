@@ -3306,6 +3306,13 @@ async function handleVehicleImageBulkImport(request, env) {
   });
 }
 
+// Free-account level gate: any logged-in user (or a script holding
+// LIBRARY_WRITE_TOKEN) may import/patch their own catalog data into the
+// shared vehicles/handling tables. This is intentional — cataloging vehicles
+// is the core free-tier feature. Actions that affect other users' accounts,
+// the site itself, or permanently delete shared records use
+// requireAdminSession() instead — see handleVehicleDelete and the
+// handleAdmin* handlers.
 async function checkLibraryWriteAuthorization(request, env) {
   // Accept explicit library write token (for scripts / admin tools)
   const suppliedToken = request.headers.get("x-library-token") || "";
@@ -3595,9 +3602,15 @@ function normalizeEditValue(value) {
   return String(value).trim();
 }
 
+// Admin-only: this permanently deletes a vehicle from the single shared
+// library table (there is no per-user ownership on `vehicles`, so any account
+// that could reach this before could delete anyone's shared data). Importing/
+// patching your own catalog data stays free-account level via
+// checkLibraryWriteAuthorization below; only whole-record deletion is gated
+// to admin/owner.
 async function handleVehicleDelete(request, env, requestedModelName) {
-  const authError = await checkLibraryWriteAuthorization(request, env);
-  if (authError) return authError;
+  const { auth, gate } = await requireAdminSession(request, env);
+  if (gate) return gate;
 
   const modelName = String(requestedModelName || "").trim();
   if (!/^[a-zA-Z0-9_-]{1,100}$/.test(modelName)) {
@@ -3610,6 +3623,14 @@ async function handleVehicleDelete(request, env, requestedModelName) {
     env.DB.prepare(`DELETE FROM vehicle_popgroups WHERE vehicle_id = ? COLLATE NOCASE`).bind(modelName),
     env.DB.prepare(`DELETE FROM vehicle_field_edits WHERE model_name = ? COLLATE NOCASE`).bind(modelName),
   ]);
+
+  await writeAdminAuditLog(env, {
+    actorUserId: auth.user.id,
+    actorLabel: auth.user.email,
+    action: "admin.vehicle.delete",
+    entityType: "vehicle",
+    entityId: modelName
+  });
 
   return jsonResponse({ ok: true, deleted: modelName });
 }
@@ -3948,12 +3969,8 @@ async function countAdminTableRows(env, tableName) {
 }
 
 async function handleAdminSummary(request, env) {
-  const authorizationError =
-    await checkLibraryWriteAuthorization(request, env);
-
-  if (authorizationError) {
-    return authorizationError;
-  }
+  const { gate } = await requireAdminSession(request, env);
+  if (gate) return gate;
 
   const [
     users,
@@ -4062,12 +4079,8 @@ async function writeAdminAuditLog(env, entry = {}) {
 }
 
 async function handleAdminUserList(request, env) {
-  const authorizationError =
-    await checkLibraryWriteAuthorization(request, env);
-
-  if (authorizationError) {
-    return authorizationError;
-  }
+  const { gate } = await requireAdminSession(request, env);
+  if (gate) return gate;
 
   const url = new URL(request.url);
   const query = String(url.searchParams.get("query") || "").trim();
@@ -4111,12 +4124,8 @@ async function handleAdminUserList(request, env) {
 }
 
 async function handleAdminUserCreate(request, env) {
-  const authorizationError =
-    await checkLibraryWriteAuthorization(request, env);
-
-  if (authorizationError) {
-    return authorizationError;
-  }
+  const { auth, gate } = await requireAdminSession(request, env);
+  if (gate) return gate;
 
   let body;
 
@@ -4218,6 +4227,15 @@ async function handleAdminUserCreate(request, env) {
       WHERE id = ?
     `).bind(id).first();
 
+  await writeAdminAuditLog(env, {
+    actorUserId: auth.user.id,
+    actorLabel: auth.user.email,
+    action: "admin.user.create",
+    entityType: "user",
+    entityId: id,
+    details: { created: normalizeAdminUserRow(row) }
+  });
+
   return jsonResponse(
     {
       ok: true,
@@ -4229,12 +4247,8 @@ async function handleAdminUserCreate(request, env) {
 
 
 async function handleAdminUserUpdate(request, env, userId) {
-  const authorizationError =
-    await checkLibraryWriteAuthorization(request, env);
-
-  if (authorizationError) {
-    return authorizationError;
-  }
+  const { auth, gate } = await requireAdminSession(request, env);
+  if (gate) return gate;
 
   const existing =
     await env.DB.prepare(`
@@ -4351,6 +4365,8 @@ async function handleAdminUserUpdate(request, env, userId) {
     `).bind(userId).first();
 
   await writeAdminAuditLog(env, {
+    actorUserId: auth.user.id,
+    actorLabel: auth.user.email,
     action: "admin.user.update",
     entityType: "user",
     entityId: userId,
@@ -4426,12 +4442,8 @@ async function runAdminSelectAll(env, sql, bindings = []) {
 }
 
 async function handleAdminWorkspaceList(request, env) {
-  const authorizationError =
-    await checkLibraryWriteAuthorization(request, env);
-
-  if (authorizationError) {
-    return authorizationError;
-  }
+  const { gate } = await requireAdminSession(request, env);
+  if (gate) return gate;
 
   const rows = await runAdminSelectAll(env, `
     SELECT
@@ -4461,12 +4473,8 @@ async function handleAdminWorkspaceList(request, env) {
 }
 
 async function handleAdminWorkspaceMemberList(request, env) {
-  const authorizationError =
-    await checkLibraryWriteAuthorization(request, env);
-
-  if (authorizationError) {
-    return authorizationError;
-  }
+  const { gate } = await requireAdminSession(request, env);
+  if (gate) return gate;
 
   const url = new URL(request.url);
   const workspaceId =
@@ -4564,12 +4572,8 @@ async function getAdminWorkspaceMember(env, workspaceId, userId) {
 }
 
 async function handleAdminWorkspaceMemberUpsert(request, env) {
-  const authorizationError =
-    await checkLibraryWriteAuthorization(request, env);
-
-  if (authorizationError) {
-    return authorizationError;
-  }
+  const { auth, gate } = await requireAdminSession(request, env);
+  if (gate) return gate;
 
   let body;
 
@@ -4679,6 +4683,8 @@ async function handleAdminWorkspaceMemberUpsert(request, env) {
   );
 
   await writeAdminAuditLog(env, {
+    actorUserId: auth.user.id,
+    actorLabel: auth.user.email,
     action: "admin.workspace_member.upsert",
     entityType: "workspace_member",
     entityId: workspaceId + ":" + userId,
@@ -4845,6 +4851,31 @@ function buildSessionCookie(token, expiresAt) {
 function buildExpiredSessionCookie() {
   return [
     AUTH_SESSION_COOKIE_NAME + "=",
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+  ].join("; ");
+}
+
+const OAUTH_STATE_COOKIE_NAME = "gta_traffic_oauth_state";
+
+function buildOauthStateCookie(state) {
+  const expires = new Date(Date.now() + 5 * 60 * 1000);
+  return [
+    OAUTH_STATE_COOKIE_NAME + "=" + state,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+    "Expires=" + expires.toUTCString()
+  ].join("; ");
+}
+
+function buildExpiredOauthStateCookie() {
+  return [
+    OAUTH_STATE_COOKIE_NAME + "=",
     "Path=/",
     "HttpOnly",
     "Secure",
@@ -5273,6 +5304,197 @@ async function handleAuthLogout(request, env) {
 }
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Google sign-in
+// Redirect-based OAuth 2.0 flow (no client library needed on Workers):
+//  1. /api/auth/google/start builds the Google consent URL, stashes a random
+//     state value in a short-lived cookie, and redirects the browser there.
+//  2. Google redirects back to /api/auth/google/callback with a code + the
+//     same state. We check the state against the cookie (CSRF protection),
+//     trade the code for tokens server-to-server, and call Google's userinfo
+//     endpoint with the access token to get a verified email + profile.
+//  3. find-or-create a `users` row by verified email, link a
+//     user_oauth_identities row, then reuse createAuthSession() exactly like
+//     password login does — Google is just another way to end up with a
+//     valid session cookie.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function googleRedirectUri(url) {
+  return url.origin + "/api/auth/google/callback";
+}
+
+async function handleGoogleAuthStart(request, env) {
+  if (!env.GOOGLE_CLIENT_ID) {
+    return jsonAuthResponse(
+      { ok: false, error: "Google sign-in is not configured on this Worker." },
+      { status: 503 }
+    );
+  }
+
+  const url = new URL(request.url);
+  const state = randomTokenBase64Url(24);
+
+  const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  authUrl.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
+  authUrl.searchParams.set("redirect_uri", googleRedirectUri(url));
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("scope", "openid email profile");
+  authUrl.searchParams.set("state", state);
+  authUrl.searchParams.set("prompt", "select_account");
+
+  const headers = new Headers();
+  headers.set("Location", authUrl.toString());
+  headers.append("Set-Cookie", buildOauthStateCookie(state));
+
+  return new Response(null, { status: 302, headers });
+}
+
+async function findOrCreateUserForGoogle(env, { sub, email, displayName }) {
+  const identity = await env.DB.prepare(`
+    SELECT user_id FROM user_oauth_identities
+    WHERE provider = 'google' AND provider_user_id = ?
+  `).bind(sub).first();
+
+  if (identity) {
+    return identity.user_id;
+  }
+
+  const existingUser = await env.DB.prepare(`
+    SELECT id FROM users WHERE email = ?
+  `).bind(email).first();
+
+  if (existingUser) {
+    await env.DB.prepare(`
+      INSERT INTO user_oauth_identities (id, user_id, provider, provider_user_id, email)
+      VALUES (?, ?, 'google', ?, ?)
+    `).bind("oauth:" + crypto.randomUUID(), existingUser.id, sub, email).run();
+
+    return existingUser.id;
+  }
+
+  const userId = "user:" + crypto.randomUUID();
+  const workspaceId = "workspace:" + crypto.randomUUID();
+  const workspaceName = displayName + "'s Workspace";
+
+  await env.DB.batch([
+    env.DB.prepare(`
+      INSERT INTO users (id, email, display_name, role, plan, status, notes)
+      VALUES (?, ?, ?, 'free_user', 'free', 'active', 'Signed up with Google.')
+    `).bind(userId, email, displayName),
+
+    env.DB.prepare(`
+      INSERT INTO user_oauth_identities (id, user_id, provider, provider_user_id, email)
+      VALUES (?, ?, 'google', ?, ?)
+    `).bind("oauth:" + crypto.randomUUID(), userId, sub, email),
+
+    env.DB.prepare(`
+      INSERT INTO workspaces (id, owner_user_id, name)
+      VALUES (?, ?, ?)
+    `).bind(workspaceId, userId, workspaceName),
+
+    env.DB.prepare(`
+      INSERT INTO workspace_members (workspace_id, user_id, role, status)
+      VALUES (?, ?, 'owner', 'active')
+    `).bind(workspaceId, userId)
+  ]);
+
+  return userId;
+}
+
+async function handleGoogleAuthCallback(request, env) {
+  const url = new URL(request.url);
+  const loginUrl = url.origin + "/login.html";
+
+  if (url.searchParams.get("error")) {
+    return Response.redirect(loginUrl + "?error=google_denied", 302);
+  }
+
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const cookieState = getCookieValue(request, OAUTH_STATE_COOKIE_NAME);
+
+  if (!code || !state || !cookieState || state !== cookieState) {
+    return Response.redirect(loginUrl + "?error=google_state", 302);
+  }
+
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return Response.redirect(loginUrl + "?error=google_not_configured", 302);
+  }
+
+  let tokenPayload;
+  try {
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_CLIENT_ID,
+        client_secret: env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: googleRedirectUri(url),
+        grant_type: "authorization_code"
+      })
+    });
+
+    tokenPayload = await tokenResponse.json();
+
+    if (!tokenResponse.ok || !tokenPayload.access_token) {
+      throw new Error(tokenPayload.error_description || tokenPayload.error || "Token exchange failed");
+    }
+  } catch (error) {
+    console.error("Google token exchange failed:", error?.message || error);
+    return Response.redirect(loginUrl + "?error=google_token", 302);
+  }
+
+  let profile;
+  try {
+    const profileResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: "Bearer " + tokenPayload.access_token }
+    });
+
+    profile = await profileResponse.json();
+
+    if (!profileResponse.ok || !profile.sub) {
+      throw new Error("Could not load Google profile");
+    }
+  } catch (error) {
+    console.error("Google profile lookup failed:", error?.message || error);
+    return Response.redirect(loginUrl + "?error=google_profile", 302);
+  }
+
+  if (profile.email_verified === false) {
+    return Response.redirect(loginUrl + "?error=google_unverified_email", 302);
+  }
+
+  const email = normalizeAuthEmail(profile.email);
+
+  if (!isValidAuthEmail(email)) {
+    return Response.redirect(loginUrl + "?error=google_email", 302);
+  }
+
+  const userId = await findOrCreateUserForGoogle(env, {
+    sub: profile.sub,
+    email,
+    displayName: normalizeAuthDisplayName(profile.name, email)
+  });
+
+  const activeUser = await env.DB.prepare(`
+    SELECT status FROM users WHERE id = ?
+  `).bind(userId).first();
+
+  if (!activeUser || activeUser.status !== "active") {
+    return Response.redirect(loginUrl + "?error=account_disabled", 302);
+  }
+
+  const session = await createAuthSession(env, userId, request);
+
+  const headers = new Headers();
+  headers.set("Location", url.origin + "/dashboard.html");
+  headers.append("Set-Cookie", buildSessionCookie(session.token, session.expiresAt));
+  headers.append("Set-Cookie", buildExpiredOauthStateCookie());
+
+  return new Response(null, { status: 302, headers });
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Raw Meta File Cloud Storage  (vehicles.meta, handling.meta, etc. → R2)
@@ -5491,6 +5713,20 @@ export default {
         url.pathname === "/api/auth/me"
       ) {
         return await handleAuthMe(request, env);
+      }
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/auth/google/start"
+      ) {
+        return await handleGoogleAuthStart(request, env);
+      }
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/auth/google/callback"
+      ) {
+        return await handleGoogleAuthCallback(request, env);
       }
 
       if (
@@ -7108,6 +7344,20 @@ function requirePremium(auth) {
              ["admin", "owner", "moderator"].includes(auth.user.role);
   if (!ok) return jsonResponse({ ok: false, error: "Premium subscription required" }, 403);
   return null;
+}
+
+// Admin/owner-only gate. Distinct from checkLibraryWriteAuthorization, which
+// only checks "is anyone logged in" and is intentionally used for free-account
+// level library contributions (importing/patching a vehicle record). This gate
+// is for actions that affect other users' accounts or the whole site: user
+// management, workspace administration, admin summaries, and deleting shared
+// library records outright.
+async function requireAdminSession(request, env) {
+  const auth = await getCurrentAuthSession(request, env);
+  if (!auth) return { auth: null, gate: jsonResponse({ ok: false, error: "Authentication required" }, 401) };
+  const ok = ["admin", "owner"].includes(auth.user.role);
+  if (!ok) return { auth, gate: jsonResponse({ ok: false, error: "Admin access required" }, 403) };
+  return { auth, gate: null };
 }
 
 function createPackId() {
