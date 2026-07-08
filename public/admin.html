@@ -106,54 +106,77 @@
       </div>
     </section>
 
-    <section id="adminExistingUserPanel" class="admin-panel">
-      <div class="section-heading">
-        <div>
-          <h2>Update Existing User</h2>
-          <p>Search for a user, load their record, then update role, plan, status, or notes.</p>
+    <!-- User edit/activity drawer (replaces separate Update Existing User panel) -->
+    <div id="userDrawerOverlay" class="user-drawer-overlay" hidden>
+      <div id="userDrawer" class="user-drawer" role="dialog" aria-label="User details">
+        <div class="drawer-header">
+          <div class="drawer-user-info">
+            <div id="drawerAvatar" class="drawer-avatar">?</div>
+            <div>
+              <div id="drawerUserName" class="drawer-user-name"></div>
+              <div id="drawerUserEmail" class="drawer-user-email"></div>
+            </div>
+          </div>
+          <button id="drawerCloseBtn" class="drawer-close" aria-label="Close drawer">✕</button>
+        </div>
+
+        <div class="drawer-tabs">
+          <button class="drawer-tab active" data-tab="edit">Edit user</button>
+          <button class="drawer-tab" data-tab="activity">Activity</button>
+        </div>
+
+        <div id="drawerTabEdit" class="drawer-tab-panel">
+          <input type="hidden" id="drawerUserId">
+          <div class="drawer-field-group">
+            <label>Display name</label>
+            <input id="drawerDisplayName" type="text" placeholder="Display name">
+          </div>
+          <div class="drawer-field-group">
+            <label>Role</label>
+            <select id="drawerRole">
+              <option value="free_user">free_user</option>
+              <option value="premium_user">premium_user</option>
+              <option value="moderator">moderator</option>
+              <option value="admin">admin</option>
+              <option value="owner">owner</option>
+            </select>
+          </div>
+          <div class="drawer-field-group">
+            <label>Plan</label>
+            <select id="drawerPlan">
+              <option value="free">free</option>
+              <option value="premium">premium</option>
+              <option value="admin">admin</option>
+            </select>
+          </div>
+          <div class="drawer-field-group">
+            <label>Status</label>
+            <select id="drawerStatus">
+              <option value="active">active</option>
+              <option value="pending">pending</option>
+              <option value="disabled">disabled</option>
+            </select>
+          </div>
+          <div class="drawer-field-group">
+            <label>Notes</label>
+            <input id="drawerNotes" type="text" placeholder="Notes">
+          </div>
+          <div id="drawerEditStatus" class="drawer-edit-status"></div>
+          <div class="drawer-actions">
+            <button id="drawerSaveBtn">Save changes</button>
+            <button id="drawerDisableBtn" class="secondary danger-btn">Disable user</button>
+          </div>
+        </div>
+
+        <div id="drawerTabActivity" class="drawer-tab-panel" hidden>
+          <div id="drawerActivityStats" class="drawer-activity-stats">
+            <div class="drawer-stat-card"><div class="val">—</div><div class="lbl">Sessions</div></div>
+            <div class="drawer-stat-card"><div class="val">—</div><div class="lbl">Saved projects</div></div>
+          </div>
+          <div id="drawerActivityFeed" class="drawer-activity-feed"></div>
         </div>
       </div>
-
-      <div class="admin-actions">
-        <input id="existingUserLookupInput" class="admin-small-input" placeholder="Search email or name...">
-        <button id="findExistingUserBtn" class="secondary">Find User</button>
-        <button id="clearExistingUserEditBtn" class="secondary">Clear</button>
-        <span id="existingUserEditStatus" class="inline-status">No user loaded.</span>
-      </div>
-
-      <div class="admin-form-grid existing-user-edit-grid">
-        <input id="existingUserIdInput" placeholder="User ID" readonly>
-        <input id="existingUserEmailInput" placeholder="Email" readonly>
-        <input id="existingUserDisplayNameInput" placeholder="Display name">
-
-        <select id="existingUserRoleInput">
-          <option value="free_user">free_user</option>
-          <option value="premium_user">premium_user</option>
-          <option value="moderator">moderator</option>
-          <option value="admin">admin</option>
-          <option value="owner">owner</option>
-        </select>
-
-        <select id="existingUserPlanInput">
-          <option value="free">free</option>
-          <option value="premium">premium</option>
-          <option value="admin">admin</option>
-        </select>
-
-        <select id="existingUserStatusInput">
-          <option value="active">active</option>
-          <option value="pending">pending</option>
-          <option value="disabled">disabled</option>
-        </select>
-
-        <input id="existingUserNotesInput" placeholder="Notes">
-      </div>
-
-      <div class="admin-actions">
-        <button id="saveExistingUserBtn">Save Existing User</button>
-        <button id="disableExistingUserBtn" class="secondary danger-btn">Disable User</button>
-      </div>
-    </section>
+    </div>
 
     <section id="adminWorkspaceMembershipPanel" class="admin-panel">
       <div class="section-heading">
@@ -268,44 +291,4 @@
 
       <article class="admin-card">
         <h3>Import Jobs</h3>
-        <p>Preview, validate, and apply uploaded data safely.</p>
-        <ul>
-          <li>Upload source file</li>
-          <li>Dry run import</li>
-          <li>Review warnings</li>
-          <li>Apply import</li>
-        </ul>
-        <button disabled>Coming next</button>
-      </article>
-
-      <article class="admin-card">
-        <h3>Database Tools</h3>
-        <p>Run safe maintenance tools without raw SQL at first.</p>
-        <ul>
-          <li>Table counts</li>
-          <li>Find orphan records</li>
-          <li>Find duplicate packs</li>
-          <li>Export backup</li>
-        </ul>
-        <button disabled>Coming next</button>
-      </article>
-
-      <article class="admin-card">
-        <h3>Audit Log</h3>
-        <p>Track important admin changes for safety and troubleshooting.</p>
-        <ul>
-          <li>Recent admin actions</li>
-          <li>Changed entity</li>
-          <li>Actor / timestamp</li>
-          <li>Details JSON</li>
-        </ul>
-        <button disabled>Coming next</button>
-      </article>
-    </section>
-  </main>
-
-  <script src="js/admin.js"></script>
-  <script src="/js/bulk-photo-importer.js"></script>
-  <script src="/js/shared/siteheader.js"></script>
-</body>
-</html>
+        <p>Preview, validate, and apply 

@@ -417,23 +417,19 @@ input[readonly] {
 }
 
 
-/* Workspace membership admin panel */
-.workspace-membership-grid {
-  grid-template-columns: 1.6fr 2fr 1fr 1fr auto;
+/* ── User drawer ──────────────────────────────────────── */
+
+.user-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.workspace-membership-table {
-  min-width: 1100px;
-}
+.user-drawer-overlay[hidden] { display: none; }
 
-@media (max-width: 1200px) {
-  .workspace-membership-grid {
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
-  }
-}
-
-@media (max-width: 720px) {
-  .workspace-membership-grid {
-    grid-template-columns: 1fr;
-  }
-}
+.user-drawer {
+  background: var(--panel);
+  

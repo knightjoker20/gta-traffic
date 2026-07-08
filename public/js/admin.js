@@ -94,14 +94,43 @@ function setUsersStatus(message, tone = "") {
   els.usersStatus.className = "inline-status" + (tone ? " " + tone : "");
 }
 
+// ── User cache for drawer lookups ───────────────────────
+let _adminUsersCache = {};
+
+function formatTimeAgo(dateStr) {
+  if (!dateStr) return "never";
+  const date = new Date(dateStr);
+  if (isNaN(date)) return String(dateStr);
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return diffMin + "m ago";
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return diffH + "h ago";
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 30) return diffD + "d ago";
+  return date.toLocaleDateString();
+}
+
+function isRecentlyOnline(dateStr) {
+  if (!dateStr) return false;
+  return Date.now() - new Date(dateStr).getTime() < 15 * 60 * 1000;
+}
+
+function getAvatarInitial(user) {
+  if (user.displayName && user.displayName.trim()) return user.displayName.trim()[0].toUpperCase();
+  if (user.email) return user.email[0].toUpperCase();
+  return "?";
+}
+
 function renderAdminUsers(users = []) {
-  if (!els.usersList) {
-    return;
-  }
+  if (!els.usersList) return;
+
+  _adminUsersCache = {};
+  users.forEach(u => { _adminUsersCache[u.id] = u; });
 
   if (!users.length) {
-    els.usersList.innerHTML =
-      '<div class="empty-state">No users found.</div>';
+    els.usersList.innerHTML = '<div class="empty-state">No users found.</div>';
     return;
   }
 
@@ -109,27 +138,42 @@ function renderAdminUsers(users = []) {
     <table class="admin-table">
       <thead>
         <tr>
+          <th></th>
           <th>Email</th>
           <th>Name</th>
           <th>Role</th>
           <th>Plan</th>
           <th>Status</th>
-          <th>Created</th>
-          <th>Notes</th>
+          <th>Last seen</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
-        ${users.map(user => `
-          <tr>
-            <td>${escapeHTML(user.email)}</td>
-            <td>${escapeHTML(user.displayName || "�")}</td>
-            <td><span class="pill">${escapeHTML(user.role)}</span></td>
-            <td><span class="pill">${escapeHTML(user.plan)}</span></td>
-            <td><span class="pill status-${escapeHTML(user.status)}">${escapeHTML(user.status)}</span></td>
-            <td>${escapeHTML(user.createdAt || "�")}</td>
-            <td>${escapeHTML(user.notes || "")}</td>
-          </tr>
-        `).join("")}
+        ${users.map(user => {
+          const online = isRecentlyOnline(user.lastLoginAt);
+          const safeId = escapeHTML(user.id);
+          return `
+            <tr>
+              <td style="width:28px">
+                <span class="user-online-dot ${online ? "online" : "offline"}"
+                  title="${online ? "Active in last 15 min" : "Offline"}"></span>
+              </td>
+              <td>${escapeHTML(user.email)}</td>
+              <td>${escapeHTML(user.displayName || "\u2014")}</td>
+              <td><span class="pill">${escapeHTML(user.role)}</span></td>
+              <td><span class="pill">${escapeHTML(user.plan)}</span></td>
+              <td><span class="pill status-${escapeHTML(user.status)}">${escapeHTML(user.status)}</span></td>
+              <td>${escapeHTML(formatTimeAgo(user.lastLoginAt))}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn-row-action accent"
+                    onclick="openDrawerById('${safeId}','edit')">Edit</button>
+                  <button class="btn-row-action"
+                    onclick="openDrawerById('${safeId}','activity')">Activity</button>
+                </div>
+              </td>
+            </tr>`;
+        }).join("")}
       </tbody>
     </table>
   `;
@@ -248,199 +292,6 @@ function renderSummary(summary = {}) {
   ].join("");
 }
 
-function getExistingUserEditFields() {
-  return {
-    lookup: document.getElementById("existingUserLookupInput"),
-    id: document.getElementById("existingUserIdInput"),
-    email: document.getElementById("existingUserEmailInput"),
-    displayName: document.getElementById("existingUserDisplayNameInput"),
-    role: document.getElementById("existingUserRoleInput"),
-    plan: document.getElementById("existingUserPlanInput"),
-    status: document.getElementById("existingUserStatusInput"),
-    notes: document.getElementById("existingUserNotesInput"),
-    statusText: document.getElementById("existingUserEditStatus"),
-    findBtn: document.getElementById("findExistingUserBtn"),
-    saveBtn: document.getElementById("saveExistingUserBtn"),
-    disableBtn: document.getElementById("disableExistingUserBtn"),
-    clearBtn: document.getElementById("clearExistingUserEditBtn")
-  };
-}
-
-function setExistingUserEditStatus(message, tone = "") {
-  const fields = getExistingUserEditFields();
-
-  if (!fields.statusText) {
-    return;
-  }
-
-  fields.statusText.textContent = message;
-  fields.statusText.className = "inline-status" + (tone ? " " + tone : "");
-}
-
-function clearExistingUserEditForm() {
-  const fields = getExistingUserEditFields();
-
-  if (fields.lookup) fields.lookup.value = "";
-  if (fields.id) fields.id.value = "";
-  if (fields.email) fields.email.value = "";
-  if (fields.displayName) fields.displayName.value = "";
-  if (fields.role) fields.role.value = "free_user";
-  if (fields.plan) fields.plan.value = "free";
-  if (fields.status) fields.status.value = "active";
-  if (fields.notes) fields.notes.value = "";
-
-  setExistingUserEditStatus("No user loaded.");
-}
-
-function fillExistingUserEditForm(user) {
-  const fields = getExistingUserEditFields();
-
-  if (fields.id) fields.id.value = user.id || "";
-  if (fields.email) fields.email.value = user.email || "";
-  if (fields.displayName) fields.displayName.value = user.displayName || "";
-  if (fields.role) fields.role.value = user.role || "free_user";
-  if (fields.plan) fields.plan.value = user.plan || "free";
-  if (fields.status) fields.status.value = user.status || "active";
-  if (fields.notes) fields.notes.value = user.notes || "";
-
-  setExistingUserEditStatus("Loaded user: " + user.email, "good");
-}
-
-function getExistingUserEditBody() {
-  const fields = getExistingUserEditFields();
-
-  return {
-    displayName: fields.displayName?.value?.trim() || "",
-    role: fields.role?.value || "free_user",
-    plan: fields.plan?.value || "free",
-    status: fields.status?.value || "active",
-    notes: fields.notes?.value?.trim() || ""
-  };
-}
-
-async function findExistingUserForEdit() {
-  if (!getAdminToken()) {
-    setExistingUserEditStatus("Admin token required before finding users.", "warning");
-    return;
-  }
-
-  const fields = getExistingUserEditFields();
-  const query = fields.lookup?.value?.trim() || "";
-
-  if (!query) {
-    setExistingUserEditStatus("Enter an email or name to search.", "warning");
-    return;
-  }
-
-  setExistingUserEditStatus("Finding user...");
-
-  try {
-    const response = await fetch(
-      "/api/admin/users?query=" + encodeURIComponent(query),
-      {
-        headers: getAdminHeaders()
-      }
-    );
-
-    const payload = await response.json().catch(() => ({}));
-
-    if (!response.ok || payload.ok === false) {
-      throw new Error(payload.error || `HTTP ${response.status}`);
-    }
-
-    const users = payload.users || [];
-
-    if (!users.length) {
-      clearExistingUserEditForm();
-      if (fields.lookup) fields.lookup.value = query;
-      setExistingUserEditStatus("No matching user found.", "warning");
-      return;
-    }
-
-    fillExistingUserEditForm(users[0]);
-
-    if (users.length > 1) {
-      setExistingUserEditStatus(
-        "Loaded first match: " + users[0].email + " (" + users.length + " matches found)",
-        "warning"
-      );
-    }
-  } catch (error) {
-    console.warn("Existing user lookup failed.", error);
-    setExistingUserEditStatus(
-      "Find user failed: " + (error.message || "Unknown error"),
-      "danger"
-    );
-  }
-}
-
-async function saveExistingUserEdit() {
-  if (!getAdminToken()) {
-    setExistingUserEditStatus("Admin token required before saving users.", "warning");
-    return;
-  }
-
-  const fields = getExistingUserEditFields();
-  const userId = fields.id?.value?.trim() || "";
-
-  if (!userId) {
-    setExistingUserEditStatus("Load a user before saving.", "warning");
-    return;
-  }
-
-  setExistingUserEditStatus("Saving user...");
-
-  try {
-    const response = await fetch(
-      "/api/admin/users/" + encodeURIComponent(userId),
-      {
-        method: "PATCH",
-        headers: getAdminHeaders(true),
-        body: JSON.stringify(getExistingUserEditBody())
-      }
-    );
-
-    const payload = await response.json().catch(() => ({}));
-
-    if (!response.ok || payload.ok === false) {
-      throw new Error(payload.error || `HTTP ${response.status}`);
-    }
-
-    fillExistingUserEditForm(payload.user);
-    setExistingUserEditStatus("Saved user: " + payload.user.email, "good");
-
-    await loadAdminUsers();
-    await loadAdminSummary();
-  } catch (error) {
-    console.warn("Existing user save failed.", error);
-    setExistingUserEditStatus(
-      "Save failed: " + (error.message || "Unknown error"),
-      "danger"
-    );
-  }
-}
-
-async function disableExistingUserEdit() {
-  const fields = getExistingUserEditFields();
-  const userId = fields.id?.value?.trim() || "";
-  const email = fields.email?.value?.trim() || "selected user";
-
-  if (!userId) {
-    setExistingUserEditStatus("Load a user before disabling.", "warning");
-    return;
-  }
-
-  if (!confirm("Disable " + email + "?")) {
-    return;
-  }
-
-  if (fields.status) {
-    fields.status.value = "disabled";
-  }
-
-  await saveExistingUserEdit();
-}
-
 async function loadAdminSummary() {
   const token = getAdminToken();
 
@@ -487,17 +338,6 @@ function initAdminDashboard() {
   els.refreshUsersBtn?.addEventListener("click", loadAdminUsers);
   els.createUserBtn?.addEventListener("click", createAdminUser);
 
-  const existingFields = getExistingUserEditFields();
-
-  existingFields.findBtn?.addEventListener("click", findExistingUserForEdit);
-  existingFields.saveBtn?.addEventListener("click", saveExistingUserEdit);
-  existingFields.disableBtn?.addEventListener("click", disableExistingUserEdit);
-  existingFields.clearBtn?.addEventListener("click", clearExistingUserEditForm);
-  existingFields.lookup?.addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-      findExistingUserForEdit();
-    }
-  });
   els.userSearchInput?.addEventListener("keydown", event => {
     if (event.key === "Enter") {
       loadAdminUsers();
@@ -510,6 +350,197 @@ function initAdminDashboard() {
 }
 
 initAdminDashboard();
+document.addEventListener("DOMContentLoaded", initUserDrawer);
+
+
+
+// ═══════════════════════════════════════════════════════
+// User Edit / Activity Drawer
+// ═══════════════════════════════════════════════════════
+
+let _drawerUser = null;
+
+function openDrawerById(userId, tab = "edit") {
+  const user = _adminUsersCache[userId];
+  if (!user) return;
+  openDrawer(user, tab);
+}
+
+function openDrawer(user, tab = "edit") {
+  _drawerUser = user;
+
+  // Header
+  document.getElementById("drawerAvatar").textContent = getAvatarInitial(user);
+  document.getElementById("drawerUserName").textContent = user.displayName || user.email;
+  document.getElementById("drawerUserEmail").textContent = user.email;
+
+  // Edit form
+  document.getElementById("drawerUserId").value      = user.id || "";
+  document.getElementById("drawerDisplayName").value = user.displayName || "";
+  document.getElementById("drawerRole").value         = user.role || "free_user";
+  document.getElementById("drawerPlan").value         = user.plan || "free";
+  document.getElementById("drawerStatus").value       = user.status || "active";
+  document.getElementById("drawerNotes").value        = user.notes || "";
+  setDrawerEditStatus("");
+
+  // Show drawer
+  document.getElementById("userDrawerOverlay").removeAttribute("hidden");
+  document.body.style.overflow = "hidden";
+
+  switchDrawerTab(tab);
+}
+
+function closeDrawer() {
+  _drawerUser = null;
+  document.getElementById("userDrawerOverlay").setAttribute("hidden", "");
+  document.body.style.overflow = "";
+}
+
+function switchDrawerTab(tab) {
+  document.querySelectorAll(".drawer-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+  document.getElementById("drawerTabEdit").hidden     = (tab !== "edit");
+  document.getElementById("drawerTabActivity").hidden = (tab !== "activity");
+
+  if (tab === "activity" && _drawerUser) {
+    loadUserActivity(_drawerUser.id);
+  }
+}
+
+function setDrawerEditStatus(message, tone = "") {
+  const el = document.getElementById("drawerEditStatus");
+  if (!el) return;
+  el.textContent = message;
+  el.className = "drawer-edit-status" + (tone ? " " + tone : "");
+}
+
+async function saveDrawerEdit() {
+  const userId = document.getElementById("drawerUserId")?.value;
+  if (!userId) return;
+
+  if (!getAdminToken()) {
+    setDrawerEditStatus("Admin token required.", "warning");
+    return;
+  }
+
+  const body = {
+    displayName: document.getElementById("drawerDisplayName").value.trim(),
+    role:        document.getElementById("drawerRole").value,
+    plan:        document.getElementById("drawerPlan").value,
+    status:      document.getElementById("drawerStatus").value,
+    notes:       document.getElementById("drawerNotes").value.trim()
+  };
+
+  setDrawerEditStatus("Saving...");
+
+  try {
+    const response = await fetch(
+      "/api/admin/users/" + encodeURIComponent(userId),
+      { method: "PATCH", headers: getAdminHeaders(true), body: JSON.stringify(body) }
+    );
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) throw new Error(payload.error || "HTTP " + response.status);
+
+    _drawerUser = payload.user;
+    _adminUsersCache[userId] = payload.user;
+    document.getElementById("drawerUserName").textContent = payload.user.displayName || payload.user.email;
+    setDrawerEditStatus("Saved.", "good");
+
+    await loadAdminUsers();
+    await loadAdminSummary();
+  } catch (err) {
+    setDrawerEditStatus("Save failed: " + (err.message || "Unknown error"), "danger");
+  }
+}
+
+async function disableDrawerUser() {
+  const userId = document.getElementById("drawerUserId")?.value;
+  const email  = _drawerUser?.email || "this user";
+  if (!userId) return;
+  if (!confirm("Disable " + email + "?")) return;
+  document.getElementById("drawerStatus").value = "disabled";
+  await saveDrawerEdit();
+}
+
+async function loadUserActivity(userId) {
+  const statsEl = document.getElementById("drawerActivityStats");
+  const feedEl  = document.getElementById("drawerActivityFeed");
+  if (!statsEl || !feedEl) return;
+
+  statsEl.innerHTML = '<div class="drawer-stat-card" style="grid-column:1/-1"><div class="lbl">Loading…</div></div>';
+  feedEl.innerHTML  = "";
+
+  if (!getAdminToken()) {
+    feedEl.innerHTML = '<div class="empty-state">Admin token required.</div>';
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "/api/admin/users/" + encodeURIComponent(userId) + "/sessions",
+      { headers: getAdminHeaders() }
+    );
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) throw new Error(payload.error || "HTTP " + response.status);
+
+    const sessions       = payload.sessions || [];
+    const savedProjects  = payload.savedProjects;
+
+    statsEl.innerHTML = `
+      <div class="drawer-stat-card">
+        <div class="val">${sessions.length}</div>
+        <div class="lbl">Sessions</div>
+      </div>
+      <div class="drawer-stat-card">
+        <div class="val">${savedProjects != null ? savedProjects : "\u2014"}</div>
+        <div class="lbl">Saved projects</div>
+      </div>`;
+
+    if (!sessions.length) {
+      feedEl.innerHTML = '<div class="empty-state">No sessions recorded yet.</div>';
+      return;
+    }
+
+    feedEl.innerHTML = sessions.map(s => {
+      const active = s.expiresAt && new Date(s.expiresAt) > new Date();
+      return `
+        <div class="drawer-activity-item">
+          <div class="drawer-activity-icon${active ? " active" : ""}">${active ? "\u25cf" : "\u25cb"}</div>
+          <div class="drawer-activity-text">
+            <strong>${active ? "Active session" : "Session"}</strong>
+            <span>Started ${escapeHTML(formatTimeAgo(s.createdAt))} &middot; last seen ${escapeHTML(formatTimeAgo(s.lastSeenAt))}</span>
+          </div>
+        </div>`;
+    }).join("");
+
+  } catch (err) {
+    statsEl.innerHTML = "";
+    feedEl.innerHTML  = `<div class="empty-state" style="color:var(--danger)">Failed to load: ${escapeHTML(err.message || "Unknown error")}</div>`;
+  }
+}
+
+function initUserDrawer() {
+  document.getElementById("drawerCloseBtn")?.addEventListener("click", closeDrawer);
+
+  // Close on overlay backdrop click
+  document.getElementById("userDrawerOverlay")?.addEventListener("click", e => {
+    if (e.target.id === "userDrawerOverlay") closeDrawer();
+  });
+
+  document.getElementById("drawerSaveBtn")?.addEventListener("click", saveDrawerEdit);
+  document.getElementById("drawerDisableBtn")?.addEventListener("click", disableDrawerUser);
+
+  document.querySelectorAll(".drawer-tab").forEach(btn => {
+    btn.addEventListener("click", () => switchDrawerTab(btn.dataset.tab));
+  });
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !document.getElementById("userDrawerOverlay")?.hidden) {
+      closeDrawer();
+    }
+  });
+}
 
 
 /* Workspace membership admin panel */
