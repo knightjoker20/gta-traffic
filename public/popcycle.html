@@ -89,125 +89,34 @@
     <section class="panel pc-control-panel">
       <h2>Popcycle File Controls</h2>
 
-      <div class="pc-control-row">
+      <div class="pc-import-row">
+        <div
+          id="popcycleDropZone"
+          class="pc-drop-zone"
+          role="button"
+          tabindex="0"
+          title="Drop a popcycle.dat file here or click to choose"
+        >
+          <div class="pc-drop-icon">▱</div>
+          <strong>Drop popcycle.dat here</strong>
+          <small>or click to choose a file</small>
+        </div>
+        <input id="popcycleFilePicker" class="pc-file-picker" type="file" accept=".dat,.txt" hidden>
+
         <div class="pc-btn-group">
-          <button
-            class="btn-orange"
-            type="button"
-            onclick="loadStockTrafficBase()"
-          >
-            Load Stock Traffic
-          </button>
+          <button class="btn-orange" type="button" onclick="loadStockTrafficBase()">Load Stock Traffic</button>
           <a class="pc-vanilla-link" href="/assets/vanilla/popcycle.dat" download>↓ Download vanilla popcycle.dat</a>
         </div>
+      </div>
 
-        <div class="pc-btn-group">
-          <span class="small">Load custom popcycle.dat</span>
-          <input
-            id="popcycleFilePicker"
-            class="pc-file-picker"
-            type="file"
-            accept=".dat,.txt"
-          >
-        </div>
-
-        <button
-          class="btn-green"
-          type="button"
-          onclick="savePopcycleWorkspaceNow()"
-        >
-          Save Workspace Now
-        </button>
-
-        <button
-          class="secondary"
-          type="button"
-          onclick="exportPopcycleWorkspaceBackup()"
-        >
-          Export Workspace
-        </button>
-
-        <button
-          class="secondary"
-          type="button"
-          onclick="openPopcycleWorkspaceImportPicker()"
-        >
-          Import Workspace
-        </button>
-
-        <input
-          id="popcycleWorkspaceImportPicker"
-          type="file"
-          accept=".json,application/json"
-          hidden
-          onchange="importPopcycleWorkspaceBackup(this.files[0]); this.value=''"
-        >
-
-        <button
-          class="secondary"
-          type="button"
-          onclick="refreshInstalledPopgroupsReference()"
-        >
-          Refresh Popgroups Groups
-        </button>
-
-        <button
-          class="danger"
-          type="button"
-          onclick="clearSavedPopcycleWorkspace()"
-        >
-          Clear Saved Workspace
-        </button>
-
-        <button
-          id="popcycleUndoButton"
-          class="secondary"
-          type="button"
-          onclick="undoPopcycleEdit()"
-        >
-          Undo
-        </button>
-
-        <button
-          id="popcycleRedoButton"
-          class="secondary"
-          type="button"
-          onclick="redoPopcycleEdit()"
-        >
-          Redo
-        </button>
-
-        <button
-          class="secondary"
-          type="button"
-          onclick="downloadOriginalPopcycleBackup()"
-        >
-          Download Original Backup
-        </button>
-
-        <button
-          class="secondary"
-          type="button"
-          onclick="downloadPopcycleChangeReport()"
-        >
-          Download Change Report
-        </button>
-
-        <button
-          class="btn-green"
-          type="button"
-          onclick="runPopcycleValidation()"
-        >
-          Validate
-        </button>
-
-        <button
-          class="btn-orange"
-          type="button"
-          onclick="exportEditedPopcycle()"
-        >
-          Export Edited DAT
-        </button>
+      <div class="pc-control-row" style="margin-top:12px">
+        <button class="btn-green" type="button" onclick="savePopcycleWorkspaceNow()">Save Workspace Now</button>
+        <button class="secondary" type="button" onclick="refreshInstalledPopgroupsReference()">Refresh Popgroups Groups</button>
+        <button id="popcycleUndoButton" class="secondary" type="button" onclick="undoPopcycleEdit()">Undo</button>
+        <button id="popcycleRedoButton" class="secondary" type="button" onclick="redoPopcycleEdit()">Redo</button>
+        <button class="btn-green" type="button" onclick="runPopcycleValidation()">Validate</button>
+        <button class="btn-orange" type="button" onclick="exportEditedPopcycle()">Export Edited DAT</button>
+        <button class="danger" type="button" onclick="clearSavedPopcycleWorkspace()">Clear Saved Workspace</button>
       </div>
 
       <div class="pc-status-row">
@@ -215,16 +124,11 @@
         <div id="popcycleDraftStatus"></div>
       </div>
 
-      <div
-        id="popcycleOverview"
-        class="pc-overview"
-      ></div>
-
-      <div
-        id="popcycleWorkspaceStatus"
-        class="pc-workspace-status"
-      ></div>
+      <div id="popcycleOverview" class="pc-overview"></div>
+      <div id="popcycleWorkspaceStatus" class="pc-workspace-status"></div>
     </section>
+
+    <div id="pcCloudProjectPanelSlot"></div>
     <!-- [END SECTION: POPCYCLE_FILE_CONTROLS] -->
 
     <!-- =====================================================
@@ -563,6 +467,8 @@
 
   <script src="/js/shared/siteheader.js"></script>
 <script src="js/shared/siteshell.js"></script>
+  <script src="js/projectscloud.js"></script>
+  <script src="js/popcycle-cloud-save.js"></script>
 
   <script src="js/popcycle/popcyclestate.js"></script>
   <script src="js/popcycle/popcycleparser.js"></script>

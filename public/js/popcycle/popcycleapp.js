@@ -91,16 +91,26 @@ function bindPopcyclePageControls() {
   filePicker?.addEventListener(
     "change",
     event => {
-      const file =
-        event.target.files[0];
-
-      if (file) {
-        loadPopcycleFile(file);
-      }
-
+      const file = event.target.files[0];
+      if (file) loadPopcycleFile(file);
       filePicker.value = "";
     }
   );
+
+  // Drop zone wiring
+  const dropZone = document.getElementById("popcycleDropZone");
+  if (dropZone) {
+    dropZone.addEventListener("click", () => filePicker?.click());
+    dropZone.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") filePicker?.click(); });
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+    dropZone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropZone.classList.remove("drag-over");
+      const file = e.dataTransfer.files[0];
+      if (file) loadPopcycleFile(file);
+    });
+  }
 
   scheduleSearch?.addEventListener(
     "input",
@@ -119,6 +129,29 @@ function bindPopcyclePageControls() {
       );
     }
   );
+}
+
+// ── Cloud Projects API (used by popcycle-cloud-save.js) ──────────────────────
+function popcycleHasContent() {
+  return Boolean(popcycleState.current?.order?.length);
+}
+
+function popcycleGetCloudPayload() {
+  if (!popcycleHasContent()) return null;
+  return {
+    format: "gta-traffic-popcycle-cloud-project",
+    version: 1,
+    savedAt: new Date().toISOString(),
+    projectType: "popcycle",
+    fileName: popcycleState.originalFileName || "popcycle.dat",
+    datText: buildEditedPopcycleText(),
+    scheduleCount: popcycleState.current.order.length
+  };
+}
+
+function popcycleApplyCloudProject(data) {
+  if (!data?.datText) throw new Error("Cloud project has no popcycle.dat content.");
+  loadPopcycleTextIntoEditor(data.datText, data.fileName || "popcycle.dat");
 }
 
 // [END MODULE: POPCYCLE_APP]
