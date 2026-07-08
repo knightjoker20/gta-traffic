@@ -19,15 +19,35 @@ const vehicleMetaEditor = window.vehicleMetaEditor = (() => {
     "handlingId",
     "audioNameHash",
     "layout",
-    "swankness"
+    "swankness",
+    "wheelType",
+    "wheelScale",
+    "wheelScaleRear",
+    "lodDistances"
   ];
 
   const NUMBER_VALUE_FIELDS = new Set([
     "frequency",
     "maxNum",
     "maxNumOfSameColor",
-    "identicalModelSpawnDistance"
+    "identicalModelSpawnDistance",
+    "wheelScale",
+    "wheelScaleRear"
   ]);
+
+  // wheelType dropdown options from vehicles.meta spec
+  const WHEEL_TYPE_OPTIONS = [
+    "VWT_LOWEND",
+    "VWT_NORMAL",
+    "VWT_HIEND",
+    "VWT_BIKE",
+    "VWT_BICYCLE",
+    "VWT_PLANE",
+    "VWT_BOAT"
+  ];
+
+  // Vanilla recommended LOD distances for a standard car
+  const LOD_DISTANCE_DEFAULTS = ["15.000000", "30.000000", "60.000000", "120.000000", "500.000000", "500.000000"];
 
   // Fields that are game-breaking if changed — must match internal game file names
   const DANGEROUS_FIELDS = new Set(["modelName"]);
@@ -51,7 +71,8 @@ const vehicleMetaEditor = window.vehicleMetaEditor = (() => {
     "type",
     "layout",
     "audioNameHash",
-    "swankness"
+    "swankness",
+    "wheelType"
   ]);
 
   const PROJECT_DB_NAME = "gtaTrafficVehicleMetaDB";
@@ -509,6 +530,33 @@ const vehicleMetaEditor = window.vehicleMetaEditor = (() => {
     return node ? (node.getAttribute("value") ?? "") : "";
   }
 
+  // Parses <lodDistances content="float_array"> ... </lodDistances>
+  // Returns an array of 6 numeric strings, padding with defaults if needed.
+  function getLodDistances(item) {
+    const node = getDirectChild(item, "lodDistances");
+    if (!node) return [...LOD_DISTANCE_DEFAULTS];
+    const parts = node.textContent.trim().split(/\s+/).filter(Boolean);
+    const result = [...LOD_DISTANCE_DEFAULTS];
+    parts.forEach((val, i) => { if (i < 6) result[i] = val; });
+    return result;
+  }
+
+  // Serialises 6 floats back to the float_array text content format
+  function setLodDistancesValue(vehicle, values) {
+    if (!vehicle?.item) return;
+    let node = getDirectChild(vehicle.item, "lodDistances");
+    if (!node) {
+      node = state.xmlDoc.createElement("lodDistances");
+      node.setAttribute("content", "float_array");
+      const anchor = getDirectChild(vehicle.item, "flags") || getDirectChild(vehicle.item, "type");
+      if (anchor) vehicle.item.insertBefore(node, anchor);
+      else vehicle.item.appendChild(node);
+    }
+    node.setAttribute("content", "float_array");
+    node.textContent = "\n        " + values.join("\n        ") + "\n      ";
+    vehicle.lodDistances = [...values];
+  }
+
   function ensureNode(item, tagName) {
     let node = getDirectChild(item, tagName);
     if (node) return node;
@@ -537,6 +585,12 @@ const vehicleMetaEditor = window.vehicleMetaEditor = (() => {
 
   function setFieldValue(vehicle, field, value) {
     if (!vehicle?.item) return;
+
+    if (field === "lodDistances") {
+      // value is the full space-separated string or an array index update
+      // handled separately via setLodDistancesValue
+      return;
+    }
 
     const cleanValue = String(value ?? "").trim();
 
@@ -586,7 +640,11 @@ const vehicleMetaEditor = window.vehicleMetaEditor = (() => {
         maxNum: getValueAttr(item, "maxNum"),
         maxNumOfSameColor: getValueAttr(item, "maxNumOfSameColor"),
         identicalModelSpawnDistance: getValueAttr(item, "identicalModelSpawnDistance"),
-        swankness: getText(item, "swankness")
+        swankness: getText(item, "swankness"),
+        wheelType: getText(item, "wheelType"),
+        wheelScale: getValueAttr(item, "wheelScale"),
+        wheelScaleRear: getValueAttr(item, "wheelScaleRear"),
+        lodDistances: getLodDistances(item)
       });
     });
 
@@ -690,11 +748,15 @@ const vehicleMetaEditor = window.vehicleMetaEditor = (() => {
           ${editableCell(vehicle, "audioNameHash")}
           ${editableCell(vehicle, "layout")}
           ${editableCell(vehicle, "swankness")}
+          ${wheelTypeCell(vehicle)}
+          ${editableCell(vehicle, "wheelScale")}
+          ${editableCell(vehicle, "wheelScaleRear")}
+          ${lodDistancesCell(vehicle)}
         </tr>
       `;
     }).join("");
 
-    body.innerHTML = rows || `<tr><td colspan="14" class="vm-muted">No vehicles match the current filters.</td></tr>`;
+    body.innerHTML = rows || `<tr><td colspan="18" class="vm-muted">No vehicles match the current filters.</td></tr>`;
     scrollToTargetModel();
 
     const visibleKeys = state.filteredIndexes.map(index => state.vehicles[index].key);
@@ -721,6 +783,46 @@ const vehicleMetaEditor = window.vehicleMetaEditor = (() => {
         const xmlField = field === "vehicleType" ? "type" : field;
         setFieldValue(vehicle, xmlField, event.target.value);
         runAnalyzer(false);
+        scheduleAutosave();
+      });
+    });
+
+    // wheelType dropdown
+    body.querySelectorAll(".vm-wheeltype-select").forEach(sel => {
+      sel.addEventListener("change", event => {
+        const key = event.target.dataset.key;
+        const vehicle = state.vehicles.find(v => v.key === key);
+        setFieldValue(vehicle, "wheelType", event.target.value);
+        scheduleAutosave();
+      });
+    });
+
+    // LOD distance inputs — each input carries data-lod-index
+    body.querySelectorAll(".vm-lod-input").forEach(input => {
+      input.addEventListener("change", event => {
+        const key = event.target.dataset.key;
+        const lodIndex = Number(event.target.dataset.lodIndex);
+        const vehicle = state.vehicles.find(v => v.key === key);
+        if (!vehicle) return;
+        const updated = [...vehicle.lodDistances];
+        updated[lodIndex] = event.target.value || "0.000000";
+        setLodDistancesValue(vehicle, updated);
+        scheduleAutosave();
+      });
+    });
+
+    // Reset LOD to vanilla defaults button
+    body.querySelectorAll(".vm-lod-reset").forEach(btn => {
+      btn.addEventListener("click", event => {
+        const key = event.target.dataset.key;
+        const vehicle = state.vehicles.find(v => v.key === key);
+        if (!vehicle) return;
+        setLodDistancesValue(vehicle, [...LOD_DISTANCE_DEFAULTS]);
+        // Update the inputs in the same row without full re-render
+        const row = event.target.closest("tr");
+        row?.querySelectorAll(".vm-lod-input").forEach((inp, i) => {
+          inp.value = LOD_DISTANCE_DEFAULTS[i];
+        });
         scheduleAutosave();
       });
     });
@@ -753,6 +855,47 @@ const vehicleMetaEditor = window.vehicleMetaEditor = (() => {
     `;
   }
 
+
+  function wheelTypeCell(vehicle) {
+    const current = vehicle.wheelType || "";
+    const options = WHEEL_TYPE_OPTIONS.map(opt =>
+      `<option value="${opt}"${opt === current ? " selected" : ""}>${opt}</option>`
+    ).join("");
+    return `
+      <td>
+        <select class="vm-cell-input vm-wheeltype-select" data-key="${escapeHTML(vehicle.key)}" aria-label="wheelType for ${escapeHTML(vehicle.modelName)}">
+          <option value=""${current ? "" : " selected"}>—</option>
+          ${options}
+        </select>
+      </td>
+    `;
+  }
+
+  // Renders 6 compact number inputs for lodDistances (LOD0–LOD5)
+  function lodDistancesCell(vehicle) {
+    const lods = Array.isArray(vehicle.lodDistances) ? vehicle.lodDistances : [...LOD_DISTANCE_DEFAULTS];
+    const labels = ["LOD0", "LOD1", "LOD2", "LOD3", "LOD4", "LOD5"];
+    const inputs = lods.map((val, i) => `
+      <label class="vm-lod-label">
+        <span>${labels[i]}</span>
+        <input
+          type="number"
+          class="vm-lod-input"
+          data-key="${escapeHTML(vehicle.key)}"
+          data-lod-index="${i}"
+          value="${escapeHTML(val)}"
+          step="0.5"
+          min="0"
+          aria-label="${labels[i]} for ${escapeHTML(vehicle.modelName)}"
+        >
+      </label>`).join("");
+    return `
+      <td class="vm-lod-cell">
+        <div class="vm-lod-grid">${inputs}</div>
+        <button type="button" class="vm-lod-reset" data-key="${escapeHTML(vehicle.key)}" title="Reset to vanilla defaults (15 / 30 / 60 / 120 / 500 / 500)">↺ vanilla</button>
+      </td>
+    `;
+  }
 
   function setupQuickEditFields() {
     const options = EDITABLE_FIELDS.map(field => `<option value="${escapeHTML(field)}">${escapeHTML(field)}</option>`).join("");

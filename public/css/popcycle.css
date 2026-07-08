@@ -33,8 +33,32 @@
   text-align: center;
 }
 
-.pc-control-panel {
+.pc-top-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
   margin-bottom: 18px;
+}
+
+.pc-top-row > .panel,
+.pc-top-row > #pcCloudProjectPanelSlot > .panel {
+  margin-bottom: 0;
+  height: 100%;
+}
+
+/* Make the slot div invisible to the grid so the JS-injected .panel
+   lands directly in the second grid column */
+#pcCloudProjectPanelSlot {
+  display: contents;
+}
+
+.pc-control-panel {
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .pc-top-row { grid-template-columns: 1fr; }
 }
 
 .pc-import-row {

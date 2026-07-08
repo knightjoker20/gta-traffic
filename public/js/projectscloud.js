@@ -3,7 +3,12 @@
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok || payload.ok === false) {
-      throw new Error(payload.error || payload.message || "Project request failed");
+      // Surface the detailed server message when the top-level error is generic
+      const summary = payload.error || "Project request failed";
+      const detail  = payload.message && payload.message !== summary
+        ? " — " + payload.message
+        : "";
+      throw new Error(summary + detail);
     }
 
     return payload;

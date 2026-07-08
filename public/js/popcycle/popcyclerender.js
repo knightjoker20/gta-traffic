@@ -150,6 +150,11 @@ function renderPopcycleEditor() {
       "popcycleGroupSummary"
     );
 
+  const policeEditor =
+    document.getElementById(
+      "popcyclePoliceEditor"
+    );
+
   const schedule =
     getSelectedPopcycleSchedule();
 
@@ -168,6 +173,7 @@ function renderPopcycleEditor() {
 
     tableBody.innerHTML = "";
     groupSummary.innerHTML = "";
+    if (policeEditor) policeEditor.innerHTML = "";
     return;
   }
 
@@ -192,6 +198,16 @@ function renderPopcycleEditor() {
           rowIndex
         )
     ).join("");
+
+  // Police Presence sits above the time-select table
+  if (policeEditor) {
+    const policeRow =
+      schedule.rows[popcycleState.selectedRowIndex || 0] ||
+      schedule.rows[0];
+    policeEditor.innerHTML = policeRow
+      ? renderPoliceMixEditor(policeRow)
+      : "";
+  }
 
   groupSummary.innerHTML =
     renderGroupSummary(schedule);
@@ -481,10 +497,6 @@ function renderGroupSummary(schedule) {
           )}
         </p>
       </div>
-
-      ${renderPoliceMixEditor(
-        selectedRow
-      )}
 
       <div class="pc-group-columns pc-editable-group-columns">
         <div class="pc-group-editor-column">

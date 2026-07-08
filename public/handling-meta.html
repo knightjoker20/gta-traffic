@@ -222,20 +222,38 @@
     document.addEventListener("DOMContentLoaded", function () {
       var wrap = document.querySelector(".hm-table-wrap");
       if (!wrap) return;
+
+      // ── Top mirror scrollbar ────────────────────────────────
       var topBar = document.createElement("div");
       topBar.className = "hm-scroll-top";
-      var inner = document.createElement("div");
-      inner.className = "hm-scroll-top-inner";
-      topBar.appendChild(inner);
+      var topInner = document.createElement("div");
+      topInner.className = "hm-scroll-top-inner";
+      topBar.appendChild(topInner);
       wrap.parentNode.insertBefore(topBar, wrap);
-      function syncWidth() { inner.style.width = wrap.scrollWidth + "px"; }
+
+      // ── Bottom sticky mirror scrollbar ──────────────────────
+      var botBar = document.createElement("div");
+      botBar.className = "hm-scroll-bottom";
+      var botInner = document.createElement("div");
+      botInner.className = "hm-scroll-bottom-inner";
+      botBar.appendChild(botInner);
+      wrap.parentNode.insertBefore(botBar, wrap.nextSibling);
+
+      function syncWidth() {
+        var w = wrap.scrollWidth + "px";
+        topInner.style.width = w;
+        botInner.style.width = w;
+      }
+
       var syncing = false;
-      topBar.addEventListener("scroll", function () {
-        if (syncing) return; syncing = true; wrap.scrollLeft = topBar.scrollLeft; syncing = false;
-      });
-      wrap.addEventListener("scroll", function () {
-        if (syncing) return; syncing = true; topBar.scrollLeft = wrap.scrollLeft; syncing = false;
-      });
+      function onTopScroll()  { if (syncing) return; syncing = true; wrap.scrollLeft = topBar.scrollLeft; botBar.scrollLeft = topBar.scrollLeft; syncing = false; }
+      function onBotScroll()  { if (syncing) return; syncing = true; wrap.scrollLeft = botBar.scrollLeft; topBar.scrollLeft = botBar.scrollLeft; syncing = false; }
+      function onWrapScroll() { if (syncing) return; syncing = true; topBar.scrollLeft = wrap.scrollLeft; botBar.scrollLeft = wrap.scrollLeft; syncing = false; }
+
+      topBar.addEventListener("scroll", onTopScroll);
+      botBar.addEventListener("scroll", onBotScroll);
+      wrap.addEventListener("scroll", onWrapScroll);
+
       syncWidth();
       new ResizeObserver(syncWidth).observe(wrap);
     });

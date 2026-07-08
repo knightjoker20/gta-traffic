@@ -137,7 +137,7 @@ const HANDLING_EDITABLE_FIELD_TYPES = {
 
 // Fields shown read-only because there's no dedicated column to save them
 // against yet (they only live inside raw_record_json today).
-const VEHICLE_META_READONLY_FIELDS = ["txdName", "plateType", "wheelType"];
+const VEHICLE_META_READONLY_FIELDS = ["txdName", "plateType", "wheelType", "wheelScale", "wheelScaleRear", "lodDistances"];
 
 const el = id => document.getElementById(id);
   function escapeHTML(value) {
@@ -395,12 +395,24 @@ const el = id => document.getElementById(id);
     `;
   }
 
+  function formatLodDistances(value) {
+    if (Array.isArray(value)) return value.join(" / ");
+    if (typeof value === "string" && value.trim()) return value.trim().replace(/\s+/g, " / ");
+    return "Not listed";
+  }
+
   function renderVehicleMeta() {
     const meta = state.vehicle.vehiclesMeta || {};
 
     const readonlyItems = [
       detailItem("modelName", state.vehicle.modelName),
-      ...VEHICLE_META_READONLY_FIELDS.map(key => detailItem(key, meta[key]))
+      ...VEHICLE_META_READONLY_FIELDS.map(key => {
+        if (key === "lodDistances") {
+          const formatted = formatLodDistances(meta[key]);
+          return `<div class="vd-detail-item"><span>lodDistances</span><strong title="LOD0 / LOD1 / LOD2 / LOD3 / LOD4 / LOD5">${escapeHTML(formatted)}</strong></div>`;
+        }
+        return detailItem(key, meta[key]);
+      })
     ].join("");
 
     const editableItems = VEHICLE_META_FIELDS.map(editableFieldRow).join("");

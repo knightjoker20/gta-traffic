@@ -249,6 +249,22 @@ body[data-page="handling-meta"] {
 }
 .hm-scroll-top-inner { height: 1px; }
 
+/* Sticky bottom mirror — stays at the bottom of the viewport
+   while the user is scrolled anywhere within the table panel */
+.hm-scroll-bottom {
+  position: sticky;
+  bottom: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 14px;
+  margin-top: 2px;
+  border-radius: 4px;
+  background: rgba(12, 14, 21, 0.96);
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  z-index: 10;
+}
+.hm-scroll-bottom-inner { height: 1px; }
+
 .hm-table-wrap {
   width: 100%;
   max-width: 100%;
@@ -338,6 +354,47 @@ body[data-page="handling-meta"] {
 .hm-table th:nth-child(12), .hm-table td:nth-child(12) { min-width: 135px; width: 135px; }
 .hm-table th:nth-child(13), .hm-table td:nth-child(13) { min-width: 135px; width: 135px; }
 .hm-table th:nth-child(14), .hm-table td:nth-child(14) { min-width: 135px; width: 135px; }
+
+/* ── Frozen columns: checkbox + Edit button + handlingName ── */
+.hm-table th:nth-child(1),
+.hm-table td:nth-child(1),
+.hm-table th:nth-child(2),
+.hm-table td:nth-child(2),
+.hm-table th:nth-child(3),
+.hm-table td:nth-child(3) {
+  position: sticky;
+  z-index: 1;
+  background: #0c0e15;
+}
+.hm-table th:nth-child(1),
+.hm-table td:nth-child(1) { left: 0; }
+.hm-table th:nth-child(2),
+.hm-table td:nth-child(2) { left: 42px; }
+.hm-table th:nth-child(3),
+.hm-table td:nth-child(3) { left: 126px; }
+
+/* Header corners above both sticky axes */
+.hm-table th:nth-child(1),
+.hm-table th:nth-child(2),
+.hm-table th:nth-child(3) { z-index: 4; }
+
+/* Separator on right edge of freeze zone */
+.hm-table th:nth-child(3),
+.hm-table td:nth-child(3) {
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Row state backgrounds for frozen cells */
+.hm-table tr:hover td:nth-child(1),
+.hm-table tr:hover td:nth-child(2),
+.hm-table tr:hover td:nth-child(3) { background: #111420; }
+.hm-table tr.selected-row td:nth-child(1),
+.hm-table tr.selected-row td:nth-child(2),
+.hm-table tr.selected-row td:nth-child(3) { background: #181308; }
+.hm-table tr.active-profile-row td:nth-child(1),
+.hm-table tr.active-profile-row td:nth-child(2),
+.hm-table tr.active-profile-row td:nth-child(3) { background: #0c1610; }
 
 .hm-profile-toolbar {
   display: grid;

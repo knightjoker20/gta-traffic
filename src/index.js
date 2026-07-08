@@ -6146,16 +6146,32 @@ async function handleProjectCreate(request, env) {
   const versionId = "project-version:" + crypto.randomUUID();
   const projectType = normalizeSavedProjectType(body.projectType);
   const description = savedProjectText(body.description);
-  const summaryJson = body.summary ? JSON.stringify(body.summary) : null;
+  let summaryJson;
+  let payloadJson;
+  let payloadKB;
 
-  // Strip heavy fields that bloat the payload beyond D1's 4MB statement limit.
-  // vehicleMetaCache and localStorage snapshots can be reconstructed client-side.
-  const slimPayload = Object.assign({}, body.payload || {});
-  delete slimPayload.vehicleMetaCache;
-  delete slimPayload.uiState;
-  const payloadJson = JSON.stringify(slimPayload);
+  try {
+    summaryJson = body.summary ? JSON.stringify(body.summary) : null;
 
-  const payloadKB = Math.round(payloadJson.length / 1024);
+    // Strip heavy fields that bloat the payload beyond D1's 1 MB per-cell limit.
+    const slimPayload = Object.assign({}, body.payload || {});
+    delete slimPayload.vehicleMetaCache;
+    delete slimPayload.uiState;
+    payloadJson = JSON.stringify(slimPayload);
+    payloadKB = Math.round(payloadJson.length / 1024);
+
+    if (payloadKB > 900) {
+      return jsonAuthResponse(
+        { ok: false, error: `Payload too large (${payloadKB} KB). Reduce project size before saving.` },
+        { status: 413 }
+      );
+    }
+  } catch (serializeError) {
+    return jsonAuthResponse(
+      { ok: false, error: "Could not serialize project payload: " + (serializeError?.message || String(serializeError)) },
+      { status: 400 }
+    );
+  }
 
   try {
     await env.DB.prepare(`
@@ -6220,11 +6236,12 @@ async function handleProjectCreate(request, env) {
     );
   }
 
-  const project = await getSavedProjectForWorkspace(
-    env,
-    projectId,
-    auth.workspaceId
-  );
+  let project = null;
+  try {
+    project = await getSavedProjectForWorkspace(env, projectId, auth.workspaceId);
+  } catch {
+    // Non-fatal: the insert succeeded; return success without the full row.
+  }
 
   return jsonAuthResponse(
     {

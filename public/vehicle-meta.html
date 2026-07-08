@@ -154,10 +154,14 @@
                   <th class="vm-th-risky" title="⚠ Caution — Links to an audio bank entry. Wrong value = silent vehicle.">audio <span class="vm-th-badge vm-th-badge-risky">⚠</span></th>
                   <th>layout</th>
                   <th>swankness</th>
+                  <th title="Wheel visual type used for this vehicle. Affects which rim models appear in carcols.">wheelType</th>
+                  <th title="Front wheel radius scale (default 0.268 for most cars). Affects visual wheel size.">wheelScale</th>
+                  <th title="Rear wheel radius scale. Set equal to wheelScale unless you want wider rear wheels.">wheelScaleRear</th>
+                  <th title="Six LOD draw distances (LOD0–LOD5). Vanilla defaults: 15 / 30 / 60 / 120 / 500 / 500.">lodDistances</th>
                 </tr>
               </thead>
               <tbody id="vmTableBody">
-                <tr><td colspan="14" class="vm-muted">Load a vehicles.meta file to begin.</td></tr>
+                <tr><td colspan="18" class="vm-muted">Load a vehicles.meta file to begin.</td></tr>
               </tbody>
             </table>
           </div>
@@ -177,6 +181,46 @@
     </div>
   </main>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var wrap = document.querySelector(".vm-table-wrap");
+      if (!wrap) return;
+
+      // ── Top mirror scrollbar ────────────────────────────────
+      var topBar = document.createElement("div");
+      topBar.className = "vm-scroll-top";
+      var topInner = document.createElement("div");
+      topInner.className = "vm-scroll-top-inner";
+      topBar.appendChild(topInner);
+      wrap.parentNode.insertBefore(topBar, wrap);
+
+      // ── Bottom sticky mirror scrollbar ──────────────────────
+      var botBar = document.createElement("div");
+      botBar.className = "vm-scroll-bottom";
+      var botInner = document.createElement("div");
+      botInner.className = "vm-scroll-bottom-inner";
+      botBar.appendChild(botInner);
+      wrap.parentNode.insertBefore(botBar, wrap.nextSibling);
+
+      function syncWidth() {
+        var w = wrap.scrollWidth + "px";
+        topInner.style.width = w;
+        botInner.style.width = w;
+      }
+
+      var syncing = false;
+      function onTopScroll()  { if (syncing) return; syncing = true; wrap.scrollLeft = topBar.scrollLeft; botBar.scrollLeft = topBar.scrollLeft; syncing = false; }
+      function onBotScroll()  { if (syncing) return; syncing = true; wrap.scrollLeft = botBar.scrollLeft; topBar.scrollLeft = botBar.scrollLeft; syncing = false; }
+      function onWrapScroll() { if (syncing) return; syncing = true; topBar.scrollLeft = wrap.scrollLeft; botBar.scrollLeft = wrap.scrollLeft; syncing = false; }
+
+      topBar.addEventListener("scroll", onTopScroll);
+      botBar.addEventListener("scroll", onBotScroll);
+      wrap.addEventListener("scroll", onWrapScroll);
+
+      syncWidth();
+      new ResizeObserver(syncWidth).observe(wrap);
+    });
+  </script>
   <script src="/js/shared/siteheader.js"></script>
 <script src="js/shared/siteshell.js"></script>
   <script src="js/shared/metafilecloud.js"></script>

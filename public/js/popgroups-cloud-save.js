@@ -341,39 +341,44 @@
   }
 
   function collectPopGroupsCloudPayload() {
-    const popgroupsProject =
+    const rawSnapshot =
       typeof buildPopgroupsProjectSnapshot === "function"
         ? buildPopgroupsProjectSnapshot()
         : null;
 
-    if (!popgroupsProject) {
+    if (!rawSnapshot) {
       return null;
     }
 
+    // Build a slim version of the snapshot for cloud storage.
+    // We keep loadedFileName, currentSection and UI state but drop originalText
+    // (redundant with editedXml) and parsedData (can be re-parsed from editedXml)
+    // to avoid exceeding D1's 1 MB per-cell limit.
+    const popgroupsProject = {
+      version:          rawSnapshot.version,
+      loadedFileName:   rawSnapshot.loadedFileName,
+      currentSection:   rawSnapshot.currentSection,
+      hasUnsavedChanges: rawSnapshot.hasUnsavedChanges,
+      openGroups:       rawSnapshot.openGroups,
+      hiddenGroups:     rawSnapshot.hiddenGroups,
+      searchText:       rawSnapshot.searchText
+      // originalText and parsedData intentionally omitted — use editedXml
+    };
+
     const vehicles =
-      Array.isArray(popgroupsProject.parsedData?.vehicles)
-        ? popgroupsProject.parsedData.vehicles
+      Array.isArray(rawSnapshot.parsedData?.vehicles)
+        ? rawSnapshot.parsedData.vehicles
         : [];
 
     const peds =
-      Array.isArray(popgroupsProject.parsedData?.peds)
-        ? popgroupsProject.parsedData.peds
+      Array.isArray(rawSnapshot.parsedData?.peds)
+        ? rawSnapshot.parsedData.peds
         : [];
 
     const editedXml =
       typeof buildPopgroupsXML === "function"
         ? buildPopgroupsXML()
         : "";
-
-    const vehicleMetaCache =
-      typeof buildVehicleMetaCacheSnapshot === "function"
-        ? buildVehicleMetaCacheSnapshot()
-        : null;
-
-    const uiState =
-      typeof buildMainPageUiSnapshot === "function"
-        ? buildMainPageUiSnapshot()
-        : null;
 
     const packContext = {
       activePackId:
@@ -402,12 +407,11 @@
       page: "popgroups",
       source: "gta-traffic-popgroups-editor",
 
-      loadedFileName: popgroupsProject.loadedFileName || "popgroups",
+      loadedFileName: rawSnapshot.loadedFileName || "popgroups",
 
       popgroupsProject,
       editedXml,
-      vehicleMetaCache,
-      uiState,
+      // vehicleMetaCache and uiState omitted — stripped server-side anyway
       packContext,
 
       summary: {
@@ -415,7 +419,7 @@
         pedGroups: peds.length,
         vehicleModels: countCloudModels(vehicles),
         pedModels: countCloudModels(peds),
-        hasUnsavedChanges: Boolean(popgroupsProject.hasUnsavedChanges),
+        hasUnsavedChanges: Boolean(rawSnapshot.hasUnsavedChanges),
         editedXmlBytes: editedXml.length
       }
     };

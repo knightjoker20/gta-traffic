@@ -87,6 +87,17 @@
   margin-bottom: 18px;
 }
 
+/* Right column: cloud save panel + vanilla files stacked vertically */
+.pg-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pg-right-col .panel {
+  margin-bottom: 0;
+}
+
 @media (max-width: 860px) {
   .pg-top-grid {
     grid-template-columns: 1fr;
