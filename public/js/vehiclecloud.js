@@ -70,7 +70,8 @@
         favorite: vehicle.favorite === true,
         installed: vehicle.installed === true,
         gameVersion: textOrEmpty(vehicle.gameVersion),
-        installDate: textOrEmpty(vehicle.installDate)
+        installDate: textOrEmpty(vehicle.installDate),
+        vehicleYear: textOrEmpty(vehicle.vehicleYear)
       },
 
       sources: {

@@ -463,6 +463,42 @@ async function disableDrawerUser() {
   await saveDrawerEdit();
 }
 
+async function deleteDrawerUser() {
+  const userId = document.getElementById("drawerUserId")?.value;
+  const email  = _drawerUser?.email || "this user";
+  if (!userId) return;
+
+  if (!getAdminToken()) {
+    setDrawerEditStatus("Admin token required.", "warning");
+    return;
+  }
+
+  if (!confirm(
+    "Permanently delete " + email + "?\n\n" +
+    "This cannot be undone. Their sessions will also be removed."
+  )) return;
+
+  if (!confirm("Second confirmation: delete " + email + " forever?")) return;
+
+  setDrawerEditStatus("Deleting...", "warning");
+
+  try {
+    const response = await fetch(
+      "/api/admin/users/" + encodeURIComponent(userId),
+      { method: "DELETE", headers: getAdminHeaders() }
+    );
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) throw new Error(payload.error || "HTTP " + response.status);
+
+    closeDrawer();
+    await loadAdminUsers();
+    await loadAdminSummary();
+    setUsersStatus("Deleted user: " + email, "good");
+  } catch (err) {
+    setDrawerEditStatus("Delete failed: " + (err.message || "Unknown error"), "danger");
+  }
+}
+
 async function loadUserActivity(userId) {
   const statsEl = document.getElementById("drawerActivityStats");
   const feedEl  = document.getElementById("drawerActivityFeed");
@@ -530,6 +566,7 @@ function initUserDrawer() {
 
   document.getElementById("drawerSaveBtn")?.addEventListener("click", saveDrawerEdit);
   document.getElementById("drawerDisableBtn")?.addEventListener("click", disableDrawerUser);
+  document.getElementById("drawerDeleteBtn")?.addEventListener("click", deleteDrawerUser);
 
   document.querySelectorAll(".drawer-tab").forEach(btn => {
     btn.addEventListener("click", () => switchDrawerTab(btn.dataset.tab));

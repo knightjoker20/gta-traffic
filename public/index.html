@@ -148,30 +148,36 @@
   <section class="home-section home-media-section">
     <div class="home-section-heading">
       <div>
-        <div class="home-section-kicker">Video Guides</div>
-        <h2>YouTube tutorials</h2>
-        <p>Reserved space for install guides, traffic balancing walkthroughs, and modding explanations.</p>
+        <div class="home-section-kicker">GTA 6 Videos</div>
+        <h2>Watch the latest</h2>
+        <p>Official trailers, NPC AI breakdowns, and vehicle reveals for Grand Theft Auto VI.</p>
       </div>
-      <a class="home-section-link" href="#" aria-disabled="true">Video library coming soon</a>
+      <a class="home-section-link" href="https://www.youtube.com/@RockstarGames" target="_blank" rel="noopener">Rockstar on YouTube ↗</a>
     </div>
 
     <div class="home-video-grid">
       <article class="home-video-card">
-        <div class="home-video-placeholder">YouTube</div>
-        <h3>Getting started with GTA Traffic Studio</h3>
-        <p>Placeholder for a site overview or first-time setup video.</p>
+        <div class="home-video-embed">
+          <iframe src="https://www.youtube.com/embed/VQRLujxTm3c" title="GTA VI — Official Trailer 2" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <h3>GTA VI — Official Trailer 2</h3>
+        <p>The second official trailer from Rockstar Games revealing Leonida, Vice City, dual protagonists Jason &amp; Lucia, and the explosive open world of GTA 6.</p>
       </article>
 
       <article class="home-video-card">
-        <div class="home-video-placeholder">YouTube</div>
-        <h3>How popgroups affect traffic</h3>
-        <p>Placeholder for explaining traffic group structure and safe editing.</p>
+        <div class="home-video-embed">
+          <iframe src="https://www.youtube.com/embed/AzyZkE-N4dY" title="GTA 6 NPCs Are WAY More Advanced Than We Thought" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <h3>GTA 6 NPCs Are WAY More Advanced</h3>
+        <p>Deep-dive into Rockstar's patent-backed NPC AI — dual-layer pathfinding, pedestrians filming chaos on their phones, traffic overtaking in oncoming lanes, and dynamic crowd reactions.</p>
       </article>
 
       <article class="home-video-card">
-        <div class="home-video-placeholder">YouTube</div>
-        <h3>Managing addon vehicle packs</h3>
-        <p>Placeholder for Pack DB Builder, source tracking, and installed vehicles.</p>
+        <div class="home-video-embed">
+          <iframe src="https://www.youtube.com/embed/QdBZY2fkU-0" title="GTA VI — Official Trailer 1" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <h3>GTA VI — Official Trailer 1</h3>
+        <p>The reveal that broke YouTube records — 90 million views in 24 hours. First look at Leonida, Vice City, and Lucia set to Tom Petty's "Love Is a Long Road."</p>
       </article>
     </div>
   </section>
@@ -181,28 +187,31 @@
       <div>
         <div class="home-section-kicker">Updates</div>
         <h2>GTA 6 and modding news</h2>
-        <p>Reserved area for curated update articles, official links, and future GTA modding notes.</p>
+        <p>Key updates on GTA VI vehicles, NPC traffic systems, and what's coming for modders.</p>
       </div>
-      <a class="home-section-link" href="#" aria-disabled="true">Articles coming soon</a>
+      <a class="home-section-link" href="https://www.rockstargames.com/VI" target="_blank" rel="noopener">Official GTA VI Site ↗</a>
     </div>
 
     <div class="home-news-grid">
       <article class="home-news-card">
-        <span>GTA 6</span>
-        <h3>GTA 6 update tracker</h3>
-        <p>Placeholder for curated GTA 6 release, trailer, platform, and official news updates.</p>
+        <span>Release</span>
+        <h3>GTA VI arrives November 19, 2026</h3>
+        <p>Grand Theft Auto VI launches on PS5 and Xbox Series X|S on November 19, 2026. Set in Leonida — a fictional Florida with Vice City at its core — featuring a dual-protagonist story with Lucia and Jason. PC date not yet announced.</p>
+        <a class="home-news-link" href="https://www.rockstargames.com/VI" target="_blank" rel="noopener">Official site ↗</a>
       </article>
 
       <article class="home-news-card">
-        <span>Modding</span>
-        <h3>GTA V modding notes</h3>
-        <p>Placeholder for traffic mods, script tools, RPF workflows, and OpenIV/CodeWalker notes.</p>
+        <span>Vehicles</span>
+        <h3>200+ confirmed vehicles with working interiors</h3>
+        <p>Over 200 vehicles confirmed at launch — with real-time speedometers, working mirrors, pedals, and full cockpit views. Classes span supercars, muscle, everyday traffic, motorcycles, aircraft, and watercraft. The most diverse roster in the series.</p>
+        <a class="home-news-link" href="https://www.gtabase.com/gta-6/vehicles/" target="_blank" rel="noopener">Full vehicle list ↗</a>
       </article>
 
       <article class="home-news-card">
-        <span>Project</span>
-        <h3>GTA Traffic Studio changelog</h3>
-        <p>Placeholder for site feature updates, new import tools, and database improvements.</p>
+        <span>Traffic AI</span>
+        <h3>NPCs now overtake in oncoming lanes</h3>
+        <p>Rockstar's patent-backed dual-layer NPC AI completely overhauls traffic. Drivers navigate around accidents, react to player interference, and overtake in the oncoming lane. Pedestrians film with phones, take cover, or reroute dynamically based on weather and events.</p>
+        <a class="home-news-link" href="https://circuitprofessor.com/gta-6-ai-patent-revolutionary-npc/" target="_blank" rel="noopener">AI patent breakdown ↗</a>
       </article>
     </div>
   </section>
@@ -221,6 +230,84 @@
 <script src="/js/shared/siteheader.js"></script>
 <script src="js/shared/siteshell.js"></script>
 <script defer src="/js/accountnav.js"></script>
+
+<script>
+// ── GTA 6 news rotation ───────────────────────────────────────────────────────
+// Picks 3 cards from the pool each day. To add more items just push to the array.
+(function () {
+  const pool = [
+    {
+      tag:      "Release",
+      title:    "GTA VI arrives November 19, 2026",
+      body:     "Grand Theft Auto VI launches on PS5 and Xbox Series X|S on November 19, 2026. Set in Leonida — a fictional Florida with Vice City at its core — featuring dual protagonists Lucia and Jason. PC date not yet announced.",
+      link:     "https://www.rockstargames.com/VI",
+      linkText: "Official site ↗"
+    },
+    {
+      tag:      "Vehicles",
+      title:    "200+ confirmed vehicles with working interiors",
+      body:     "Over 200 vehicles confirmed at launch — real-time speedometers, working mirrors, pedals, and full cockpit views. Classes span supercars, muscle, everyday traffic, motorcycles, aircraft, and watercraft. The most diverse roster in series history.",
+      link:     "https://www.gtabase.com/gta-6/vehicles/",
+      linkText: "Full vehicle list ↗"
+    },
+    {
+      tag:      "Traffic AI",
+      title:    "NPCs now overtake in oncoming lanes",
+      body:     "Rockstar's patent-backed dual-layer NPC AI completely overhauls traffic. Drivers navigate around accidents, react to player interference, and overtake in the oncoming lane. Pedestrians film with their phones, take cover, or reroute dynamically.",
+      link:     "https://circuitprofessor.com/gta-6-ai-patent-revolutionary-npc/",
+      linkText: "AI patent breakdown ↗"
+    },
+    {
+      tag:      "World",
+      title:    "Leonida — the biggest GTA map ever",
+      body:     "GTA 6 spans Leonida, a fictional Florida state with Vice City, the Everglades, rural towns, and beach strips. The map dwarfs both GTA V's Los Santos and Red Dead Redemption 2's frontier — the largest open world Rockstar has ever built.",
+      link:     "https://www.rockstargames.com/VI",
+      linkText: "Explore Leonida ↗"
+    },
+    {
+      tag:      "Driving",
+      title:    "First-person cockpits with working dashboards",
+      body:     "Every vehicle has a fully modeled cockpit: functional speedometers, real-time mirror reflections, animated pedals and steering wheels. First-person driving is more immersive than any previous GTA entry — and modders will have a lot to work with.",
+      link:     "https://www.gtabase.com/gta-6/vehicles/",
+      linkText: "Vehicle details ↗"
+    },
+    {
+      tag:      "NPCs",
+      title:    "Pedestrians react dynamically to chaos",
+      body:     "GTA 6 NPCs have mixed, context-aware reactions: some run, some film on their phones, some try to intervene. Schedules adapt to weather, time of day, and unfolding events — no more everyone panicking the same scripted way.",
+      link:     "https://knightli.com/en/2026/06/27/gta-6-ai-npc-open-world-rumor/",
+      linkText: "NPC behavior deep dive ↗"
+    }
+  ];
+
+  // Rotate by day — same 3 cards all day, different 3 tomorrow
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  const picks    = [0, 1, 2].map(function (i) {
+    return pool[(dayIndex + i) % pool.length];
+  });
+
+  function renderNews() {
+    var grid = document.querySelector(".home-news-grid");
+    if (!grid) return;
+    grid.innerHTML = picks.map(function (item) {
+      return [
+        '<article class="home-news-card">',
+          '<span>' + item.tag   + '</span>',
+          '<h3>'   + item.title + '</h3>',
+          '<p>'    + item.body  + '</p>',
+          '<a class="home-news-link" href="' + item.link + '" target="_blank" rel="noopener">' + item.linkText + '</a>',
+        '</article>'
+      ].join("");
+    }).join("");
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", renderNews);
+  } else {
+    renderNews();
+  }
+})();
+</script>
 </body>
 </html>
 

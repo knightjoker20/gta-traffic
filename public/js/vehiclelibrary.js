@@ -1045,11 +1045,13 @@ const importSource =
     resultHost.innerHTML = "";
 
     const today = new Date().toISOString().slice(0, 10);
-    const currentMap = new Map((await store.getVehicles()).map(v => [v.id, v]));
-    const updated   = [];
-    const applied   = [];
-    const notFound  = [];  // only relevant when uninstalling
-    const created   = [];  // new entries created when installing
+    const currentMap    = new Map((await store.getVehicles()).map(v => [v.id, v]));
+    const listSet       = new Set(names);
+    const updated       = [];
+    const applied       = [];
+    const notFound      = [];  // only relevant when uninstalling
+    const created       = [];  // new entries created when installing
+    const autoUninstalled = []; // addon cars removed because they weren't in the install list
 
     for (const id of names) {
       let vehicle = currentMap.get(id);
@@ -1076,6 +1078,25 @@ const importSource =
       applied.push(id);
     }
 
+    // When installing: auto-uninstall any addon cars currently marked installed
+    // that are NOT in the list. Vanilla / DLC cars (GTAVanillaModels) are never touched.
+    if (installing) {
+      const vanillaSet = window.GTAVanillaModels || new Set();
+      for (const [id, vehicle] of currentMap) {
+        if (listSet.has(id))       continue; // already handled above
+        if (vanillaSet.has(id))    continue; // never touch vanilla / DLC cars
+        if (!vehicle.custom?.installed) continue; // not marked installed, nothing to do
+        vehicle.custom = vehicle.custom || {};
+        vehicle.custom.installed         = false;
+        vehicle.custom.installDate       = "";
+        vehicle.custom.installSource     = "";
+        vehicle.custom.lastInstallScanAt = new Date().toISOString();
+        vehicle.updatedAt                = new Date().toISOString();
+        updated.push(vehicle);
+        autoUninstalled.push(id);
+      }
+    }
+
     if (updated.length) await store.putVehicles(updated);
     await reloadData();
 
@@ -1083,12 +1104,14 @@ const importSource =
     resultHost.innerHTML = `
       <div class="vl-scan-summary">
         <div><strong>${applied.length}</strong><span>Marked ${verb}</span></div>
-        ${created.length ? `<div><strong>${created.length}</strong><span>New entries added</span></div>` : ""}
-        ${notFound.length ? `<div><strong>${notFound.length}</strong><span>Not in library</span></div>` : ""}
+        ${created.length        ? `<div><strong>${created.length}</strong><span>New entries added</span></div>` : ""}
+        ${autoUninstalled.length ? `<div><strong>${autoUninstalled.length}</strong><span>Addon cars auto-uninstalled</span></div>` : ""}
+        ${notFound.length       ? `<div><strong>${notFound.length}</strong><span>Not in library</span></div>` : ""}
       </div>
       ${notFound.length ? `<div class="vl-scan-warning"><strong>Not found:</strong> ${notFound.map(n => `<code>${escapeHTML(n)}</code>`).join(", ")}</div>` : ""}
+      ${autoUninstalled.length ? `<div class="vl-scan-warning"><strong>Auto-uninstalled addon cars:</strong> ${autoUninstalled.map(n => `<code>${escapeHTML(n)}</code>`).join(", ")}</div>` : ""}
     `;
-    setStatus(`${applied.length} vehicle${applied.length !== 1 ? "s" : ""} marked ${verb}.`, notFound.length ? "warn" : "good");
+    setStatus(`${applied.length} vehicle${applied.length !== 1 ? "s" : ""} marked ${verb}${autoUninstalled.length ? `, ${autoUninstalled.length} addon car${autoUninstalled.length !== 1 ? "s" : ""} auto-uninstalled` : ""}.`, notFound.length ? "warn" : "good");
 
     applyBtn.disabled = false;
     applyBtn.textContent = "Apply";
@@ -1767,6 +1790,46 @@ function cardHtml(vehicle) {
     if (assignButton) assignButton.disabled = count === 0;
   }
 
+  // ── Bulk Assign — load selection from vehicles.meta ───────────────
+
+  async function handleBulkMetaFile(file) {
+    let text;
+    try {
+      text = await file.text();
+    } catch (e) {
+      setStatus("Could not read the file.", "warn");
+      return;
+    }
+
+    // Pull every <modelName> value out of the XML (case-insensitive tag match)
+    const matches = [...text.matchAll(/<modelName>\s*([^<\s]+)\s*<\/modelName>/gi)];
+    const parsed  = [...new Set(matches.map(m => store.normalizeId(m[1])).filter(Boolean))];
+
+    if (!parsed.length) {
+      setStatus("No <modelName> entries found in that file.", "warn");
+      return;
+    }
+
+    const knownIds = new Set(state.vehicles.map(v => store.normalizeId(v.modelName)));
+    const missing  = [];
+
+    for (const id of parsed) {
+      if (knownIds.has(id)) {
+        state.bulkSelection.add(id);
+      } else {
+        missing.push(id);
+      }
+    }
+
+    const added = parsed.length - missing.length;
+    renderGrid();
+    renderBulkPackBar();
+
+    const msg = `Selected ${added} vehicle${added !== 1 ? "s" : ""} from ${file.name}` +
+      (missing.length ? ` — ${missing.length} model${missing.length !== 1 ? "s" : ""} not in library` : "");
+    setStatus(msg, missing.length ? "warn" : "good");
+  }
+
   // ── Compare Vehicles ──────────────────────────────────────────────
 
   function isComparing(modelName) {
@@ -2387,6 +2450,12 @@ if (pageSizeSelect) {
     el("vlBulkPackAssign")?.addEventListener("click", () => {
       assignPackToSelection(el("vlBulkPackNameInput").value);
       el("vlBulkPackNameInput").value = "";
+    });
+    el("vlBulkMetaBtn")?.addEventListener("click", () => el("vlBulkMetaInput")?.click());
+    el("vlBulkMetaInput")?.addEventListener("change", event => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (file) handleBulkMetaFile(file);
     });
     el("vlBulkPackClear")?.addEventListener("click", clearBulkSelection);
     el("vlBulkPackExit")?.addEventListener("click", () => {

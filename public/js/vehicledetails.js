@@ -220,6 +220,18 @@ const el = id => document.getElementById(id);
       makeLine.hidden = true;
     }
 
+    const yearLine = el("vdYearLine");
+    const vehicleYear = state.vehicle?.custom?.vehicleYear || "";
+    if (yearLine) {
+      if (vehicleYear) {
+        yearLine.textContent = vehicleYear;
+        yearLine.hidden = false;
+      } else {
+        yearLine.textContent = "";
+        yearLine.hidden = true;
+      }
+    }
+
     el("vdModelName").textContent = `Model: ${vehicle.modelName}`;
 
     const vehicleClass = effectiveMeta("vehicleClass") || meta.vehicleClass;
@@ -997,12 +1009,14 @@ const el = id => document.getElementById(id);
   }
 
   const CUSTOM_FIELDS = [
+    "vehicleYear",
     "displayName", "rockstarDlc", "sourcePack", "gameVersion", "installDate", "installType", "replacementFor",
     "dlcFolderPath", "vehiclesMetaPath",
     "handlingMetaPath", "downloadUrl", "tags", "notes"
   ];
 
   const CUSTOM_IDS = {
+    vehicleYear: "vdVehicleYear",
     displayName: "vdCustomDisplayName",
     rockstarDlc: "vdRockstarDlc",
     sourcePack: "vdSourcePack",
@@ -1031,7 +1045,22 @@ const el = id => document.getElementById(id);
       : `<span class="vd-no-data">No tags yet. Add some under Library Details below.</span>`;
   }
 
+  function buildYearOptions() {
+    const sel = el("vdVehicleYear");
+    if (!sel || sel.dataset.builtOptions === "true") return;
+    sel.dataset.builtOptions = "true";
+    const thisYear = new Date().getFullYear();
+    const max = thisYear + 5;
+    for (let y = max; y >= 1900; y--) {
+      const opt = document.createElement("option");
+      opt.value = String(y);
+      opt.textContent = String(y);
+      sel.appendChild(opt);
+    }
+  }
+
   function populateCustomForm() {
+    buildYearOptions();
     const custom = state.vehicle.custom || {};
     CUSTOM_FIELDS.forEach(field => {
       el(CUSTOM_IDS[field]).value = custom[field] || "";
@@ -1058,6 +1087,7 @@ const el = id => document.getElementById(id);
 
   function customToCloudChanges(custom) {
     return {
+      vehicleYear: custom.vehicleYear || "",
       displayName: custom.displayName || "",
       rockstarDlc: custom.rockstarDlc || "",
       sourcePack: custom.sourcePack || "",

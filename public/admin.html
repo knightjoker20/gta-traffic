@@ -166,6 +166,9 @@
             <button id="drawerSaveBtn">Save changes</button>
             <button id="drawerDisableBtn" class="secondary danger-btn">Disable user</button>
           </div>
+          <div class="drawer-delete-row">
+            <button id="drawerDeleteBtn" class="secondary danger-btn drawer-delete-btn">Delete user</button>
+          </div>
         </div>
 
         <div id="drawerTabActivity" class="drawer-tab-panel" hidden>
@@ -291,4 +294,44 @@
 
       <article class="admin-card">
         <h3>Import Jobs</h3>
-        <p>Preview, validate, and apply 
+        <p>Preview, validate, and apply uploaded data safely.</p>
+        <ul>
+          <li>Upload source file</li>
+          <li>Dry run import</li>
+          <li>Review warnings</li>
+          <li>Apply import</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+
+      <article class="admin-card">
+        <h3>Database Tools</h3>
+        <p>Run safe maintenance tools without raw SQL at first.</p>
+        <ul>
+          <li>Table counts</li>
+          <li>Find orphan records</li>
+          <li>Find duplicate packs</li>
+          <li>Export backup</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+
+      <article class="admin-card">
+        <h3>Audit Log</h3>
+        <p>Track important admin changes for safety and troubleshooting.</p>
+        <ul>
+          <li>Recent admin actions</li>
+          <li>Changed entity</li>
+          <li>Actor / timestamp</li>
+          <li>Details JSON</li>
+        </ul>
+        <button disabled>Coming next</button>
+      </article>
+    </section>
+  </main>
+
+  <script src="js/admin.js"></script>
+  <script src="/js/bulk-photo-importer.js"></script>
+  <script src="/js/shared/siteheader.js"></script>
+</body>
+</html>

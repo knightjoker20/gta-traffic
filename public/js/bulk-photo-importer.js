@@ -1,36 +1,43 @@
 // =====================================================
 // BULK VEHICLE PHOTO IMPORTER (Admin dashboard)
-// Lets the site admin upload a .zip of vehicle screenshots
-// and overwrite vehicle images in bulk. Like the rest of
-// admin.html, the page itself isn't role-gated — the write
-// is protected server-side by the existing IMAGE_UPLOAD_TOKEN,
-// same as the single-image upload endpoint and
-// bulk-upload-vehicle-images.ps1.
+// Accepts a .zip of vehicle screenshots OR individual
+// JPG / PNG / WebP files dropped directly. When images
+// are dropped individually they are packed into a zip
+// client-side (via JSZip) before upload, so the backend
+// endpoint stays unchanged.
 // =====================================================
 
 (function () {
   const UPLOAD_TOKEN_KEY = "gtaTrafficImageUploadToken";
-  const MAX_ZIP_BYTES = 90 * 1024 * 1024;
+  const MAX_ZIP_BYTES    = 90 * 1024 * 1024;  // 90 MB
+  const MAX_IMAGE_BYTES  = 10 * 1024 * 1024;  // 10 MB per image
+  const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+  const ACCEPTED_IMAGE_EXTS  = [".jpg", ".jpeg", ".png", ".webp"];
 
   const STATUS_LABELS = {
-    uploaded: "Uploaded",
-    unmatched: "Unmatched",
-    tooLarge: "Too large",
+    uploaded:        "Uploaded",
+    unmatched:       "Unmatched",
+    tooLarge:        "Too large",
     skippedExisting: "Skipped (existing)",
-    skipped: "Skipped",
-    failed: "Failed"
+    skipped:         "Skipped",
+    failed:          "Failed"
   };
 
   const STATUS_TONES = {
-    uploaded: "good",
-    unmatched: "warning",
-    tooLarge: "warning",
+    uploaded:        "good",
+    unmatched:       "warning",
+    tooLarge:        "warning",
     skippedExisting: "muted",
-    skipped: "muted",
-    failed: "danger"
+    skipped:         "muted",
+    failed:          "danger"
   };
 
-  let selectedFile = null;
+  // selectedFile  → a single .zip File
+  // selectedImages → array of image File objects
+  let selectedFile   = null;
+  let selectedImages = [];
+
+  // ── helpers ────────────────────────────────────────
 
   function escapeHTML(value) {
     return String(value ?? "")
@@ -43,60 +50,61 @@
 
   function formatBytes(bytes) {
     const value = Number(bytes || 0);
-
-    if (value >= 1024 * 1024) {
-      return (value / (1024 * 1024)).toFixed(2) + " MB";
-    }
-
-    if (value >= 1024) {
-      return (value / 1024).toFixed(1) + " KB";
-    }
-
+    if (value >= 1024 * 1024) return (value / (1024 * 1024)).toFixed(2) + " MB";
+    if (value >= 1024)        return (value / 1024).toFixed(1) + " KB";
     return value + " B";
   }
 
+  function isImageFile(file) {
+    if (ACCEPTED_IMAGE_TYPES.includes(file.type)) return true;
+    const lower = file.name.toLowerCase();
+    return ACCEPTED_IMAGE_EXTS.some(ext => lower.endsWith(ext));
+  }
+
   function getUploadToken() {
-    try {
-      return localStorage.getItem(UPLOAD_TOKEN_KEY) || "";
-    } catch {
-      return "";
-    }
+    try { return localStorage.getItem(UPLOAD_TOKEN_KEY) || ""; }
+    catch { return ""; }
   }
 
   function saveUploadToken(token) {
-    try {
-      localStorage.setItem(UPLOAD_TOKEN_KEY, token);
-    } catch {
-      /* localStorage unavailable — token just won't persist */
-    }
+    try { localStorage.setItem(UPLOAD_TOKEN_KEY, token); }
+    catch { /* localStorage unavailable */ }
   }
 
   function clearUploadToken() {
-    try {
-      localStorage.removeItem(UPLOAD_TOKEN_KEY);
-    } catch {
-      /* no-op */
-    }
+    try { localStorage.removeItem(UPLOAD_TOKEN_KEY); }
+    catch { /* no-op */ }
   }
 
   function setStatus(message, tone) {
     const status = document.getElementById("bulkPhotoStatus");
-
-    if (!status) {
-      return;
-    }
-
+    if (!status) return;
     status.textContent = message;
     status.className = "inline-status" + (tone ? " " + tone : "");
   }
 
+  // ── JSZip loader ───────────────────────────────────
+
+  let _jszipPromise = null;
+
+  function loadJSZip() {
+    if (_jszipPromise) return _jszipPromise;
+    _jszipPromise = new Promise((resolve, reject) => {
+      if (window.JSZip) { resolve(window.JSZip); return; }
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+      script.onload  = () => resolve(window.JSZip);
+      script.onerror = () => reject(new Error("Failed to load JSZip"));
+      document.head.appendChild(script);
+    });
+    return _jszipPromise;
+  }
+
+  // ── section build ──────────────────────────────────
+
   function buildSection() {
     const container = document.getElementById("adminBulkPhotoPanel");
-
-    if (!container || container.dataset.built === "true") {
-      return container;
-    }
-
+    if (!container || container.dataset.built === "true") return container;
     container.dataset.built = "true";
 
     container.innerHTML = `
@@ -104,10 +112,11 @@
         <div>
           <h2>Bulk Vehicle Photo Importer</h2>
           <p>
-            Upload a .zip of vehicle screenshots to overwrite photos in the vehicle image library.
-            Name each file exactly like the vehicle's model name (for example
-            <code>zentorno.png</code>) — subfolders inside the zip are fine, and matching is
-            case-insensitive. Unmatched files are skipped and listed below.
+            Drop a <strong>.zip</strong> of vehicle screenshots, or drag individual
+            <strong>JPG / PNG / WebP</strong> images directly. Name each file exactly like the
+            vehicle&rsquo;s model name (e.g. <code>zentorno.png</code>) &mdash; subfolders inside
+            a zip are fine, and matching is case-insensitive. Unmatched files are skipped and
+            listed below.
           </p>
         </div>
       </div>
@@ -123,15 +132,18 @@
         <span>Skip vehicles that already have a photo (otherwise existing photos are overwritten)</span>
       </label>
 
-      <div class="bulk-photo-dropzone" id="bulkPhotoDropZone" tabindex="0" role="button" aria-label="Choose a zip file">
-        <strong id="bulkPhotoDropTitle">Drop a .zip file here, or click to browse</strong>
-        <span>Images up to 10 MB each &middot; .zip up to 90 MB total &middot; JPG, PNG, WebP supported</span>
+      <div class="bulk-photo-dropzone" id="bulkPhotoDropZone" tabindex="0" role="button"
+           aria-label="Choose a zip or image files">
+        <strong id="bulkPhotoDropTitle">Drop a .zip or JPG / PNG / WebP files here, or click to browse</strong>
+        <span>Images up to 10 MB each &middot; .zip up to 90 MB total &middot; Multiple images OK</span>
       </div>
-      <input type="file" id="bulkPhotoFileInput" accept=".zip" class="hidden">
+      <input type="file" id="bulkPhotoFileInput"
+             accept=".zip,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+             multiple class="hidden">
 
       <div class="bulk-photo-actions">
         <button type="button" id="bulkPhotoUploadBtn" disabled>Upload &amp; Overwrite Photos</button>
-        <span class="inline-status" id="bulkPhotoStatus">Choose a zip file to begin.</span>
+        <span class="inline-status" id="bulkPhotoStatus">Choose a zip or image files to begin.</span>
       </div>
 
       <div class="bulk-photo-summary" id="bulkPhotoSummary"></div>
@@ -141,82 +153,120 @@
     return container;
   }
 
+  // ── state helpers ──────────────────────────────────
+
+  function clearSelection() {
+    selectedFile   = null;
+    selectedImages = [];
+  }
+
   function updateUploadButtonState() {
     const uploadBtn = document.getElementById("bulkPhotoUploadBtn");
-
     if (uploadBtn) {
-      uploadBtn.disabled = !selectedFile;
+      uploadBtn.disabled = !(selectedFile || selectedImages.length > 0);
     }
   }
 
-  function handleFileChosen(file) {
-    if (!file) {
-      return;
-    }
+  function setDropTitle(text) {
+    const el = document.getElementById("bulkPhotoDropTitle");
+    if (el) el.textContent = text;
+  }
 
-    if (!file.name.toLowerCase().endsWith(".zip")) {
-      setStatus("Please choose a .zip file.", "danger");
-      return;
-    }
+  // ── file handling ──────────────────────────────────
 
-    if (file.size > MAX_ZIP_BYTES) {
-      setStatus(
-        `That zip is ${formatBytes(file.size)}. The limit is ` +
+  function handleFilesChosen(files) {
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+
+    // Single zip
+    if (fileArray.length === 1 && fileArray[0].name.toLowerCase().endsWith(".zip")) {
+      const zip = fileArray[0];
+
+      if (zip.size > MAX_ZIP_BYTES) {
+        setStatus(
+          `That zip is ${formatBytes(zip.size)}. The limit is ` +
           `${Math.floor(MAX_ZIP_BYTES / (1024 * 1024))} MB per upload.`,
-        "danger"
-      );
+          "danger"
+        );
+        return;
+      }
+
+      clearSelection();
+      selectedFile = zip;
+      setDropTitle(`${zip.name} (${formatBytes(zip.size)})`);
+      setStatus("Ready to upload zip.", "good");
+      updateUploadButtonState();
       return;
     }
 
-    selectedFile = file;
+    // One or more image files
+    const images    = fileArray.filter(isImageFile);
+    const nonImages = fileArray.filter(f => !isImageFile(f) && !f.name.toLowerCase().endsWith(".zip"));
+    const tooLarge  = images.filter(f => f.size > MAX_IMAGE_BYTES);
+    const valid     = images.filter(f => f.size <= MAX_IMAGE_BYTES);
 
-    const dropTitle = document.getElementById("bulkPhotoDropTitle");
-
-    if (dropTitle) {
-      dropTitle.textContent = `${file.name} (${formatBytes(file.size)})`;
+    if (nonImages.length > 0) {
+      setStatus(
+        `Skipped ${nonImages.length} unsupported file(s). Only JPG, PNG, WebP, or a single .zip are accepted.`,
+        "warning"
+      );
     }
 
-    setStatus("Ready to upload.", "good");
+    if (tooLarge.length > 0) {
+      setStatus(
+        `${tooLarge.length} image(s) exceed 10 MB and were skipped.` +
+        (valid.length > 0 ? ` ${valid.length} image(s) ready.` : ""),
+        "warning"
+      );
+    }
+
+    if (valid.length === 0) {
+      setStatus("No valid image files found. Use JPG, PNG, or WebP under 10 MB.", "danger");
+      return;
+    }
+
+    clearSelection();
+    selectedImages = valid;
+
+    const totalBytes = valid.reduce((sum, f) => sum + f.size, 0);
+    setDropTitle(
+      valid.length === 1
+        ? `${valid[0].name} (${formatBytes(valid[0].size)})`
+        : `${valid.length} images selected (${formatBytes(totalBytes)} total)`
+    );
+
+    if (tooLarge.length === 0 && nonImages.length === 0) {
+      setStatus(`${valid.length} image(s) ready to upload.`, "good");
+    }
+
     updateUploadButtonState();
   }
 
+  // ── results rendering ──────────────────────────────
+
   function renderSummary(summary) {
     const summaryEl = document.getElementById("bulkPhotoSummary");
+    if (!summaryEl) return;
 
-    if (!summaryEl) {
-      return;
-    }
-
-    const order = [
-      "uploaded",
-      "unmatched",
-      "tooLarge",
-      "skippedExisting",
-      "skipped",
-      "failed"
-    ];
+    const order = ["uploaded", "unmatched", "tooLarge", "skippedExisting", "skipped", "failed"];
 
     summaryEl.innerHTML = order
       .filter(status => summary[status])
-      .map(status => {
-        return `
-          <span class="bulk-photo-pill ${STATUS_TONES[status] || ""}">
-            ${escapeHTML(STATUS_LABELS[status] || status)}: ${summary[status]}
-          </span>
-        `;
-      })
+      .map(status => `
+        <span class="bulk-photo-pill ${STATUS_TONES[status] || ""}">
+          ${escapeHTML(STATUS_LABELS[status] || status)}: ${summary[status]}
+        </span>
+      `)
       .join("");
   }
 
   function renderResults(results) {
     const wrap = document.getElementById("bulkPhotoResultsWrap");
-
-    if (!wrap) {
-      return;
-    }
+    if (!wrap) return;
 
     if (!results.length) {
-      wrap.innerHTML = '<div class="empty-state">No zip entries were processed.</div>';
+      wrap.innerHTML = '<div class="empty-state">No entries were processed.</div>';
       return;
     }
 
@@ -233,9 +283,11 @@
         <tbody>
           ${results.map(result => `
             <tr>
-              <td><span class="bulk-photo-pill ${STATUS_TONES[result.status] || ""}">${escapeHTML(STATUS_LABELS[result.status] || result.status)}</span></td>
+              <td><span class="bulk-photo-pill ${STATUS_TONES[result.status] || ""}">
+                ${escapeHTML(STATUS_LABELS[result.status] || result.status)}
+              </span></td>
               <td>${escapeHTML(result.modelName || "—")}</td>
-              <td>${escapeHTML(result.fileName || "—")}</td>
+              <td>${escapeHTML(result.fileName  || "—")}</td>
               <td class="muted">${escapeHTML(result.message || "")}</td>
             </tr>
           `).join("")}
@@ -244,50 +296,69 @@
     `;
   }
 
+  // ── upload ─────────────────────────────────────────
+
+  async function getUploadZipBuffer() {
+    // Already a zip — return its buffer directly
+    if (selectedFile) {
+      return selectedFile.arrayBuffer();
+    }
+
+    // Pack individual images into a zip client-side
+    const JSZip  = await loadJSZip();
+    const zipper = new JSZip();
+
+    for (const img of selectedImages) {
+      zipper.file(img.name, img);
+    }
+
+    return zipper.generateAsync({
+      type:               "arraybuffer",
+      compression:        "DEFLATE",
+      compressionOptions: { level: 6 }
+    });
+  }
+
   async function uploadZip() {
-    if (!selectedFile) {
-      setStatus("Choose a zip file first.", "warning");
+    if (!selectedFile && selectedImages.length === 0) {
+      setStatus("Choose a zip or image files first.", "warning");
       return;
     }
 
     const token = getUploadToken();
-
     if (!token) {
       setStatus("Enter and save the image upload token first.", "warning");
       return;
     }
 
-    const skipExisting =
-      document.getElementById("bulkPhotoSkipExisting")?.checked || false;
+    const skipExisting = document.getElementById("bulkPhotoSkipExisting")?.checked || false;
+    const isImages     = selectedImages.length > 0;
 
-    const confirmed = window.confirm(
-      "This will overwrite existing vehicle photos for every matched file in the zip. Continue?"
-    );
+    const confirmMsg = isImages
+      ? `This will upload ${selectedImages.length} image(s) and overwrite any existing matching vehicle photos. Continue?`
+      : "This will overwrite existing vehicle photos for every matched file in the zip. Continue?";
 
-    if (!confirmed) {
-      return;
-    }
+    if (!window.confirm(confirmMsg)) return;
 
     const uploadBtn = document.getElementById("bulkPhotoUploadBtn");
+    if (uploadBtn) uploadBtn.disabled = true;
 
-    if (uploadBtn) {
-      uploadBtn.disabled = true;
-    }
-
-    setStatus("Uploading and processing zip...", "");
+    setStatus(
+      isImages
+        ? `Packing ${selectedImages.length} image(s) and uploading…`
+        : "Uploading and processing zip…",
+      ""
+    );
 
     try {
-      const fileBuffer = await selectedFile.arrayBuffer();
+      const fileBuffer = await getUploadZipBuffer();
 
       const response = await fetch(
         "/api/vehicle-images/import-bulk?skipExisting=" + (skipExisting ? "true" : "false"),
         {
-          method: "POST",
-          headers: {
-            "x-upload-token": token,
-            "Content-Type": "application/zip"
-          },
-          body: fileBuffer
+          method:  "POST",
+          headers: { "x-upload-token": token, "Content-Type": "application/zip" },
+          body:    fileBuffer
         }
       );
 
@@ -303,28 +374,24 @@
       const uploadedCount = payload.summary?.uploaded || 0;
       setStatus(`Done. ${uploadedCount} photo(s) uploaded.`, "good");
     } catch (error) {
-      setStatus(
-        "Bulk import failed: " + (error.message || "Unknown error"),
-        "danger"
-      );
+      setStatus("Bulk import failed: " + (error.message || "Unknown error"), "danger");
     } finally {
       updateUploadButtonState();
     }
   }
 
-  function wireSection(section) {
-    if (section.dataset.wired === "true") {
-      return;
-    }
+  // ── wiring ─────────────────────────────────────────
 
+  function wireSection(section) {
+    if (section.dataset.wired === "true") return;
     section.dataset.wired = "true";
 
-    const tokenInput = document.getElementById("bulkPhotoTokenInput");
+    const tokenInput   = document.getElementById("bulkPhotoTokenInput");
     const saveTokenBtn = document.getElementById("bulkPhotoSaveTokenBtn");
-    const clearTokenBtn = document.getElementById("bulkPhotoClearTokenBtn");
-    const dropZone = document.getElementById("bulkPhotoDropZone");
-    const fileInput = document.getElementById("bulkPhotoFileInput");
-    const uploadBtn = document.getElementById("bulkPhotoUploadBtn");
+    const clearTokenBtn= document.getElementById("bulkPhotoClearTokenBtn");
+    const dropZone     = document.getElementById("bulkPhotoDropZone");
+    const fileInput    = document.getElementById("bulkPhotoFileInput");
+    const uploadBtn    = document.getElementById("bulkPhotoUploadBtn");
 
     if (getUploadToken() && tokenInput) {
       tokenInput.placeholder = "Image upload token saved in this browser";
@@ -332,12 +399,7 @@
 
     saveTokenBtn?.addEventListener("click", () => {
       const token = tokenInput?.value?.trim() || "";
-
-      if (!token) {
-        setStatus("Enter an upload token before saving.", "warning");
-        return;
-      }
-
+      if (!token) { setStatus("Enter an upload token before saving.", "warning"); return; }
       saveUploadToken(token);
       tokenInput.value = "";
       tokenInput.placeholder = "Image upload token saved in this browser";
@@ -346,16 +408,11 @@
 
     clearTokenBtn?.addEventListener("click", () => {
       clearUploadToken();
-
-      if (tokenInput) {
-        tokenInput.value = "";
-        tokenInput.placeholder = "Image upload token";
-      }
-
+      if (tokenInput) { tokenInput.value = ""; tokenInput.placeholder = "Image upload token"; }
       setStatus("Upload token cleared.", "warning");
     });
 
-    dropZone?.addEventListener("click", () => fileInput?.click());
+    dropZone?.addEventListener("click",  () => fileInput?.click());
 
     dropZone?.addEventListener("keydown", event => {
       if (event.key === "Enter" || event.key === " ") {
@@ -365,8 +422,7 @@
     });
 
     fileInput?.addEventListener("change", event => {
-      const file = event.target.files?.[0];
-      handleFileChosen(file);
+      handleFilesChosen(event.target.files);
     });
 
     ["dragenter", "dragover"].forEach(eventName => {
@@ -389,20 +445,20 @@
       event.preventDefault();
       event.stopPropagation();
       dropZone.classList.remove("is-dragging");
-
-      const file = event.dataTransfer?.files?.[0];
-      handleFileChosen(file);
+      handleFilesChosen(event.dataTransfer?.files);
     });
 
     uploadBtn?.addEventListener("click", uploadZip);
+
+    // Preload JSZip so packing is instant when the user clicks upload
+    loadJSZip().catch(() => { /* non-fatal — loads on demand if this fails */ });
   }
+
+  // ── init ───────────────────────────────────────────
 
   function initBulkPhotoImporter() {
     const section = buildSection();
-
-    if (section) {
-      wireSection(section);
-    }
+    if (section) wireSection(section);
   }
 
   if (document.readyState === "loading") {

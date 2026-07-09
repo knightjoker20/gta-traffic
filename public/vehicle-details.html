@@ -56,6 +56,7 @@
           <div class="vd-kicker">Vehicle Reference</div>
           <h1 id="vdDisplayTitle">Vehicle</h1>
           <div id="vdMakeLine" class="vd-make-line" hidden></div>
+          <div id="vdYearLine" class="vd-year-line" hidden></div>
           <div id="vdModelName" class="vd-model-name"></div>
           <div id="vdIdentityBadges" class="vd-badge-row"></div>
           <div id="vdSourceCompleteness" class="vd-source-completeness"></div>
@@ -157,6 +158,12 @@
             </div>
 
             <form id="vdCustomForm" class="vd-custom-form">
+              <label>Model Year
+                <select id="vdVehicleYear" name="vehicleYear">
+                  <option value="">Not set</option>
+                  <!-- Options 1900–2030 are injected by vehicledetails.js on load -->
+                </select>
+              </label>
               <label>Display Name
                 <input id="vdCustomDisplayName" name="displayName" type="text" placeholder="Example: 2018 Police Interceptor">
               </label>

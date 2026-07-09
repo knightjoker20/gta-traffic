@@ -207,6 +207,39 @@ body[data-page="home"] .home-video-placeholder {
   text-transform: uppercase;
 }
 
+/* YouTube embed — responsive 16:9 wrapper */
+body[data-page="home"] .home-video-embed {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(2, 6, 23, .55);
+}
+
+body[data-page="home"] .home-video-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 14px;
+}
+
+/* News card "read more" links */
+body[data-page="home"] .home-news-link {
+  margin-top: auto;
+  color: #fb923c;
+  font-size: .82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+body[data-page="home"] .home-news-link:hover {
+  color: #fbbf24;
+  text-decoration: underline;
+}
+
 @media (max-width: 1180px) {
   body[data-page="home"] .home-tool-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -588,6 +588,14 @@
 
     const query = String(document.getElementById("librarySearchBox")?.value || "").toLowerCase();
     const vehicles = Array.from(cloudVehicles.values())
+      // Only show vehicles that have actual library data (vehicleClass or vehicleType
+      // set from a vehicles.meta import). Vehicles with neither are minimal placeholder
+      // records that were never properly imported and should not appear in the panel.
+      .filter((vehicle) =>
+        vehicle.vehicleClass || vehicle.className || vehicle.class ||
+        vehicle.category    || vehicle.vehicleCategory ||
+        vehicle.vehicleType || vehicle.type
+      )
       .filter((vehicle) => !query || vehicleSearchText(vehicle).includes(query));
 
     if (!vehicles.length) {
