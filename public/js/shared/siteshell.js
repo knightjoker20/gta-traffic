@@ -50,6 +50,11 @@ const SITE_TOOL_NAV_ITEMS = [
     href: "handling-flags.html",
     page: "flags-reference"
   },
+  {
+    label: "Pricing",
+    href: "pricing.html",
+    page: "pricing"
+  },
 ];
 
 function renderSiteToolMenu() {

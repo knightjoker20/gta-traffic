@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="css/vehicle-library.css">
   <link rel="stylesheet" href="/css/accountnav.css">
   <link rel="stylesheet" href="/css/site-shell.css">
+  <link rel="stylesheet" href="/css/probanner.css">
 </head>
 <body data-page="library">
   <header class="app-header">
@@ -25,6 +26,7 @@
   <div id="siteToolMenu"></div>
 
   <main class="vehicle-detail-main">
+    <div id="proBannerSlot" hidden></div>
     <div class="vd-topbar">
       <a class="vd-back-link" href="vehicle-library.html">← Back to Vehicle Library</a>
       <div class="vd-selector-wrap">
@@ -61,8 +63,6 @@
           <div id="vdIdentityBadges" class="vd-badge-row"></div>
           <div id="vdSourceCompleteness" class="vd-source-completeness"></div>
           <div class="vd-title-actions">
-            <button id="vdFavorite" class="btn-orange" type="button">☆ Add Favorite</button>
-            <button id="vdInstallButton" class="vd-install-button" type="button">+ Install Vehicle</button>
             <a id="vdOpenVehicleMetaEditor" href="vehicle-meta.html">Open Vehicle.meta Editor</a>
             <a id="vdOpenHandlingEditor" href="handling-meta.html">Open Handling.meta Editor</a>
           </div>
@@ -71,13 +71,6 @@
 
       <div class="vd-columns">
         <div class="vd-main-column">
-          <section class="panel">
-            <div class="vd-section-heading">
-              <div><h2>Tags</h2><p>Click a tag to browse other vehicles in the library sharing it.</p></div>
-            </div>
-            <div id="vdTagCloud" class="tag-cloud"></div>
-          </section>
-
           <section class="panel">
             <div class="vd-section-heading">
               <div><h2>Vehicle.meta Details</h2><p>Parsed from the most recently imported vehicles.meta entry. Editable fields save as your own personal customization &mdash; the shared vanilla data is never changed.</p></div>
@@ -127,35 +120,40 @@
         </div>
 
         <aside class="vd-side-column">
-          <section class="panel">
+          <section class="panel" id="vdUploadMetaPanel">
             <div class="vd-section-heading">
               <div><h2>Upload Meta Files</h2><p>Updates this vehicle's cloud record.</p></div>
             </div>
-            <div class="vd-upload-grid">
-              <div class="vd-upload-zone" id="vdVehiclesMetaZone" role="button" tabindex="0" data-state="idle">
-                <div class="vd-upload-icon">📄</div>
-                <strong>vehicles.meta</strong>
-                <span class="vd-upload-msg">Drop or click to upload</span>
+            <p id="vdUploadMetaLoginNote" class="vd-login-note" hidden>Log in to upload your own vehicles.meta / handling.meta files for this vehicle. <a href="login.html">Log in</a> or <a href="register.html">create a free account</a>.</p>
+            <div id="vdUploadMetaBody">
+              <div class="vd-upload-grid">
+                <div class="vd-upload-zone" id="vdVehiclesMetaZone" role="button" tabindex="0" data-state="idle">
+                  <div class="vd-upload-icon">📄</div>
+                  <strong>vehicles.meta</strong>
+                  <span class="vd-upload-msg">Drop or click to upload</span>
+                </div>
+                <input id="vdVehiclesMetaPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt">
+                <div class="vd-upload-zone" id="vdHandlingMetaZone" role="button" tabindex="0" data-state="idle">
+                  <div class="vd-upload-icon">⚙️</div>
+                  <strong>handling.meta</strong>
+                  <span class="vd-upload-msg">Drop or click to upload</span>
+                </div>
+                <input id="vdHandlingMetaPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt">
               </div>
-              <input id="vdVehiclesMetaPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt">
-              <div class="vd-upload-zone" id="vdHandlingMetaZone" role="button" tabindex="0" data-state="idle">
-                <div class="vd-upload-icon">⚙️</div>
-                <strong>handling.meta</strong>
-                <span class="vd-upload-msg">Drop or click to upload</span>
-              </div>
-              <input id="vdHandlingMetaPicker" class="vl-hidden" type="file" accept=".meta,.xml,.txt">
+              <p class="vd-upload-note">Only the entry matching this vehicle's model name is extracted and saved.</p>
             </div>
-            <p class="vd-upload-note">Only the entry matching this vehicle's model name is extracted and saved.</p>
           </section>
 
           <section class="panel vd-custom-panel">
             <div class="vd-section-heading">
 <div>
   <h2>Library Details</h2>
-  <p>Your information is saved to the cloud vehicle database.</p>
+  <p id="vdCustomPanelNote">Your information is saved to the cloud vehicle database.</p>
 </div>
               <span id="vdSaveState" class="vd-save-state">Saved</span>
             </div>
+
+            <p id="vdCustomLoginNote" class="vd-login-note" hidden>Log in if you want to edit these fields. <a href="login.html">Log in</a> or <a href="register.html">create a free account</a> — it's free.</p>
 
             <form id="vdCustomForm" class="vd-custom-form">
               <label>Model Year
@@ -173,16 +171,12 @@
               <label>Mod / Source Pack
                 <input id="vdSourcePack" name="sourcePack" type="text" placeholder="Example: Police Vehicle Pack">
               </label>
-              <label class="vd-installed-toggle"><input id="vdInstalled" name="installed" type="checkbox"> Installed in Current GTA Game</label>
               <label>Installed Game Version
                 <select id="vdGameVersion" name="gameVersion">
                   <option value="">Not set</option>
                   <option value="Legacy">GTA V Legacy</option>
                   <option value="Enhanced">GTA V Enhanced</option>
                 </select>
-              </label>
-              <label>Install Date
-                <input id="vdInstallDate" name="installDate" type="date">
               </label>
               <label>Installation Type
                 <select id="vdInstallType" name="installType">
@@ -208,12 +202,6 @@
               <label>Download / Source URL
                 <input id="vdDownloadUrl" name="downloadUrl" type="url" placeholder="https://...">
               </label>
-              <label>Tags
-                <input id="vdTags" name="tags" type="text" placeholder="police, sedan, lore-friendly">
-              </label>
-              <label>Notes
-                <textarea id="vdNotes" name="notes" rows="8" placeholder="Installation notes, known conflicts, preferred handling setup..."></textarea>
-              </label>
               <button id="vdSaveButton" class="btn-green" type="submit">Save Vehicle Details</button>
               <button id="vdDeleteButton" class="danger vd-delete-button" type="button">Delete Vehicle</button>
             </form>
@@ -230,6 +218,8 @@
 <script src="js/vanillaVehicles.js"></script>
 <script src="js/vehicledetails.js"></script>
   <script src="js/vd-meta-upload.js"></script>
+  <script defer src="/js/shared/accountstate.js"></script>
+  <script defer src="/js/shared/probanner.js"></script>
   <script defer src="/js/accountnav.js"></script>
 </body>
 </html>

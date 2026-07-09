@@ -116,7 +116,7 @@
     el.main.hidden     = true;
     if (reason === "premium") {
       el.authGate.querySelector("p").textContent =
-        "The Pack Builder is a premium feature. Upgrade your account to access it.";
+        "The Pack Builder is a Pro feature. Upgrade your account to access it.";
     }
   }
 

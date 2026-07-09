@@ -240,6 +240,10 @@
           <p>Save this handling.meta as a versioned cloud project linked to your dashboard. You can reload it here at any time.</p>
         </div>
       </div>
+      <p class="cloud-save-login-note" data-hm-cloud-save-login-note hidden>
+        Log in to save this handling.meta as a cloud project.
+        <a href="/login.html">Log in</a> or <a href="/register.html">create a free account</a>.
+      </p>
       <div class="cloud-save-grid">
         <label class="cloud-save-field">
           <span>Project Name</span>
@@ -263,6 +267,34 @@
       slot.appendChild(panel);
     } else {
       slot.insertBefore(panel, slot.firstChild);
+    }
+
+    applyHMCloudSaveAccountGating();
+  }
+
+  // ── Account gating ─────────────────────────────────
+
+  async function applyHMCloudSaveAccountGating() {
+    const panel = document.querySelector("[data-hm-cloud-project-panel]");
+    if (!panel) return;
+    let account = null;
+    try {
+      account = window.GTAAccountState ? await window.GTAAccountState.get() : null;
+    } catch { account = null; }
+    const loggedIn = Boolean(account?.loggedIn);
+    const loginNote = panel.querySelector("[data-hm-cloud-save-login-note]");
+    const nameInput = panel.querySelector("[data-hm-cloud-project-name]");
+    const descriptionInput = panel.querySelector("[data-hm-cloud-project-description]");
+    const saveButton = panel.querySelector("[data-hm-cloud-save-btn]");
+    const browseButton = panel.querySelector("[data-hm-cloud-browse-btn]");
+    const status = panel.querySelector("[data-hm-cloud-project-status]");
+    if (loginNote) loginNote.hidden = loggedIn;
+    if (nameInput) nameInput.disabled = !loggedIn;
+    if (descriptionInput) descriptionInput.disabled = !loggedIn;
+    if (saveButton) saveButton.disabled = !loggedIn;
+    if (browseButton) browseButton.disabled = !loggedIn;
+    if (status) {
+      status.textContent = loggedIn ? "Cloud save is ready." : "Cloud save is available once you log in.";
     }
   }
 

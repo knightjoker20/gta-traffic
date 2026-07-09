@@ -816,6 +816,18 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
 }
 .vd-meta-hint { margin: 10px 0 0; color: rgba(255,255,255,.5); font-size: .74rem; }
 
+.vd-login-note {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,176,32,.35);
+  border-radius: 8px;
+  background: rgba(255,176,32,.08);
+  color: rgba(255,255,255,.75);
+  font-size: .82rem;
+  line-height: 1.4;
+}
+.vd-login-note a { color: #ffb020; font-weight: 600; }
+
 .vd-handling-groups { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
 .vd-handling-group {
   padding: 12px;
@@ -1473,3 +1485,58 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
 .vl-compare-table td {
   padding: 11px 15px;
   text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.vl-compare-photo-cell {
+  padding: 0;
+  position: relative;
+}
+
+.vl-compare-slot-image {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 25%, rgba(249,115,22,.22), transparent 50%),
+    linear-gradient(145deg, #1c2430, #090d13);
+}
+
+.vl-compare-slot-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.vl-compare-slot-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  font-size: .95rem;
+  line-height: 1;
+}
+
+.vl-compare-title-cell {
+  padding-top: 12px;
+}
+
+.vl-compare-slot-title {
+  margin: 0 0 2px;
+  color: #fff;
+  font-weight: 800;
+}
+
+.vl-compare-slot-model {
+  margin: 0 0 6px;
+  color: rgba(255,255,255,.5);
+  font-size: .78rem;
+}

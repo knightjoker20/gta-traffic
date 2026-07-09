@@ -9,7 +9,8 @@
     "dashboard": "Account Dashboard",
     "login": "Account Access",
     "register": "Create Account",
-    "admin": "Admin Console"
+    "admin": "Admin Console",
+    "pricing": "Pricing"
   };
 
   function getPageTagline() {

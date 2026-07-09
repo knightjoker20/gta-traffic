@@ -242,6 +242,10 @@
           <p>Save this vehicles.meta as a versioned cloud project linked to your dashboard. You can reload it here at any time.</p>
         </div>
       </div>
+      <p class="cloud-save-login-note" data-vm-cloud-save-login-note hidden>
+        Log in to save this vehicles.meta as a cloud project.
+        <a href="/login.html">Log in</a> or <a href="/register.html">create a free account</a>.
+      </p>
       <div class="cloud-save-grid">
         <label class="cloud-save-field">
           <span>Project Name</span>
@@ -265,6 +269,34 @@
       slot.appendChild(panel);
     } else {
       slot.insertBefore(panel, slot.firstChild);
+    }
+
+    applyVMCloudSaveAccountGating();
+  }
+
+  // ── Account gating ─────────────────────────────────
+
+  async function applyVMCloudSaveAccountGating() {
+    const panel = document.querySelector("[data-vm-cloud-project-panel]");
+    if (!panel) return;
+    let account = null;
+    try {
+      account = window.GTAAccountState ? await window.GTAAccountState.get() : null;
+    } catch { account = null; }
+    const loggedIn = Boolean(account?.loggedIn);
+    const loginNote = panel.querySelector("[data-vm-cloud-save-login-note]");
+    const nameInput = panel.querySelector("[data-vm-cloud-project-name]");
+    const descriptionInput = panel.querySelector("[data-vm-cloud-project-description]");
+    const saveButton = panel.querySelector("[data-vm-cloud-save-btn]");
+    const browseButton = panel.querySelector("[data-vm-cloud-browse-btn]");
+    const status = panel.querySelector("[data-vm-cloud-project-status]");
+    if (loginNote) loginNote.hidden = loggedIn;
+    if (nameInput) nameInput.disabled = !loggedIn;
+    if (descriptionInput) descriptionInput.disabled = !loggedIn;
+    if (saveButton) saveButton.disabled = !loggedIn;
+    if (browseButton) browseButton.disabled = !loggedIn;
+    if (status) {
+      status.textContent = loggedIn ? "Cloud save is ready." : "Cloud save is available once you log in.";
     }
   }
 

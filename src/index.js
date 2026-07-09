@@ -508,6 +508,28 @@ async function handleVehicleList(request, env) {
     bindings.push(favorite === "true" ? 1 : 0);
   }
 
+  // Tier gate: vanilla Rockstar vehicles are visible to everyone. Addon/mod
+  // vehicles are only visible to the account that added them to their own
+  // garage (see user_garage_vehicles, migration 020) -- FNL (no session)
+  // sees vanilla only, free-logged-in sees vanilla + their own garage.
+  // Admins/owners bypass this for full catalog visibility/moderation.
+  const auth = await getCurrentAuthSession(request, env);
+  const isAdmin = Boolean(auth && ["admin", "owner"].includes(auth.user.role));
+
+  if (!isAdmin) {
+    if (auth) {
+      conditions.push(`
+        (
+          model_name IN (SELECT model_name FROM vanilla_vehicles)
+          OR id IN (SELECT vehicle_id FROM user_garage_vehicles WHERE user_id = ?)
+        )
+      `);
+      bindings.push(auth.user.id);
+    } else {
+      conditions.push("model_name IN (SELECT model_name FROM vanilla_vehicles)");
+    }
+  }
+
   const whereClause = conditions.length
     ? `WHERE ${conditions.join(" AND ")}`
     : "";
@@ -549,6 +571,64 @@ async function handleVehicleList(request, env) {
     offset,
     vehicles: listResult.results.map(normalizeVehicle)
   });
+}
+
+// POST /api/garage/:modelName -- add an addon/mod vehicle to the current
+// user's own garage (requires login). Vanilla vehicles don't need this --
+// they're always visible to everyone regardless of garage membership.
+async function handleGarageAdd(request, env, requestedModelName) {
+  const auth = await getCurrentAuthSession(request, env);
+  if (!auth) {
+    return jsonResponse({ ok: false, error: "Authentication required" }, 401);
+  }
+
+  const modelName = optionalText(requestedModelName);
+  if (!modelName) {
+    return jsonResponse({ ok: false, error: "A vehicle model name is required" }, 400);
+  }
+
+  const vehicle = await env.DB.prepare(
+    `SELECT id, model_name FROM vehicles WHERE model_name = ? COLLATE NOCASE LIMIT 1`
+  ).bind(modelName).first();
+
+  if (!vehicle) {
+    return jsonResponse({ ok: false, error: "Vehicle not found" }, 404);
+  }
+
+  await env.DB.prepare(
+    `INSERT OR IGNORE INTO user_garage_vehicles (id, user_id, vehicle_id) VALUES (?, ?, ?)`
+  ).bind(crypto.randomUUID(), auth.user.id, vehicle.id).run();
+
+  return jsonResponse({ ok: true, modelName: vehicle.model_name });
+}
+
+// DELETE /api/garage/:modelName -- remove a vehicle from the current
+// user's own garage. Only removes the personal pointer -- never touches
+// the shared vehicles catalog row itself.
+async function handleGarageRemove(request, env, requestedModelName) {
+  const auth = await getCurrentAuthSession(request, env);
+  if (!auth) {
+    return jsonResponse({ ok: false, error: "Authentication required" }, 401);
+  }
+
+  const modelName = optionalText(requestedModelName);
+  if (!modelName) {
+    return jsonResponse({ ok: false, error: "A vehicle model name is required" }, 400);
+  }
+
+  const vehicle = await env.DB.prepare(
+    `SELECT id FROM vehicles WHERE model_name = ? COLLATE NOCASE LIMIT 1`
+  ).bind(modelName).first();
+
+  if (!vehicle) {
+    return jsonResponse({ ok: false, error: "Vehicle not found" }, 404);
+  }
+
+  await env.DB.prepare(
+    `DELETE FROM user_garage_vehicles WHERE user_id = ? AND vehicle_id = ?`
+  ).bind(auth.user.id, vehicle.id).run();
+
+  return jsonResponse({ ok: true });
 }
 function safeParseObject(value, fallback = {}) {
   if (!value) {
@@ -1236,6 +1316,55 @@ async function handleSourceHistoryList(
       rows.map(normalizeSourceHistory)
   });
 }
+// When a logged-in user imports addon/mod vehicles, link them into that
+// user's own garage so they keep seeing "their" addons under the FLI tier
+// gate in handleVehicleList (vanilla + own garage). Vanilla vehicles never
+// need a garage entry -- they're already visible to everyone. Imports
+// authorized only via LIBRARY_WRITE_TOKEN (no user session) skip this,
+// since there's no account to attribute the entries to.
+async function linkImportedVehiclesToGarage(flattenedVehicles, request, env) {
+  const auth = await getCurrentAuthSession(request, env);
+  if (!auth) return;
+
+  const modelNames = [...new Set(
+    flattenedVehicles
+      .map(vehicle => optionalText(vehicle.modelName))
+      .filter(Boolean)
+  )];
+
+  if (!modelNames.length) return;
+
+  const placeholders = modelNames.map(() => "?").join(", ");
+
+  const [vehicleRows, vanillaRows] = await Promise.all([
+    env.DB.prepare(
+      `SELECT id, model_name FROM vehicles WHERE model_name IN (${placeholders})`
+    ).bind(...modelNames).all(),
+    env.DB.prepare(
+      `SELECT model_name FROM vanilla_vehicles WHERE model_name IN (${placeholders})`
+    ).bind(...modelNames).all()
+  ]);
+
+  const vanillaSet = new Set(
+    (vanillaRows.results || []).map(row => String(row.model_name).toLowerCase())
+  );
+
+  const addonVehicleIds = (vehicleRows.results || [])
+    .filter(row => !vanillaSet.has(String(row.model_name).toLowerCase()))
+    .map(row => row.id)
+    .filter(Boolean);
+
+  if (!addonVehicleIds.length) return;
+
+  const statements = addonVehicleIds.map(vehicleId =>
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO user_garage_vehicles (id, user_id, vehicle_id) VALUES (?, ?, ?)`
+    ).bind(crypto.randomUUID(), auth.user.id, vehicleId)
+  );
+
+  await env.DB.batch(statements);
+}
+
 async function handleLibraryV2Import(request, env) {
   const authorizationError =
     await checkLibraryWriteAuthorization(request, env);
@@ -1369,6 +1498,12 @@ if (importMode === "popgroups") {
 
   await env.DB.batch(
     vehicleStatements
+  );
+
+  await linkImportedVehiclesToGarage(
+    flattenedVehicles,
+    request,
+    env
   );
 }
 
@@ -3481,30 +3616,18 @@ async function handleVehiclePatch(
       convert: optionalText
     },
 
-    tags: {
-      column: "tags_json",
-      convert: tagsForDatabase
-    },
-
-    notes: {
-      column: "notes",
-      convert: optionalText
-    },
-
     vehicleYear: {
       column: "vehicle_year",
       convert: optionalText
-    },
-
-    installed: {
-      column: "installed",
-      convert: booleanInteger
-    },
-
-    favorite: {
-      column: "favorite",
-      convert: booleanInteger
     }
+
+    // tags, notes, installed, and favorite were removed from this whitelist
+    // (2026-07) because they were written to this single shared `vehicles`
+    // row with no per-user scoping — any account editing a vehicle's tags,
+    // notes, favorite status, or installed status was overwriting the same
+    // values everyone else saw. Removed as a stopgap until a proper
+    // per-user table (e.g. user_vehicle_data) exists to store these fields
+    // scoped to each account.
   };
 
   const assignments = [];
@@ -5064,6 +5187,41 @@ async function handleAuthMe(request, env) {
   });
 }
 
+// POST /api/premium-interest -- collects interest in the Pro tier from the
+// pricing page form. There's no live checkout/subscription flow yet, so
+// this just records the lead; a real subscription is still granted
+// manually by an admin (see requireAdminSession / handleAdminUserUpdate).
+async function handlePremiumInterest(request, env) {
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse({ ok: false, error: "Invalid JSON body" }, 400);
+  }
+
+  const email = normalizeAuthEmail(body.email);
+  const note = optionalText(body.note);
+
+  if (!isValidAuthEmail(email)) {
+    return jsonResponse({ ok: false, error: "Valid email is required" }, 400);
+  }
+
+  const auth = await getCurrentAuthSession(request, env);
+
+  await env.DB.prepare(`
+    INSERT INTO premium_interest_signups (id, email, note, user_id)
+    VALUES (?, ?, ?, ?)
+  `).bind(
+    crypto.randomUUID(),
+    email,
+    note || null,
+    auth?.user?.id || null
+  ).run();
+
+  return jsonResponse({ ok: true });
+}
+
 async function handleAuthRegister(request, env) {
   let body;
 
@@ -5708,6 +5866,13 @@ export default {
 
       if (
         request.method === "POST" &&
+        url.pathname === "/api/premium-interest"
+      ) {
+        return await handlePremiumInterest(request, env);
+      }
+
+      if (
+        request.method === "POST" &&
         url.pathname === "/api/auth/login"
       ) {
         return await handleAuthLogin(request, env);
@@ -5820,6 +5985,27 @@ export default {
         url.pathname === "/api/vanilla-vehicles"
       ) {
         return await handleVanillaVehicleList(request, env);
+      }
+
+      const garageRoute =
+        url.pathname.match(
+          /^\/api\/garage\/([^/]{1,240})$/
+        );
+
+      if (garageRoute && request.method === "POST") {
+        return await handleGarageAdd(
+          request,
+          env,
+          decodeURIComponent(garageRoute[1])
+        );
+      }
+
+      if (garageRoute && request.method === "DELETE") {
+        return await handleGarageRemove(
+          request,
+          env,
+          decodeURIComponent(garageRoute[1])
+        );
       }
 
 if (

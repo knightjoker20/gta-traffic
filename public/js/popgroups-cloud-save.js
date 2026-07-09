@@ -445,6 +445,11 @@
         </div>
       </div>
 
+      <p class="cloud-save-login-note" data-cloud-save-login-note hidden>
+        Log in to save this workspace as a cloud project.
+        <a href="/login.html">Log in</a> or <a href="/register.html">create a free account</a>.
+      </p>
+
       <div class="cloud-save-grid">
         <label class="cloud-save-field">
           <span>Project Name</span>
@@ -492,6 +497,46 @@
         document.body;
 
       target.insertBefore(panel, target.firstChild);
+    }
+
+    applyCloudSaveAccountGating();
+  }
+
+  // Saving a cloud project always requires login server-side
+  // (requireSavedProjectSession) -- this just makes that obvious in the UI
+  // instead of letting a logged-out visitor fill out the form and hit a
+  // confusing error on save.
+  async function applyCloudSaveAccountGating() {
+    const panel = getCloudSavePanel();
+    if (!panel) return;
+
+    let account = null;
+
+    try {
+      account = window.GTAAccountState
+        ? await window.GTAAccountState.get()
+        : null;
+    } catch {
+      account = null;
+    }
+
+    const loggedIn = Boolean(account?.loggedIn);
+
+    const loginNote = panel.querySelector("[data-cloud-save-login-note]");
+    const nameInput = panel.querySelector("[data-cloud-project-name]");
+    const descriptionInput = panel.querySelector("[data-cloud-project-description]");
+    const saveButton = panel.querySelector("[data-save-popgroups-cloud]");
+    const status = panel.querySelector("[data-cloud-save-status]");
+
+    if (loginNote) loginNote.hidden = loggedIn;
+    if (nameInput) nameInput.disabled = !loggedIn;
+    if (descriptionInput) descriptionInput.disabled = !loggedIn;
+    if (saveButton) saveButton.disabled = !loggedIn;
+
+    if (status) {
+      status.textContent = loggedIn
+        ? "Cloud save is ready."
+        : "Cloud save is available once you log in.";
     }
   }
 

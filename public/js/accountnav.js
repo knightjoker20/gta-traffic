@@ -27,6 +27,20 @@ async function logoutFromAccountNav() {
   window.location.href = "/login.html";
 }
 
+// Fallback only — used if a page loads accountnav.js without also loading
+// shared/accountstate.js first. Every page should load accountstate.js so
+// this path shouldn't normally run.
+async function legacyFetchAccountState() {
+  const response = await fetch("/api/auth/me", { credentials: "same-origin" });
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok || !payload.authenticated || !payload.user) {
+    return { loggedIn: false, email: "" };
+  }
+
+  return { loggedIn: true, email: payload.user.email || "" };
+}
+
 async function renderAccountNav() {
   if (document.querySelector(".gta-account-nav")) {
     return;
@@ -37,14 +51,12 @@ async function renderAccountNav() {
   nav.setAttribute("aria-label", "Account navigation");
 
   try {
-    const response = await fetch("/api/auth/me", {
-      credentials: "same-origin"
-    });
+    const state = window.GTAAccountState
+      ? await window.GTAAccountState.get()
+      : await legacyFetchAccountState();
 
-    const payload = await response.json().catch(() => ({}));
-
-    if (response.ok && payload.authenticated && payload.user) {
-      const emailText = payload.user.email || "Account";
+    if (state.loggedIn) {
+      const emailText = state.email || "Account";
       // Build two-letter initials from the email address
       const initials = emailText.split("@")[0].replace(/[^a-z0-9]/gi, " ").trim().split(/\s+/)
         .map(w => w[0]).slice(0, 2).join("").toUpperCase() || "ME";

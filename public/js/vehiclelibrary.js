@@ -9,6 +9,7 @@
 
  const store = window.vehicleLibraryStore;
  const PAGE_SIZE_STORAGE_KEY = "gtaTraffic.vehicleLibrary.pageSize";
+ const CATEGORY_FILTERS_STORAGE_KEY = "gtaTraffic.vehicleLibrary.categoryFilters";
  const DEFAULT_PAGE_SIZE = 50;
  const PAGE_SIZE_OPTIONS = new Set([25, 50, 100]);
  const MAX_COMPARE = 3;
@@ -30,11 +31,28 @@ function savePageSize(value) {
   }
 }
 
+function getSavedCategoryFilters() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(CATEGORY_FILTERS_STORAGE_KEY) || "[]");
+    return Array.isArray(saved) ? new Set(saved) : new Set();
+  } catch (error) {
+    return new Set();
+  }
+}
+
+function saveCategoryFilters(categoryFilters) {
+  try {
+    sessionStorage.setItem(CATEGORY_FILTERS_STORAGE_KEY, JSON.stringify([...categoryFilters]));
+  } catch (error) {
+    console.warn("Category filters could not be saved.", error);
+  }
+}
+
   const state = {
     vehicles: [],
     handlingMap: new Map(),
 	sourceHistory: [],
-    categoryFilters: new Set(),
+    categoryFilters: getSavedCategoryFilters(),
     compare: [],
     page: 1,
 	pageSize: getSavedPageSize(),
@@ -49,9 +67,7 @@ function savePageSize(value) {
       pack: "",
       install: "",
       installed: "",
-      favoritesOnly: false,
-      sort: "name-asc",
-      tag: (new URLSearchParams(window.location.search).get("tag") || "").trim().toLowerCase()
+      sort: "name-asc"
     }
   };
 
@@ -1355,6 +1371,7 @@ const importSource =
 
     el("vlCategoryList").querySelector('[data-category="ALL"]')?.addEventListener("click", () => {
       state.categoryFilters.clear();
+      saveCategoryFilters(state.categoryFilters);
       state.page = 1;
       renderAll();
     });
@@ -1366,50 +1383,7 @@ const importSource =
         } else {
           state.categoryFilters.delete(checkbox.dataset.category);
         }
-        state.page = 1;
-        renderAll();
-      });
-    });
-  }
-
-  function getVehicleTags(vehicle) {
-    return String(vehicle.custom?.tags || "")
-      .split(",")
-      .map(tag => tag.trim())
-      .filter(Boolean);
-  }
-
-  function tagCounts() {
-    const counts = new Map();
-    state.vehicles.forEach(vehicle => {
-      getVehicleTags(vehicle).forEach(tag => {
-        const key = tag.toLowerCase();
-        counts.set(key, (counts.get(key) || 0) + 1);
-      });
-    });
-    return counts;
-  }
-
-  function renderTagCloud() {
-    const host = el("vlTagCloud");
-    if (!host) return;
-    const counts = tagCounts();
-    if (!counts.size) {
-      host.innerHTML = `<p class="vl-muted small">No tags yet. Add tags from a vehicle's detail page.</p>`;
-      return;
-    }
-    const maxCount = Math.max(...counts.values());
-    const entries = [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-    host.innerHTML = entries.map(([tag, count]) => {
-      const weight = maxCount > 1 ? (count - 1) / (maxCount - 1) : 0;
-      const fontSize = (0.72 + weight * 0.5).toFixed(2);
-      const active = state.filters.tag === tag ? "active" : "";
-      return `<button type="button" class="tag-pill ${active}" style="font-size:${fontSize}rem" data-tag="${escapeHTML(tag)}" title="${count.toLocaleString()} vehicle${count === 1 ? "" : "s"}${active ? " — click to clear" : ""}">${escapeHTML(tag)}</button>`;
-    }).join("");
-    host.querySelectorAll("[data-tag]").forEach(button => {
-      button.addEventListener("click", () => {
-        const tag = button.dataset.tag;
-        state.filters.tag = state.filters.tag === tag ? "" : tag;
+        saveCategoryFilters(state.categoryFilters);
         state.page = 1;
         renderAll();
       });
@@ -1433,8 +1407,6 @@ const importSource =
       vehicle.custom?.vehiclesMetaPath,
       vehicle.custom?.handlingMetaPath,
       vehicle.custom?.downloadUrl,
-      vehicle.custom?.tags,
-      vehicle.custom?.notes,
       handling?.handlingName,
       handling?.AIHandling,
       ...(handling?.subHandlingTypes || [])
@@ -1455,8 +1427,6 @@ const importSource =
       if (state.filters.install && inferInstallType(vehicle) !== state.filters.install) return false;
       if (state.filters.installed === "installed" && !isInstalled(vehicle)) return false;
       if (state.filters.installed === "not-installed" && isInstalled(vehicle)) return false;
-      if (state.filters.favoritesOnly && !vehicle.custom?.favorite) return false;
-      if (state.filters.tag && !getVehicleTags(vehicle).some(tag => tag.toLowerCase() === state.filters.tag)) return false;
       if (query && !searchableText(vehicle, handling).includes(query)) return false;
       return true;
     });
@@ -1668,9 +1638,7 @@ function cardHtml(vehicle) {
           <label class="vl-bulk-select-check" title="Select for bulk pack assignment">
             <input type="checkbox" data-bulk-select="${escapeHTML(vehicle.modelName)}" ${isSelected ? "checked" : ""}>
           </label>
-        ` : `
-          <button class="vl-favorite-button ${vehicle.custom?.favorite ? "active" : ""}" type="button" data-favorite="${escapeHTML(vehicle.modelName)}" title="Toggle favorite">${vehicle.custom?.favorite ? "★" : "☆"}</button>
-        `}
+        ` : ""}
 
         <div class="vl-card-source-dots">
           <span class="vl-source-dot ${vehicle.vehiclesMeta?.modelName ? "ready" : ""}">META</span>
@@ -1994,8 +1962,7 @@ function cardHtml(vehicle) {
       compareStatRow("Traction (max)", vehicles, v => numericHandlingValue(linkedHandling(v), "fTractionCurveMax"), { bar: true, decimals: 2 }),
       compareTextRow("Popgroup membership", vehicles, v => [...new Set((v.popgroups || []).map(group => group.groupName))].join(", ")),
       compareTextRow("Install status", vehicles, v => isInstalled(v) ? "Installed" : "Not installed"),
-      compareTextRow("Install type", vehicles, v => inferInstallType(v)),
-      compareTextRow("Tags", vehicles, v => v.custom?.tags)
+      compareTextRow("Install type", vehicles, v => inferInstallType(v))
     ];
 
     body.innerHTML = `
@@ -2061,134 +2028,6 @@ function cardHtml(vehicle) {
     setupStaticImageFallbacks(grid);
 
 grid.querySelectorAll(
-  "[data-favorite]"
-).forEach(button => {
-  button.addEventListener(
-    "click",
-    async event => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const modelName =
-        button.dataset.favorite;
-
-      const vehicle = state.vehicles.find(
-        candidate =>
-          candidate.modelName.toLowerCase() ===
-          modelName.toLowerCase()
-      );
-
-      if (!vehicle) {
-        return;
-      }
-
-      const nextFavorite =
-        !vehicle.custom?.favorite;
-
-      button.disabled = true;
-
-      try {
-        await window.vehicleCloud.updateVehicle(
-          vehicle.modelName,
-          {
-            favorite: nextFavorite
-          }
-        );
-
-        await reloadData();
-
-        setStatus(
-          nextFavorite
-            ? `${vehicle.modelName} added to favorites.`
-            : `${vehicle.modelName} removed from favorites.`,
-          "good"
-        );
-      } catch (error) {
-        console.error(error);
-
-        setStatus(
-          error.message ||
-          "Favorite status could not be saved.",
-          "bad"
-        );
-      } finally {
-        button.disabled = false;
-      }
-    }
-  );
-});
-
-  grid.querySelectorAll(
-  "[data-installed]"
-).forEach(button => {
-  button.addEventListener(
-    "click",
-    async event => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const modelName =
-        button.dataset.installed;
-
-      const vehicle = state.vehicles.find(
-        candidate =>
-          candidate.modelName.toLowerCase() ===
-          modelName.toLowerCase()
-      );
-
-      if (!vehicle) {
-        return;
-      }
-
-      const nextInstalled =
-        vehicle.custom?.installed !== true;
-
-      const changes = {
-        installed: nextInstalled
-      };
-
-      if (
-        nextInstalled &&
-        !vehicle.custom?.installDate
-      ) {
-        changes.installDate =
-          new Date().toISOString().slice(0, 10);
-      }
-
-      button.disabled = true;
-
-      try {
-        await window.vehicleCloud.updateVehicle(
-          vehicle.modelName,
-          changes
-        );
-
-        await reloadData();
-
-        setStatus(
-          `${vehicle.modelName} marked ${
-            nextInstalled
-              ? "installed"
-              : "not installed"
-          }.`,
-          "good"
-        );
-      } catch (error) {
-        console.error(error);
-
-        setStatus(
-          error.message ||
-          "Installed status could not be saved.",
-          "bad"
-        );
-      } finally {
-        button.disabled = false;
-      }
-    }
-  );
-});
-
-grid.querySelectorAll(
   "[data-compare-toggle]"
 ).forEach(button => {
   button.addEventListener("click", event => {
@@ -2242,7 +2081,6 @@ grid.querySelectorAll(
   function renderAll() {
     renderStats();
     renderCategories();
-    renderTagCloud();
     renderGrid();
   }
 
@@ -2368,11 +2206,6 @@ grid.querySelectorAll(
     });
     el("vlInstallFilter").addEventListener("change", event => {
       state.filters.install = event.target.value;
-      state.page = 1;
-      renderGrid();
-    });
-    el("vlFavoritesOnly").addEventListener("change", event => {
-      state.filters.favoritesOnly = event.target.checked;
       state.page = 1;
       renderGrid();
     });

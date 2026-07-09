@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing | GTA Traffic Studio</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+  <link rel="stylesheet" href="css/pricing.css">
+</head>
+<body data-page="pricing">
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic Studio">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic Studio Logo">
+      <div class="brand-copy">
+        <div class="brand-title">GTA Traffic Studio</div>
+        <div class="tagline">Pricing</div>
+      </div>
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner pr-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Plans</div>
+        <h1>Free is where the site lives. Pro is where it grows.</h1>
+        <p>Pro is still early. There's no checkout yet — the button below adds you to the interest list so we can reach out when it's ready.</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="pr-shell">
+    <div class="pr-plan-grid">
+      <section class="panel pr-plan-card">
+        <div class="pr-plan-heading">
+          <h2>Free</h2>
+          <p class="pr-plan-price">$0</p>
+        </div>
+        <ul class="pr-feature-list">
+          <li>Browse every vanilla Rockstar vehicle, no account needed</li>
+          <li>Popgroups editor, vehicle.meta and handling.meta parsers — all local, no upload required</li>
+          <li>Create a free account to build your own addon/mod garage and save your customizations to the cloud, synced across devices</li>
+          <li>Personal vehicle detail edits, tags, and handling overrides</li>
+        </ul>
+        <div class="pr-plan-cta">
+          <a class="secondary" href="register.html">Create a free account</a>
+        </div>
+      </section>
+
+      <section class="panel pr-plan-card pr-plan-featured">
+        <div class="pr-plan-heading">
+          <span class="pr-plan-badge">Coming soon</span>
+          <h2>Pro</h2>
+          <p class="pr-plan-price">Interest list open</p>
+        </div>
+        <ul class="pr-feature-list">
+          <li><strong>Pack Builder</strong> — bundle your garage vehicles into a single installable OIV pack, available today to Pro accounts</li>
+          <li>Bulk automation across your whole garage instead of one vehicle at a time <em>(planned)</em></li>
+          <li>Expanded workspace tools for sharing a build with a small team <em>(planned)</em></li>
+          <li>Priority support when something breaks <em>(planned)</em></li>
+        </ul>
+        <div class="pr-plan-cta">
+          <a class="btn-orange" href="#pricingInterestForm">Join the interest list</a>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel pr-interest-panel" id="pricingInterestForm">
+      <h2>Get notified when Pro is ready</h2>
+      <p class="pr-muted">Leave your email and, if you want, a note about what you'd use Pro for. No payment info, no spam — just a heads-up when it opens up.</p>
+
+      <form id="pricingInterestFormEl" class="pr-interest-form">
+        <label>Email
+          <input id="pricingEmailInput" type="email" autocomplete="email" required placeholder="you@example.com">
+        </label>
+        <label>What would you use Pro for? <span class="pr-optional">(optional)</span>
+          <textarea id="pricingNoteInput" rows="3" placeholder="Bulk-packaging my addon garage, sharing a build with friends, etc."></textarea>
+        </label>
+        <button class="btn-green" type="submit" id="pricingSubmitButton">Join the interest list</button>
+        <div id="pricingFormStatus" class="pr-form-status"></div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div>Built for Modders</div>
+    <div>Browser Based</div>
+    <div>Your Files Stay Local</div>
+    <div><strong>GTA Traffic Studio</strong></div>
+  </footer>
+
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="js/shared/siteshell.js"></script>
+  <script src="js/pricing.js"></script>
+  <script defer src="/js/shared/accountstate.js"></script>
+  <script defer src="/js/accountnav.js"></script>
+</body>
+</html>

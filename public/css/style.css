@@ -1587,6 +1587,18 @@ input[type="file"]::-webkit-file-upload-button {
   font-size: .92rem;
 }
 
+.cloud-save-login-note {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 176, 32, .35);
+  border-radius: 8px;
+  background: rgba(255, 176, 32, .08);
+  color: rgba(255, 255, 255, .75);
+  font-size: .85rem;
+  line-height: 1.4;
+}
+.cloud-save-login-note a { color: #ffb020; font-weight: 600; }
+
 @media (max-width: 760px) {
   .cloud-save-grid {
     grid-template-columns: 1fr;

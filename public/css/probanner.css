@@ -1,0 +1,44 @@
+/* Pro upsell banner — shared across cloud-save pages. Relies on the
+   --color-* tokens from design-tokens.css, already loaded on every page
+   this banner appears on. */
+
+#proBannerSlot[hidden] {
+  display: none;
+}
+
+.pro-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-brand-border, rgba(245, 158, 11, 0.30));
+  border-radius: 10px;
+  background: var(--color-brand-subtle, rgba(245, 158, 11, 0.12));
+  font-size: .85rem;
+}
+
+.pro-banner-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  color: var(--color-text-secondary, #94a3b8);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pro-banner-copy {
+  color: var(--color-text-primary, #f1f5f9);
+  flex: 1 1 260px;
+}
+
+.pro-banner-link {
+  color: var(--color-brand-light, #fbbf24);
+  font-weight: 600;
+  white-space: nowrap;
+}

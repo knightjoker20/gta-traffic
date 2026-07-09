@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="css/vehicle-library.css">
   <link rel="stylesheet" href="/css/accountnav.css">
   <link rel="stylesheet" href="/css/site-shell.css">
+  <link rel="stylesheet" href="/css/probanner.css">
 </head>
 <body data-page="library" class="vl-library-page">
   <header class="app-header">
@@ -35,6 +36,7 @@
   </section>
 
   <main class="vehicle-library-main">
+    <div id="proBannerSlot" hidden></div>
     <div class="vl-layout">
       <aside class="vl-sidebar">
         <div class="vl-sidebar-heading">
@@ -50,6 +52,11 @@
         </div>
 
         <div id="vlSidebarBody" class="vl-sidebar-body">
+        <section class="panel vl-category-panel">
+          <h2>Categories</h2>
+          <div id="vlCategoryList" class="vl-category-list"></div>
+        </section>
+
         <div id="vlStatus" class="vl-status warn">Opening the local vehicle database...</div>
 
         <section class="panel">
@@ -106,11 +113,6 @@
           </div>
         </section>
 
-        <section class="panel vl-category-panel">
-          <h2>Categories</h2>
-          <div id="vlCategoryList" class="vl-category-list"></div>
-        </section>
-
         <section class="panel">
           <h2>Filters</h2>
           <div class="vl-filter-stack">
@@ -142,13 +144,7 @@
                 <option value="Unknown">Unknown</option>
               </select>
             </label>
-            <label class="vl-check-label"><input id="vlFavoritesOnly" type="checkbox"> Favorites only</label>
           </div>
-        </section>
-
-        <section class="panel">
-          <h2>Tags</h2>
-          <div id="vlTagCloud" class="tag-cloud"></div>
         </section>
 
         <section class="panel">
@@ -306,6 +302,8 @@
   <script src="js/vehiclelibrary.js"></script>
   <script src="js/rpfscanner/rpf7parser.js"></script>
   <script src="js/rpfscanner/rpfscannerapp.js"></script>
+  <script defer src="/js/shared/accountstate.js"></script>
+  <script defer src="/js/shared/probanner.js"></script>
   <script defer src="/js/accountnav.js"></script>
 </body>
 </html>

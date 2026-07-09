@@ -63,7 +63,8 @@ const state = {
   fieldEdits: {},
   fieldEditsLoggedIn: false,
   fieldCatalogs: null,
-  metaEditMode: false
+  metaEditMode: false,
+  loggedIn: false
 };
 
 // Fields with a matching column in the shared `vehicles` table — these are
@@ -192,7 +193,7 @@ const el = id => document.getElementById(id);
       const staticImage = frame.querySelector("[data-vd-static-image]");
       setupDetailStaticImageFallback(staticImage, state.vehicle.modelName.toLowerCase(), initials(title));
     }
-    el("vdRemoveImage").disabled = !image;
+    el("vdRemoveImage").disabled = !image || !state.loggedIn;
   }
 
   // Return the effective value for a vehiclesMeta field, applying any saved field edit as an override.
@@ -266,12 +267,6 @@ const el = id => document.getElementById(id);
       vehicleMetaLink.href = `vehicle-meta.html?${vmParams.toString()}`;
     }
 
-    el("vdFavorite").textContent = vehicle.custom?.favorite ? "★ Favorite" : "☆ Add Favorite";
-    const installButton = el("vdInstallButton");
-    const installed = isVehicleInstalled(vehicle);
-    installButton.textContent = installed ? "✓ Installed" : "+ Install Vehicle";
-    installButton.classList.toggle("active", installed);
-    installButton.setAttribute("aria-pressed", String(installed));
     renderImage();
   }
 
@@ -1010,9 +1005,9 @@ const el = id => document.getElementById(id);
 
   const CUSTOM_FIELDS = [
     "vehicleYear",
-    "displayName", "rockstarDlc", "sourcePack", "gameVersion", "installDate", "installType", "replacementFor",
+    "displayName", "rockstarDlc", "sourcePack", "gameVersion", "installType", "replacementFor",
     "dlcFolderPath", "vehiclesMetaPath",
-    "handlingMetaPath", "downloadUrl", "tags", "notes"
+    "handlingMetaPath", "downloadUrl"
   ];
 
   const CUSTOM_IDS = {
@@ -1021,29 +1016,13 @@ const el = id => document.getElementById(id);
     rockstarDlc: "vdRockstarDlc",
     sourcePack: "vdSourcePack",
     gameVersion: "vdGameVersion",
-    installDate: "vdInstallDate",
     installType: "vdInstallType",
     replacementFor: "vdReplacementFor",
     dlcFolderPath: "vdDlcFolderPath",
     vehiclesMetaPath: "vdVehiclesMetaPath",
     handlingMetaPath: "vdHandlingMetaPath",
-    downloadUrl: "vdDownloadUrl",
-    tags: "vdTags",
-    notes: "vdNotes"
+    downloadUrl: "vdDownloadUrl"
   };
-
-  function renderTagCloud() {
-    const host = el("vdTagCloud");
-    if (!host) return;
-    const raw = el("vdTags") ? el("vdTags").value : (state.vehicle?.custom?.tags || "");
-    const tags = String(raw || "")
-      .split(",")
-      .map(tag => tag.trim())
-      .filter(Boolean);
-    host.innerHTML = tags.length
-      ? tags.map(tag => `<a class="tag-pill" href="vehicle-library.html?tag=${encodeURIComponent(tag.toLowerCase())}" title="Browse other vehicles tagged &quot;${escapeHTML(tag)}&quot;">${escapeHTML(tag)}</a>`).join("")
-      : `<span class="vd-no-data">No tags yet. Add some under Library Details below.</span>`;
-  }
 
   function buildYearOptions() {
     const sel = el("vdVehicleYear");
@@ -1065,7 +1044,6 @@ const el = id => document.getElementById(id);
     CUSTOM_FIELDS.forEach(field => {
       el(CUSTOM_IDS[field]).value = custom[field] || "";
     });
-    el("vdInstalled").checked = custom.installed === true;
     setSaveState("Saved", "saved");
   }
 
@@ -1075,12 +1053,6 @@ const el = id => document.getElementById(id);
     CUSTOM_FIELDS.forEach(field => {
       values[field] = el(CUSTOM_IDS[field]).value.trim();
     });
-
-    values.installed = el("vdInstalled").checked;
-
-    if (values.installed && !values.installDate) {
-      values.installDate = new Date().toISOString().slice(0, 10);
-    }
 
     return values;
   }
@@ -1092,7 +1064,6 @@ const el = id => document.getElementById(id);
       rockstarDlc: custom.rockstarDlc || "",
       sourcePack: custom.sourcePack || "",
       gameVersion: custom.gameVersion || "",
-      installDate: custom.installDate || "",
       installationType: normalizeInstallType(custom.installType) || "",
       replacementSlot: custom.replacementFor || "",
       installedDlcFolder: custom.dlcFolderPath || "",
@@ -1101,11 +1072,7 @@ const el = id => document.getElementById(id);
       ytdPath: custom.ytdPath || "",
       vehiclesMetaPath: custom.vehiclesMetaPath || "",
       handlingMetaPath: custom.handlingMetaPath || "",
-      downloadUrl: custom.downloadUrl || "",
-      tags: custom.tags || "",
-      notes: custom.notes || "",
-      installed: custom.installed === true,
-      favorite: custom.favorite === true
+      downloadUrl: custom.downloadUrl || ""
     };
   }
 
@@ -1302,7 +1269,6 @@ async function loadVehicle(modelName) {
   renderAppearanceMetadata();
   renderSources();
   populateCustomForm();
-  renderTagCloud();
 
   setStatus(
     `Loaded ${vehicle.modelName} from the ${
@@ -1364,108 +1330,6 @@ async function loadVehicle(modelName) {
       el(CUSTOM_IDS[field]).addEventListener("input", scheduleSave);
       el(CUSTOM_IDS[field]).addEventListener("change", scheduleSave);
     });
-    el("vdTags").addEventListener("input", renderTagCloud);
-
-el("vdInstallButton").addEventListener(
-  "click",
-  async () => {
-    const previousInstalled =
-      state.vehicle.custom?.installed === true;
-
-    const nextInstalled =
-      !previousInstalled;
-
-    state.vehicle.custom =
-      state.vehicle.custom || {};
-
-    state.vehicle.custom.installed =
-      nextInstalled;
-
-    if (
-      nextInstalled &&
-      !state.vehicle.custom.installDate
-    ) {
-      state.vehicle.custom.installDate =
-        new Date().toISOString().slice(0, 10);
-    }
-
-    el("vdInstalled").checked =
-      nextInstalled;
-
-    el("vdInstallDate").value =
-      state.vehicle.custom.installDate || "";
-
-    const saved =
-      await saveCurrentVehicle({
-        quiet: true
-      });
-
-    if (!saved) {
-      state.vehicle.custom.installed =
-        previousInstalled;
-
-      el("vdInstalled").checked =
-        previousInstalled;
-
-      renderIdentity();
-      return;
-    }
-
-    renderIdentity();
-
-    setStatus(
-      nextInstalled
-        ? "Marked as installed in the cloud library."
-        : "Removed installed status from the cloud library.",
-      "good"
-    );
-  }
-);
-    el("vdInstalled").addEventListener("change", () => {
-      if (el("vdInstalled").checked && !el("vdInstallDate").value) {
-        el("vdInstallDate").value = new Date().toISOString().slice(0, 10);
-      }
-      scheduleSave();
-    });
-
-  el("vdFavorite").addEventListener(
-  "click",
-  async () => {
-    state.vehicle.custom =
-      state.vehicle.custom || {};
-
-    const previousFavorite =
-      state.vehicle.custom.favorite === true;
-
-    const nextFavorite =
-      !previousFavorite;
-
-    state.vehicle.custom.favorite =
-      nextFavorite;
-
-    const saved =
-      await saveCurrentVehicle({
-        quiet: true
-      });
-
-    if (!saved) {
-      state.vehicle.custom.favorite =
-        previousFavorite;
-
-      renderIdentity();
-      return;
-    }
-
-    renderIdentity();
-
-    setStatus(
-      nextFavorite
-        ? "Added to cloud favorites."
-        : "Removed from cloud favorites.",
-      "good"
-    );
-  }
-);
 
   el("vdChooseImage").addEventListener(
   "click",
@@ -1659,7 +1523,62 @@ el("vdImagePicker").addEventListener(
 
   }
 
+// FNL (logged-out) visitors get a read-only vehicle details page — everything
+// that writes to the shared cloud `vehicles` row (Library Details form, meta
+// file uploads, image editing) requires an account. Deleting a vehicle goes
+// further and requires an admin/owner account, matching the server-side
+// requireAdminSession() gate on that endpoint.
+async function applyAccountGating() {
+  let account = null;
+
+  try {
+    account = window.GTAAccountState
+      ? await window.GTAAccountState.get()
+      : null;
+  } catch {
+    account = null;
+  }
+
+  state.loggedIn = Boolean(account?.loggedIn);
+  const isAdmin = Boolean(account?.isAdmin);
+
+  const uploadBody = el("vdUploadMetaBody");
+  const uploadLoginNote = el("vdUploadMetaLoginNote");
+  if (uploadBody) uploadBody.hidden = !state.loggedIn;
+  if (uploadLoginNote) uploadLoginNote.hidden = state.loggedIn;
+
+  const form = el("vdCustomForm");
+  if (form) {
+    form.querySelectorAll("input, select, textarea").forEach(field => {
+      field.disabled = !state.loggedIn;
+    });
+  }
+
+  const saveButton = el("vdSaveButton");
+  if (saveButton) saveButton.hidden = !state.loggedIn;
+
+  const customLoginNote = el("vdCustomLoginNote");
+  if (customLoginNote) customLoginNote.hidden = state.loggedIn;
+
+  const customPanelNote = el("vdCustomPanelNote");
+  if (customPanelNote) {
+    customPanelNote.textContent = state.loggedIn
+      ? "Your information is saved to the cloud vehicle database."
+      : "Log in to save your own personal customization for this vehicle.";
+  }
+
+  const chooseImageButton = el("vdChooseImage");
+  if (chooseImageButton) chooseImageButton.hidden = !state.loggedIn;
+
+  const findImageButton = el("vdFindImage");
+  if (findImageButton) findImageButton.hidden = !state.loggedIn;
+
+  const deleteButton = el("vdDeleteButton");
+  if (deleteButton) deleteButton.hidden = !isAdmin;
+}
+
 async function initialize() {
+  await applyAccountGating();
   bindEvents();
 
   try {
