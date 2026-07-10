@@ -7128,6 +7128,26 @@ async function handleProjectVersionCreate(request, env, projectId) {
         return await handleCatalogTags(request, env);
       }
 
+      // ── Community Forum ──────────────────────────────────────────
+      if (url.pathname === "/api/community/threads" && request.method === "GET") {
+        return await handleCommunityListThreads(request, env, url);
+      }
+      if (url.pathname === "/api/community/threads" && request.method === "POST") {
+        return await handleCommunityCreateThread(request, env);
+      }
+      if (/^\/api\/community\/threads\/\d+$/.test(url.pathname) && request.method === "GET") {
+        return await handleCommunityGetThread(request, env, url);
+      }
+      if (/^\/api\/community\/threads\/\d+\/view$/.test(url.pathname) && request.method === "POST") {
+        return await handleCommunityIncrementView(request, env, url);
+      }
+      if (/^\/api\/community\/threads\/\d+\/posts$/.test(url.pathname) && request.method === "POST") {
+        return await handleCommunityCreatePost(request, env, url);
+      }
+      if (url.pathname === "/api/community/upload" && request.method === "POST") {
+        return await handleCommunityUpload(request, env);
+      }
+
 return jsonResponse(
           {
             ok: false,
@@ -8174,4 +8194,291 @@ function parseAndValidateMetaXml(xml, metaType, vehicleId) {
   }
 
   return { parsed, kitName, warnings, status };
+}
+
+// ── Community Forum handlers ──────────────────────────────────────────────────
+// GET /api/community/threads?page=1&limit=15&category=builds&q=search
+async function handleCommunityListThreads(request, env, url) {
+  const page     = Math.max(1, parseInt(url.searchParams.get('page')  || '1', 10));
+  const limit    = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') || '15', 10)));
+  const offset   = (page - 1) * limit;
+  const category = url.searchParams.get('category') || '';
+  const q        = (url.searchParams.get('q') || '').trim();
+
+  let where  = '';
+  const args = [];
+
+  if (category && category !== 'all') {
+    where += ' WHERE t.category = ?';
+    args.push(category);
+  }
+  if (q) {
+    where += where ? ' AND' : ' WHERE';
+    where += ' (t.title LIKE ? OR t.body LIKE ?)';
+    args.push(`%${q}%`, `%${q}%`);
+  }
+
+  const countRow = await env.DB
+    .prepare(`SELECT COUNT(*) as n FROM community_threads t${where}`)
+    .bind(...args).first();
+  const total = countRow?.n ?? 0;
+
+  const threads = await env.DB
+    .prepare(`
+      SELECT t.id, t.category, t.title,
+        substr(t.body, 1, 200) AS excerpt,
+        t.author_name, t.reply_count, t.view_count, t.file_count,
+        t.is_pinned, t.last_reply_at, t.created_at
+      FROM community_threads t
+      ${where}
+      ORDER BY t.is_pinned DESC, t.created_at DESC
+      LIMIT ? OFFSET ?
+    `)
+    .bind(...args, limit, offset)
+    .all();
+
+  // Category counts
+  const countRows = await env.DB
+    .prepare(`
+      SELECT category, COUNT(*) as n FROM community_threads GROUP BY category
+      UNION ALL SELECT 'all', COUNT(*) FROM community_threads
+    `)
+    .all();
+  const counts = {};
+  for (const r of countRows.results || []) counts[r.category] = r.n;
+
+  return jsonResponse({ ok: true, threads: threads.results || [], total, counts });
+}
+
+// GET /api/community/threads/:id
+async function handleCommunityGetThread(request, env, url) {
+  const id = parseInt(url.pathname.split('/').pop(), 10);
+
+  const thread = await env.DB
+    .prepare('SELECT * FROM community_threads WHERE id = ?')
+    .bind(id).first();
+  if (!thread) return jsonResponse({ ok: false, error: 'Not found' }, 404);
+
+  // Get posts
+  const posts = await env.DB
+    .prepare('SELECT * FROM community_posts WHERE thread_id = ? ORDER BY created_at ASC')
+    .bind(id).all();
+
+  // Get files for thread and all posts
+  const files = await env.DB
+    .prepare('SELECT * FROM community_files WHERE thread_id = ?')
+    .bind(id).all();
+
+  const filesByPost = {};
+  const threadFiles = [];
+  for (const f of files.results || []) {
+    const downloadUrl = `/api/community/files/${f.id}`;
+    const enriched = { ...f, url: downloadUrl };
+    if (f.post_id) {
+      (filesByPost[f.post_id] = filesByPost[f.post_id] || []).push(enriched);
+    } else {
+      threadFiles.push(enriched);
+    }
+  }
+
+  const postsWithFiles = (posts.results || []).map(p => ({
+    ...p,
+    files: filesByPost[p.id] || [],
+  }));
+
+  return jsonResponse({
+    ok: true,
+    thread: { ...thread, files: threadFiles },
+    posts: postsWithFiles,
+  });
+}
+
+// POST /api/community/threads/:id/view  (fire-and-forget view counter)
+async function handleCommunityIncrementView(request, env, url) {
+  const id = parseInt(url.pathname.split('/')[4], 10);
+  await env.DB
+    .prepare('UPDATE community_threads SET view_count = view_count + 1 WHERE id = ?')
+    .bind(id).run().catch(() => {});
+  return jsonResponse({ ok: true });
+}
+
+// POST /api/community/threads
+async function handleCommunityCreateThread(request, env) {
+  const session = await requireAuth(request, env);
+  if (!session) return jsonResponse({ ok: false, error: 'Not authenticated' }, 401);
+
+  const body = await request.json().catch(() => ({}));
+  const { category = 'general', title, body: content, files = [] } = body;
+
+  if (!title?.trim())   return jsonResponse({ ok: false, error: 'Title required' }, 400);
+  if (!content?.trim()) return jsonResponse({ ok: false, error: 'Body required' }, 400);
+
+  const VALID_CATS = ['builds', 'help', 'tips', 'bugs', 'general'];
+  const cat = VALID_CATS.includes(category) ? category : 'general';
+  const now = new Date().toISOString();
+
+  const result = await env.DB
+    .prepare(`
+      INSERT INTO community_threads
+        (user_id, author_name, author_plan, category, title, body, file_count, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    .bind(
+      session.userId,
+      session.displayName || session.email || 'Unknown',
+      session.plan || 'free',
+      cat,
+      title.trim().slice(0, 120),
+      content.trim(),
+      files.length,
+      now,
+      now
+    )
+    .run();
+
+  const threadId = result.meta?.last_row_id;
+
+  // Associate any pre-uploaded files with this thread
+  if (files.length && threadId) {
+    for (const f of files) {
+      if (f.fileId) {
+        await env.DB
+          .prepare('UPDATE community_files SET thread_id = ? WHERE id = ? AND user_id = ? AND thread_id IS NULL')
+          .bind(threadId, f.fileId, session.userId).run().catch(() => {});
+      }
+    }
+  }
+
+  return jsonResponse({ ok: true, threadId });
+}
+
+// POST /api/community/threads/:id/posts
+async function handleCommunityCreatePost(request, env, url) {
+  const session = await requireAuth(request, env);
+  if (!session) return jsonResponse({ ok: false, error: 'Not authenticated' }, 401);
+
+  const threadId = parseInt(url.pathname.split('/')[4], 10);
+  const thread = await env.DB
+    .prepare('SELECT id, is_locked FROM community_threads WHERE id = ?')
+    .bind(threadId).first();
+  if (!thread) return jsonResponse({ ok: false, error: 'Thread not found' }, 404);
+  if (thread.is_locked) return jsonResponse({ ok: false, error: 'Thread is locked' }, 403);
+
+  const body = await request.json().catch(() => ({}));
+  const { body: content, files = [] } = body;
+  if (!content?.trim()) return jsonResponse({ ok: false, error: 'Body required' }, 400);
+
+  const now = new Date().toISOString();
+
+  const result = await env.DB
+    .prepare(`
+      INSERT INTO community_posts
+        (thread_id, user_id, author_name, author_plan, body, file_count, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    .bind(
+      threadId,
+      session.userId,
+      session.displayName || session.email || 'Unknown',
+      session.plan || 'free',
+      content.trim(),
+      files.length,
+      now,
+      now
+    )
+    .run();
+
+  const postId = result.meta?.last_row_id;
+
+  // Update thread reply count + last_reply_at
+  await env.DB
+    .prepare('UPDATE community_threads SET reply_count = reply_count + 1, last_reply_at = ? WHERE id = ?')
+    .bind(now, threadId).run();
+
+  // Associate pre-uploaded files with this post
+  if (files.length && postId) {
+    for (const f of files) {
+      if (f.fileId) {
+        await env.DB
+          .prepare('UPDATE community_files SET thread_id = ?, post_id = ? WHERE id = ? AND user_id = ? AND post_id IS NULL')
+          .bind(threadId, postId, f.fileId, session.userId).run().catch(() => {});
+      }
+    }
+  }
+
+  return jsonResponse({ ok: true, postId });
+}
+
+// POST /api/community/upload  (multipart, auth required, stores to R2)
+async function handleCommunityUpload(request, env) {
+  const session = await requireAuth(request, env);
+  if (!session) return jsonResponse({ ok: false, error: 'Not authenticated' }, 401);
+
+  let formData;
+  try { formData = await request.formData(); }
+  catch { return jsonResponse({ ok: false, error: 'Invalid multipart body' }, 400); }
+
+  const file = formData.get('file');
+  if (!file || typeof file === 'string') return jsonResponse({ ok: false, error: 'No file provided' }, 400);
+
+  const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+  if (file.size > MAX_BYTES) return jsonResponse({ ok: false, error: 'File too large (max 10 MB)' }, 413);
+
+  const ALLOWED_EXT = ['.meta', '.dat', '.xml', '.zip', '.txt'];
+  const ext = ('.' + file.name.split('.').pop()).toLowerCase();
+  if (!ALLOWED_EXT.includes(ext)) {
+    return jsonResponse({ ok: false, error: `File type not allowed. Allowed: ${ALLOWED_EXT.join(', ')}` }, 400);
+  }
+
+  const safeFilename = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_').slice(0, 120);
+  const r2Key = `community/${session.userId}/${Date.now()}_${safeFilename}`;
+  const now   = new Date().toISOString();
+
+  await env.VEHICLE_IMAGES.put(r2Key, file.stream(), {
+    httpMetadata: { contentType: file.type || 'application/octet-stream' },
+    customMetadata: { originalName: file.name, uploaderUserId: session.userId },
+  });
+
+  const result = await env.DB
+    .prepare(`
+      INSERT INTO community_files (user_id, filename, r2_key, file_size, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `)
+    .bind(session.userId, safeFilename, r2Key, file.size, now)
+    .run();
+
+  const fileId = result.meta?.last_row_id;
+  return jsonResponse({ ok: true, fileId, filename: safeFilename, size: file.size });
+}
+
+// Helper — shared auth check reusing existing session infrastructure
+async function requireAuth(request, env) {
+  // Reuse the existing auth pattern from the worker
+  try {
+    const cookieHeader = request.headers.get('Cookie') || '';
+    const sessionMatch = cookieHeader.match(/session_token=([^;]+)/);
+    if (!sessionMatch) return null;
+    const token = sessionMatch[1];
+
+    const row = await env.DB
+      .prepare(`
+        SELECT u.id, u.email, u.display_name, u.role, u.plan
+        FROM user_sessions s
+        JOIN users u ON u.id = s.user_id
+        WHERE s.token = ? AND s.expires_at > datetime('now')
+      `)
+      .bind(token).first();
+
+    if (!row) return null;
+
+    return {
+      userId:      String(row.id),
+      email:       row.email || '',
+      displayName: row.display_name || row.email || '',
+      role:        row.role  || '',
+      plan:        row.plan  || 'free',
+    };
+  } catch {
+    return null;
+  }
 }

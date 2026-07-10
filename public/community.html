@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic — Community</title>
+
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/community.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="community">
+
+  <!-- Shared nav -->
+  <div id="siteToolMenu"></div>
+
+  <!-- Hero -->
+  <section class="hero-banner community-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Modder Community</div>
+        <h1>GTA Traffic Community</h1>
+        <p>
+          Share your custom mod builds, ask questions, post tips, and report bugs.
+          Logged-in members can attach <code>.meta</code> and config files directly to posts.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="community-main">
+
+    <!-- Sidebar: categories + new thread button -->
+    <aside class="community-sidebar">
+      <button id="commNewBtn" class="comm-new-btn" type="button">+ New Post</button>
+
+      <ul class="comm-cat-list" id="commCatList">
+        <li class="comm-cat-item active" data-cat="all">
+          <span class="comm-cat-icon">🗂️</span> All Posts
+          <span class="comm-cat-count" id="catCount-all">—</span>
+        </li>
+        <li class="comm-cat-item" data-cat="builds">
+          <span class="comm-cat-icon">📦</span> Build Shares
+          <span class="comm-cat-count" id="catCount-builds">—</span>
+        </li>
+        <li class="comm-cat-item" data-cat="help">
+          <span class="comm-cat-icon">❓</span> Help &amp; Questions
+          <span class="comm-cat-count" id="catCount-help">—</span>
+        </li>
+        <li class="comm-cat-item" data-cat="tips">
+          <span class="comm-cat-icon">💡</span> Tips &amp; Tricks
+          <span class="comm-cat-count" id="catCount-tips">—</span>
+        </li>
+        <li class="comm-cat-item" data-cat="bugs">
+          <span class="comm-cat-icon">🐛</span> Bug Reports
+          <span class="comm-cat-count" id="catCount-bugs">—</span>
+        </li>
+        <li class="comm-cat-item" data-cat="general">
+          <span class="comm-cat-icon">💬</span> General
+          <span class="comm-cat-count" id="catCount-general">—</span>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Content: thread list OR thread view -->
+    <div class="community-content">
+
+      <!-- Thread list panel -->
+      <div id="commListPanel" class="comm-thread-list-panel">
+        <div class="comm-list-header">
+          <h2 class="comm-list-title" id="commListTitle">All Posts</h2>
+          <input
+            id="commSearch"
+            class="comm-search"
+            type="search"
+            placeholder="Search posts…"
+            autocomplete="off"
+          >
+        </div>
+        <div id="commThreadList" class="comm-thread-list">
+          <div class="comm-loading">
+            <div class="comm-spinner"></div> Loading posts…
+          </div>
+        </div>
+        <div id="commPagination" class="comm-pagination"></div>
+      </div>
+
+      <!-- Thread view panel (single thread + replies) -->
+      <div id="commThreadView" class="comm-thread-view">
+        <button class="comm-back-btn" id="commBackBtn" type="button">← Back to posts</button>
+        <div id="commThreadViewContent"></div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- New Thread Modal -->
+  <div class="comm-modal-backdrop" id="commModalBackdrop">
+    <div class="comm-modal" role="dialog" aria-modal="true" aria-labelledby="commModalTitle">
+      <div class="comm-modal-header">
+        <h2 class="comm-modal-title" id="commModalTitle">Create New Post</h2>
+        <button class="comm-modal-close" id="commModalClose" type="button" aria-label="Close">×</button>
+      </div>
+
+      <div id="commModalAuthGate" class="comm-auth-notice" style="display:none">
+        You need to be <a href="/login.html">logged in</a> to post.
+      </div>
+
+      <form id="commNewThreadForm" autocomplete="off">
+        <div class="comm-modal-field">
+          <label class="comm-modal-label" for="commThreadCat">Category</label>
+          <select class="comm-modal-select" id="commThreadCat" required>
+            <option value="builds">📦 Build Shares</option>
+            <option value="help">❓ Help &amp; Questions</option>
+            <option value="tips">💡 Tips &amp; Tricks</option>
+            <option value="bugs">🐛 Bug Reports</option>
+            <option value="general" selected>💬 General</option>
+          </select>
+        </div>
+
+        <div class="comm-modal-field">
+          <label class="comm-modal-label" for="commThreadTitle">Title</label>
+          <input
+            class="comm-modal-input"
+            id="commThreadTitle"
+            type="text"
+            maxlength="120"
+            placeholder="Brief, descriptive title…"
+            required
+          >
+        </div>
+
+        <div class="comm-modal-field">
+          <label class="comm-modal-label" for="commThreadBody">Body</label>
+          <textarea
+            class="comm-modal-textarea"
+            id="commThreadBody"
+            placeholder="Describe your post in detail…"
+            required
+          ></textarea>
+        </div>
+
+        <div class="comm-modal-field">
+          <label class="comm-modal-label">
+            Attach Files
+            <span id="commAttachGateNote" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--color-text-muted)"> · logged-in members only</span>
+          </label>
+          <div
+            id="commFileDrop"
+            class="comm-file-drop"
+            title="Drop .meta, .dat, .xml or .zip files here"
+          >
+            <div class="comm-file-drop-icon">📎</div>
+            <div>Drop mod files here or <u style="cursor:pointer">click to browse</u></div>
+            <div style="font-size:11px;margin-top:4px;opacity:.7">.meta · .dat · .xml · .zip — max 10 MB per file</div>
+            <ul class="comm-file-list" id="commFileList"></ul>
+          </div>
+          <input id="commFileInput" type="file" multiple accept=".meta,.dat,.xml,.zip,.txt" hidden>
+        </div>
+
+        <div class="comm-modal-actions">
+          <button type="button" class="btn btn-ghost" id="commModalCancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="commSubmitBtn">Post</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="communityToast"></div>
+
+  <!-- Scripts -->
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
+  <script src="/js/communityapp.js"></script>
+
+</body>
+</html>

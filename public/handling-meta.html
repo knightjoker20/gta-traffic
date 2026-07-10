@@ -57,7 +57,20 @@
             <small>Used for organization. Export filename: <strong id="hmExportNamePreview">handling.meta</strong></small>
           </div>
 
-          <div class="hm-export-actions" style="margin-top:12px">
+          <div class="file-path-crumb" style="margin-top:8px;margin-bottom:4px">
+            <span class="fpc-seg">GTA V</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">mods</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">update</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg is-rpf">update.rpf</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">common</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">data</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">levels</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">gta5</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg is-file">handling.meta</span>
+            <span class="fpc-sep" style="margin-left:6px">·</span>
+            <span class="fpc-seg" style="font-family:var(--font-sans);font-size:var(--text-xs);opacity:.7">path varies for DLC packs</span>
+          </div>
+          <div class="hm-export-actions" style="margin-top:8px">
             <button id="hmExportXmlButton" class="btn-green" type="button" onclick="handlingMetaEditor.exportXml()">Export Full handling.meta</button>
             <button class="btn-orange" type="button" onclick="handlingMetaEditor.exportSingleVehicleXml()">Export This Vehicle Only</button>
             <button class="secondary" type="button" onclick="handlingMetaEditor.copyXml()">Copy XML</button>

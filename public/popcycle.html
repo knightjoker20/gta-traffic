@@ -117,6 +117,15 @@
         <button id="popcycleRedoButton" class="secondary" type="button" onclick="redoPopcycleEdit()">Redo</button>
         <button class="btn-green" type="button" onclick="runPopcycleValidation()">Validate</button>
         <button class="btn-orange" type="button" onclick="exportEditedPopcycle()">Export Edited DAT</button>
+        <div class="file-path-crumb" style="align-self:center">
+          <span class="fpc-seg">GTA V</span><span class="fpc-sep">›</span>
+          <span class="fpc-seg">mods</span><span class="fpc-sep">›</span>
+          <span class="fpc-seg">update</span><span class="fpc-sep">›</span>
+          <span class="fpc-seg is-rpf">update.rpf</span><span class="fpc-sep">›</span>
+          <span class="fpc-seg">common</span><span class="fpc-sep">›</span>
+          <span class="fpc-seg">data</span><span class="fpc-sep">›</span>
+          <span class="fpc-seg is-file">popcycle.dat</span>
+        </div>
         <button class="danger" type="button" onclick="clearSavedPopcycleWorkspace()">Clear Saved Workspace</button>
       </div>
 
@@ -472,6 +481,8 @@
 
   <script src="/js/shared/siteheader.js"></script>
 <script src="js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
   <script src="js/projectscloud.js"></script>
   <script src="js/popcycle-cloud-save.js"></script>
 
@@ -479,6 +490,7 @@
   <script src="js/popcycle/popcycleparser.js"></script>
   <script src="js/popcycle/popcyclereferences.js"></script>
   <script src="js/popcycle/popcyclevalidation.js"></script>
+
   <script src="js/popcycle/popcyclegroupdescriptions.js"></script>
   <script src="js/popcycle/popcycleareamap.js"></script>
   <script src="js/popcycle/popcycleeditor.js"></script>
@@ -489,7 +501,5 @@
   <script src="js/popcycle/popcycleapp.js"></script>
   <!-- [END SECTION: POPCYCLE_SCRIPTS] -->
 
-  <script defer src="/js/shared/accountstate.js"></script>
-  <script defer src="/js/accountnav.js"></script>
 </body>
 </html>

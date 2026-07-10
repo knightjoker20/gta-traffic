@@ -137,8 +137,15 @@
       <div class="rel-export-bar">
         <div class="rel-export-info">
           <strong>relationships.dat</strong>
-          <span style="margin-left:6px;color:var(--color-text-muted)">·</span>
-          <span style="margin-left:6px">Export the current matrix as a .dat file ready for your mod.</span>
+          <div class="file-path-crumb">
+            <span class="fpc-seg">GTA V</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">mods</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">update</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg is-rpf">update.rpf</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">common</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">data</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg is-file">relationships.dat</span>
+          </div>
         </div>
         <div class="rel-export-actions">
           <button id="relResetBtn" class="btn btn-ghost" type="button">↺ Reset to Vanilla</button>
@@ -165,6 +172,8 @@
   <!-- Scripts -->
   <script src="/js/shared/siteheader.js"></script>
   <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
   <script src="/js/relationshipsapp.js"></script>
 
 </body>

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic — Modding Resources</title>
+
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/resources.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="resources">
+
+  <!-- Shared nav -->
+  <div id="siteToolMenu"></div>
+
+  <!-- Hero -->
+  <section class="hero-banner resources-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Modding Tools</div>
+        <h1>GTA 5 Modding Resources</h1>
+        <p>
+          The essential tools you need to mod GTA 5 story mode — from opening RPF archives to
+          building custom scripts. All links go to official sources.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="resources-main">
+
+    <div class="res-intro">
+      <strong>New to modding?</strong> Start with <strong>OpenIV</strong> (required for almost everything),
+      then <strong>ScriptHook V</strong> if you want to run script mods. Use <strong>CodeWalker</strong>
+      to visually explore the game world. All tools listed here are free unless noted.
+    </div>
+
+    <!-- Essential Tools -->
+    <section class="res-section">
+      <h2 class="res-section-title">Essential — Install These First</h2>
+      <div class="res-grid">
+
+        <a class="res-card cat-essential" href="https://openiv.com" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">📦</div>
+            <div>
+              <div class="res-card-name">OpenIV</div>
+              <div class="res-card-author">by Illusion Softworks / OpenIV Team</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            The primary tool for reading and writing GTA V RPF archives. Required to install
+            virtually every mod. Use it to browse <code>update.rpf</code>, replace .meta files,
+            and manage your mods folder.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag req">Required</span>
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Windows</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-essential" href="http://www.dev-c.com/gtav/scripthookv/" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🪝</div>
+            <div>
+              <div class="res-card-name">Script Hook V</div>
+              <div class="res-card-author">by Alexander Blade</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Enables .asi script plugins in GTA V story mode. Required by most script-based mods
+            (trainers, spawn mods, gameplay overhauls). Must be updated after every GTA V patch.
+            Includes the Native Trainer as a bonus.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag req">Required for scripts</span>
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Windows</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-essential" href="https://openiv.com/?p=mods-folder" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">📁</div>
+            <div>
+              <div class="res-card-name">OpenIV.ASI + mods folder</div>
+              <div class="res-card-author">included with OpenIV</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            The OpenIV.ASI plugin enables the <code>mods/</code> folder — a safe override directory
+            that intercepts file reads without touching original game files.
+            Always install your modded files here, never over the originals.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag req">Required</span>
+            <span class="res-tag free">Free</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-essential" href="https://github.com/OpenIV-Asset-Handler/Openiv-Download/releases/" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">📥</div>
+            <div>
+              <div class="res-card-name">OpenIV Enhanced RPF Plugin</div>
+              <div class="res-card-author">OpenIV-Asset-Handler</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Extended OpenIV plugin that adds enhanced RPF archive handling, deeper asset
+            inspection, and improved file management. Also known (officially, somehow) as the
+            <em>OpenIV File Management Toolkit, Resource Analysis Workspace and Structured
+            Archive Inspection Environment</em>. Download from GitHub Releases.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Plugin</span>
+            <span class="res-tag">GitHub</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Editors & Viewers -->
+    <section class="res-section">
+      <h2 class="res-section-title">Editors &amp; World Viewers</h2>
+      <div class="res-grid">
+
+        <a class="res-card cat-editor" href="https://www.gta5-mods.com/tools/codewalker-gtav-interactive-3d-map" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🗺️</div>
+            <div>
+              <div class="res-card-name">CodeWalker</div>
+              <div class="res-card-author">by dexyfex</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Full 3D renderer for the GTA V world. Browse the map, inspect entity placements,
+            view IPL/ymap files, explore interiors, and edit scenario nodes.
+            Essential for understanding traffic and spawn layouts.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Windows</span>
+            <span class="res-tag">.NET required</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-editor" href="https://github.com/Skylumz/Sollumz" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🧊</div>
+            <div>
+              <div class="res-card-name">Sollumz</div>
+              <div class="res-card-author">by Skylumz et al.</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Blender plugin for importing and exporting GTA V model formats (.ydr, .ydd, .yft).
+            The go-to tool for creating custom vehicle models, peds, and map props
+            that work natively with GTA V's renderer.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Blender 3.x+</span>
+            <span class="res-tag">Open Source</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-editor" href="https://www.zmodeler3.com" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🔧</div>
+            <div>
+              <div class="res-card-name">ZModeler 3</div>
+              <div class="res-card-author">by Oleg Melashenko</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Long-standing 3D tool with native GTA V export support. Widely used for vehicle
+            modding, especially in the GTA modding community's earlier era.
+            Requires a paid licence for full export functionality.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag paid">Paid licence</span>
+            <span class="res-tag">Windows</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Script Frameworks -->
+    <section class="res-section">
+      <h2 class="res-section-title">Scripting Frameworks</h2>
+      <div class="res-grid">
+
+        <a class="res-card cat-script" href="https://www.gta5-mods.com/tools/script-hook-v-net-enhanced" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🟢</div>
+            <div>
+              <div class="res-card-name">ScriptHook V .NET</div>
+              <div class="res-card-author">by crosire</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            C# scripting framework built on top of Script Hook V. Provides a high-level API
+            over all of GTA V's native functions. Comes in two flavours: <strong>Legacy</strong>
+            (original crosire release, widely compatible) and <strong>Enhanced</strong>
+            (actively maintained fork with expanded API and bug fixes). Most modern script mods
+            require one or the other — check each mod's readme.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">C#</span>
+            <span class="res-tag">Open Source</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-script" href="https://www.lcpdfr.com/lspdfr/index/" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🚓</div>
+            <div>
+              <div class="res-card-name">LSPDFR</div>
+              <div class="res-card-author">by G17 Media</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Police roleplay modification — turns GTA V into a fully featured police simulator.
+            Also has its own plugin API (RAGE Plugin Hook) used by many traffic and police
+            behaviour mods.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Roleplay</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-script" href="https://ragepluginhook.net" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🔌</div>
+            <div>
+              <div class="res-card-name">RAGE Plugin Hook</div>
+              <div class="res-card-author">by LMS</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Alternative scripting framework used by LSPDFR and its plugin ecosystem.
+            Provides C# access to GTA V internals via a different loading mechanism
+            than Script Hook V .NET — the two can coexist.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">C#</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Trainers & In-Game Tools -->
+    <section class="res-section">
+      <h2 class="res-section-title">Trainers &amp; In-Game Tools</h2>
+      <div class="res-grid">
+
+        <a class="res-card cat-trainer" href="https://www.gta5-mods.com/scripts/menyoo-pc-sp" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🎮</div>
+            <div>
+              <div class="res-card-name">Menyoo PC</div>
+              <div class="res-card-author">by MAFINS</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Feature-rich single player trainer and object spawner. Lets you spawn vehicles,
+            peds, and props, teleport around the map, edit entity properties,
+            and save/load scenes — invaluable for testing traffic spawns.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Requires SHV</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-trainer" href="https://www.gta5-mods.com/scripts/simple-trainer-for-gtav" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🛠️</div>
+            <div>
+              <div class="res-card-name">Simple Trainer</div>
+              <div class="res-card-author">by sjaak327</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Lightweight but powerful trainer covering teleportation, weather control,
+            vehicle spawning, time editing, and a suite of developer-useful toggles.
+            Often used alongside Menyoo for its different feature set.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Requires SHV</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-trainer" href="https://www.gta5-mods.com/scripts/map-editor" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🗂️</div>
+            <div>
+              <div class="res-card-name">Map Editor</div>
+              <div class="res-card-author">by Guadmaz</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            In-game prop placement tool. Spawn objects, vehicles, and peds at exact
+            world coordinates, then export as XML for permanent map additions.
+            Good for testing scenario spawns in the actual world.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Requires SHV.NET</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Asset & Ped Tools -->
+    <section class="res-section">
+      <h2 class="res-section-title">Asset &amp; Ped Tools</h2>
+      <div class="res-grid">
+
+        <a class="res-card cat-asset" href="https://www.gta5-mods.com/tools/add-on-peds-manager" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🧑</div>
+            <div>
+              <div class="res-card-name">Add-On Peds Manager</div>
+              <div class="res-card-author">by DarthPungz</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Manages custom ped (pedestrian) models added to your game. Handles the
+            <code>peds.meta</code> and <code>carvariations.meta</code> entries needed
+            for custom peds to spawn properly in traffic and popgroups.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Peds</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-asset" href="https://gims.re" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🎨</div>
+            <div>
+              <div class="res-card-name">GIMS EVO</div>
+              <div class="res-card-author">by 3Doomer</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            3ds Max plugin for importing and exporting GTA V models. Used by many
+            professional modders for vehicle creation. Requires a 3ds Max licence.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag paid">Requires 3ds Max</span>
+            <span class="res-tag">Vehicles</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-script" href="https://github.com/scripthookvdotnet/scripthookvdotnet-nightly" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🟢</div>
+            <div>
+              <div class="res-card-name">ScriptHook V .NET Nightly</div>
+              <div class="res-card-author">by scripthookvdotnet</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            The actively maintained nightly build of ScriptHook V .NET — updated to track
+            GTA V patches faster than the stable release. Use this if the stable build
+            breaks after a game update. Required by the majority of C# script mods.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">C#</span>
+            <span class="res-tag">GitHub</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- References & Community -->
+    <section class="res-section">
+      <h2 class="res-section-title">References &amp; Community</h2>
+      <div class="res-grid">
+
+        <a class="res-card cat-reference" href="https://www.gta5-mods.com" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🌐</div>
+            <div>
+              <div class="res-card-name">GTA5-Mods.com</div>
+              <div class="res-card-author">community repository</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            The main repository for GTA V mods — vehicles, scripts, maps, textures, peds, and more.
+            Use the Vehicles section to browse add-on car packs you can import into
+            this site's Vehicle Library.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Repository</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-reference" href="https://wiki.gtamods.com" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">📖</div>
+            <div>
+              <div class="res-card-name">GTAMods Wiki</div>
+              <div class="res-card-author">community wiki</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            The most complete technical reference for GTA V file formats. Covers
+            .meta XML schemas, handling flags, popgroup structure, dispatch internals,
+            RPF layouts, and more. Bookmark this — you'll use it constantly.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Reference</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-reference" href="https://forums.gta5-mods.com" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">💬</div>
+            <div>
+              <div class="res-card-name">GTA5-Mods Forums</div>
+              <div class="res-card-author">community forum</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            Active modding community forum. The best place to ask questions, get help
+            with specific mod problems, and browse existing solved issues around
+            traffic, dispatch, and vehicle spawning.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Community</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-reference" href="https://discord.gg/gtamods" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">🎙️</div>
+            <div>
+              <div class="res-card-name">GTAMods Discord</div>
+              <div class="res-card-author">community server</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            The main Discord server for GTA modding. Real-time help channels covering
+            vehicles, peds, scripts, maps, and native research. Many mod authors
+            are active members.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Discord</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-reference" href="https://gtaforums.com" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">💬</div>
+            <div>
+              <div class="res-card-name">GTAForums</div>
+              <div class="res-card-author">gtaforums.com</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            The longest-running GTA community forum. Decades of modding knowledge, dedicated
+            boards for tools, scripts, vehicles, and missions, plus active release threads
+            for major mods.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Forum</span>
+          </div>
+        </a>
+
+        <a class="res-card cat-reference" href="https://docs.fivem.net/natives/" target="_blank" rel="noopener">
+          <div class="res-card-header">
+            <div class="res-card-icon">📡</div>
+            <div>
+              <div class="res-card-name">FiveM Native Reference</div>
+              <div class="res-card-author">docs.fivem.net</div>
+            </div>
+          </div>
+          <p class="res-card-desc">
+            The most comprehensive documentation for GTA V native functions. Essential for
+            script modding — every native call, parameter type, and return value is documented
+            and community-annotated. Applies to both FiveM and story mode scripting.
+          </p>
+          <div class="res-card-tags">
+            <span class="res-tag free">Free</span>
+            <span class="res-tag">Reference</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
+</body>
+</html>

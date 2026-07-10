@@ -2254,3 +2254,44 @@ button[data-save-popgroups-cloud].is-saving {
   border-color: rgba(255, 237, 213, .5);
 }
 
+/* ── OpenIV file-path breadcrumb ─────────────────────────────
+   Shared across all editor export bars.
+   Usage:
+     <div class="file-path-crumb">
+       <span class="fpc-seg">GTA V</span>
+       <span class="fpc-sep">›</span>
+       <span class="fpc-seg">mods</span>
+       <span class="fpc-sep">›</span>
+       <span class="fpc-seg is-rpf">update.rpf</span>
+       <span class="fpc-sep">›</span>
+       <span class="fpc-seg is-file">dispatch.meta</span>
+     </div>
+   ──────────────────────────────────────────────────────────── */
+.file-path-crumb {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  margin-top: 3px;
+}
+.fpc-sep {
+  color: var(--color-text-muted);
+  padding: 0 2px;
+  opacity: 0.55;
+  user-select: none;
+}
+.fpc-seg {
+  color: var(--color-text-secondary);
+}
+.fpc-seg.is-rpf {
+  color: var(--color-brand);
+  font-weight: var(--weight-semi);
+}
+.fpc-seg.is-file {
+  color: var(--color-text-primary);
+  font-weight: var(--weight-semi);
+}
+

@@ -33,8 +33,8 @@
         <h1>GTA Traffic Dispatch Editor</h1>
         <p>
           Swap police, SWAT, and army vehicle models per zone. Tune ped counts per wanted star.
-          Adjust spawn delays, search radii, and evasion timers. Export a clean
-          <code>dispatch.meta</code> ready for your mod.
+          Adjust spawn delays, search radii, and evasion timers. Configure which crimes require
+          witnesses and how NPCs report them. Export clean files ready for your mod.
         </p>
       </div>
     </div>
@@ -43,7 +43,7 @@
   <main class="dispatch-main">
     <div class="panel" style="margin-bottom:0">
 
-      <!-- Drop Zone -->
+      <!-- Drop Zone (dispatch.meta) -->
       <div
         id="dispatchDropZone"
         class="dispatch-drop-zone"
@@ -69,6 +69,12 @@
         </button>
         <button class="dispatch-tab-btn" data-tab="settings" type="button">
           ⚙ Settings &amp; Thresholds
+        </button>
+        <button class="dispatch-tab-btn" data-tab="crimes" type="button">
+          🔴 Crime Triggers
+        </button>
+        <button class="dispatch-tab-btn" data-tab="witness" type="button">
+          👁 Witness Rules
         </button>
       </div>
 
@@ -124,12 +130,133 @@
         <div id="dispatchSettingsPanel"></div>
       </div>
 
-      <!-- Export Bar -->
+      <!-- Tab: Crime Triggers -->
+      <div id="tab-crimes" class="dispatch-tab-panel">
+
+        <div class="crime-tab-header">
+          <p style="margin:0 0 4px;font-size:var(--text-sm);color:var(--color-text-secondary)">
+            Controls which crimes require a witness before law enforcement is notified, and how far away
+            NPCs can hear sound-based crimes. <strong>Always Reported</strong> crimes bypass witnesses entirely
+            — the game assumes cops already know (used for direct attacks on officers).
+          </p>
+          <span id="crimeModCount" class="dispatch-mod-count"></span>
+        </div>
+
+        <div
+          id="crimeDropZone"
+          class="dispatch-drop-zone crime-drop-zone"
+          role="button"
+          tabindex="0"
+          title="Drop crimeinformation.meta here or click to choose"
+          aria-label="Load custom crimeinformation.meta"
+        >
+          <div style="font-size:22px;margin-bottom:4px">🔴</div>
+          <strong>Drop crimeinformation.meta here</strong>
+          <small>or click to choose · Leave empty to start from vanilla GTA 5 defaults</small>
+          <div class="dispatch-drop-state-text"></div>
+        </div>
+        <input id="crimeFileInput" type="file" accept=".meta,.xml" hidden>
+
+        <div class="crime-cat-filters">
+          <button class="crime-cat-filter active" data-cat="all" type="button">All (42)</button>
+          <button class="crime-cat-filter" data-cat="cop" type="button">🚔 Cop Crime</button>
+          <button class="crime-cat-filter" data-cat="ped" type="button">👤 Ped Crime</button>
+          <button class="crime-cat-filter" data-cat="vehicle" type="button">🚗 Vehicle</button>
+          <button class="crime-cat-filter" data-cat="traffic" type="button">🛣 Traffic</button>
+          <button class="crime-cat-filter" data-cat="weapon" type="button">💥 Weapon</button>
+        </div>
+
+        <div id="crimeTableWrap"></div>
+
+        <div class="crime-export-bar">
+          <div class="dispatch-export-info">
+            <strong>crimeinformation.meta</strong>
+            <div class="file-path-crumb">
+              <span class="fpc-seg">GTA V</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">mods</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">update</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg is-rpf">update.rpf</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">common</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">data</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg is-file">crimeinformation.meta</span>
+            </div>
+          </div>
+          <div class="dispatch-export-actions">
+            <button id="crimeResetBtn" class="btn btn-ghost" type="button">↺ Reset to Vanilla</button>
+            <button id="crimeExportBtn" class="btn btn-primary" type="button">↓ Export crimeinformation.meta</button>
+          </div>
+        </div>
+
+      </div><!-- /tab-crimes -->
+
+      <!-- Tab: Witness Rules -->
+      <div id="tab-witness" class="dispatch-tab-panel">
+
+        <p style="margin:0 0 14px;font-size:var(--text-sm);color:var(--color-text-secondary)">
+          Controls which NPC personality types can witness crimes and whether they will call the police.
+          <strong>Can Witness Crimes</strong> is a prerequisite — without it, <strong>Will Call Law Enforcement</strong>
+          has no effect. The <em>Default</em> personality covers all regular civilians and bystanders.
+        </p>
+
+        <div
+          id="witnessDropZone"
+          class="dispatch-drop-zone crime-drop-zone"
+          role="button"
+          tabindex="0"
+          title="Drop witnessinformation.meta here or click to choose"
+          aria-label="Load custom witnessinformation.meta"
+        >
+          <div style="font-size:22px;margin-bottom:4px">👁</div>
+          <strong>Drop witnessinformation.meta here</strong>
+          <small>or click to choose · Leave empty to start from vanilla GTA 5 defaults</small>
+          <div class="dispatch-drop-state-text"></div>
+        </div>
+        <input id="witnessFileInput" type="file" accept=".meta,.xml" hidden>
+
+        <div id="witnessTableWrap" style="margin-top:16px"></div>
+
+        <div class="banner banner-info" style="margin-top:16px">
+          <strong>How witnessing works:</strong>
+          When a crime with <em>MustBeWitnessed</em> occurs, the game scans nearby NPCs.
+          If any have <em>CanWitnessCrimes</em> and <em>WillCallLawEnforcement</em>, the crime is reported
+          and the wanted level triggers dispatch.meta. Crimes with a <em>Hear Distance</em> can be
+          witnessed by sound alone within that radius — no line-of-sight required.
+        </div>
+
+        <div class="crime-export-bar" style="margin-top:16px">
+          <div class="dispatch-export-info">
+            <strong>witnessinformation.meta</strong>
+            <div class="file-path-crumb">
+              <span class="fpc-seg">GTA V</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">mods</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">update</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg is-rpf">update.rpf</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">common</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">data</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg is-file">witnessinformation.meta</span>
+            </div>
+          </div>
+          <div class="dispatch-export-actions">
+            <button id="witnessResetBtn" class="btn btn-ghost" type="button">↺ Reset to Vanilla</button>
+            <button id="witnessExportBtn" class="btn btn-primary" type="button">↓ Export witnessinformation.meta</button>
+          </div>
+        </div>
+
+      </div><!-- /tab-witness -->
+
+      <!-- Export Bar (dispatch.meta) -->
       <div class="dispatch-export-bar">
         <div class="dispatch-export-info">
           <strong>dispatch.meta</strong>
-          <span style="margin-left:6px;color:var(--color-text-muted)">·</span>
-          <span style="margin-left:6px">Place in <code>common/data/</code> inside your mod.</span>
+          <div class="file-path-crumb">
+            <span class="fpc-seg">GTA V</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">mods</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">update</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg is-rpf">update.rpf</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">common</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg">data</span><span class="fpc-sep">›</span>
+            <span class="fpc-seg is-file">dispatch.meta</span>
+          </div>
         </div>
         <div class="dispatch-export-actions">
           <button id="dispatchResetBtn" class="btn btn-ghost" type="button">↺ Reset to Vanilla</button>
@@ -155,5 +282,12 @@
   <!-- Scripts -->
   <script src="/js/shared/siteheader.js"></script>
   <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
   <script src="/js/vehiclelibrarystore.js"></script>
-  <script
+  <script src="/js/dispatchapp.js"></script>
+  <script src="/js/dispatch-vehicle-picker.js"></script>
+  <script src="/js/dispatch-crime-witness.js"></script>
+
+</body>
+</html>

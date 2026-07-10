@@ -13,7 +13,9 @@
     "pricing": "Pricing",
     "relationships": "Relationships Editor",
     "dispatch": "Dispatch Editor",
-    "events": "Events Editor"
+    "events": "Events Editor",
+    "resources": "Modding Resources",
+    "community": "Community"
   };
 
   function getPageTagline() {
@@ -41,4 +43,11 @@
     `;
 
     if (!existingHeader) {
-      document.body.insertBefore(header, do
+      document.body.insertBefore(header, document.body.firstChild);
+    }
+  }
+
+  renderSiteHeader();
+})();
+
+

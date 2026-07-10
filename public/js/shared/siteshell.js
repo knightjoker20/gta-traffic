@@ -70,6 +70,16 @@ const SITE_TOOL_NAV_ITEMS = [
     href: "events.html",
     page: "events"
   },
+  {
+    label: "Resources",
+    href: "resources.html",
+    page: "resources"
+  },
+  {
+    label: "Community",
+    href: "community.html",
+    page: "community"
+  },
 ];
 
 function renderSiteToolMenu() {
@@ -204,4 +214,14 @@ document.addEventListener(
     }, { passive: true });
   }
 
-  if (docume
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+
+// [END MODULE: BACK TO TOP]
+
+
+

@@ -1,0 +1,166 @@
+/* =============================================================
+   resources.css — GTA Modding Resources page
+   ============================================================= */
+
+/* ── Hero ──────────────────────────────────────────────────── */
+.resources-hero { background: linear-gradient(135deg, #080c14 0%, #0f1521 100%); }
+
+/* ── Main layout ───────────────────────────────────────────── */
+.resources-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+/* ── Section heading ───────────────────────────────────────── */
+.res-section {
+  margin-bottom: 36px;
+}
+
+.res-section-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semi);
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.res-section-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: var(--color-brand);
+  border-radius: 2px;
+}
+
+/* ── Tool grid ─────────────────────────────────────────────── */
+.res-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+/* ── Tool card ─────────────────────────────────────────────── */
+.res-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+
+.res-card:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-raised);
+  transform: translateY(-1px);
+}
+
+.res-card::after {
+  content: '↗';
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.res-card:hover::after {
+  opacity: 1;
+}
+
+/* Card accent stripe by category */
+.res-card.cat-essential  { border-top: 2px solid var(--color-brand); }
+.res-card.cat-editor     { border-top: 2px solid #60a5fa; }
+.res-card.cat-script     { border-top: 2px solid #34d399; }
+.res-card.cat-trainer    { border-top: 2px solid #c4b5fd; }
+.res-card.cat-asset      { border-top: 2px solid #fb923c; }
+.res-card.cat-reference  { border-top: 2px solid #94a3b8; }
+
+/* ── Card contents ─────────────────────────────────────────── */
+.res-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.res-card-icon {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.res-card-name {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semi);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.res-card-author {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+.res-card-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  margin: 0 0 12px;
+  flex: 1;
+}
+
+.res-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.res-tag {
+  font-size: 10px;
+  font-weight: var(--weight-semi);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.res-tag.req  { background: var(--color-brand-subtle); border-color: var(--color-brand-border); color: var(--color-brand-light); }
+.res-tag.free { background: var(--color-success-subtle); border-color: var(--color-success-border); color: var(--color-success-light); }
+.res-tag.paid { background: var(--color-info-subtle); border-color: var(--color-info-border); color: var(--color-info-light); }
+
+/* ── Intro callout ─────────────────────────────────────────── */
+.res-intro {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-brand);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.res-intro strong { color: var(--color-text-primary); }
