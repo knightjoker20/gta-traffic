@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic — Train Editor</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/trains.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+<body data-page="trains">
+
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic home">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner trains-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Train Editor</div>
+        <h1>GTA Traffic Train Editor</h1>
+        <p>
+          Tune train speeds and braking distances per route. Swap carriage compositions,
+          toggle station stops and ping-pong routing. Export clean
+          <code>traintracks.xml</code> and <code>trains.xml</code> files ready for your mod.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="trains-main">
+    <div class="panel" style="margin-bottom:0">
+
+      <!-- Tabs -->
+      <div class="trains-tabs">
+        <button class="trains-tab-btn active" data-tab="tracks" type="button">🛤 Track Routes</button>
+        <button class="trains-tab-btn" data-tab="consists" type="button">🚂 Train Consists</button>
+      </div>
+
+      <!-- ── Tab: Track Routes ───────────────────────────────────────────────── -->
+      <div id="tab-tracks" class="trains-tab-panel active">
+
+        <div class="trains-tab-header">
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary)">
+            Each route (trains1–12.dat) runs a train group at a fixed speed.
+            Adjust speed, braking distance, station stops, and train type per route.
+            <strong>trains1</strong> and <strong>trains12</strong> are the main open freight lines (faster by default).
+            <strong>trains4</strong> is the metro line.
+          </p>
+          <span id="trackModCount" class="dispatch-mod-count"></span>
+        </div>
+
+        <div id="tracksDropZone" class="trains-drop-zone"
+          role="button" tabindex="0"
+          title="Drop traintracks.xml here or click to choose"
+          aria-label="Load custom traintracks.xml">
+          <div style="font-size:22px;margin-bottom:4px">🛤</div>
+          <strong>Drop traintracks.xml here</strong>
+          <small>or click to choose · Leave empty to start from vanilla GTA 5 defaults</small>
+          <div class="trains-drop-state-text"></div>
+        </div>
+        <input id="tracksFileInput" type="file" accept=".xml,.meta" hidden>
+
+        <div class="track-table-scroll">
+          <table class="track-table">
+            <thead>
+              <tr>
+                <th style="width:16px"></th>
+                <th>Track File</th>
+                <th>Train Type</th>
+                <th>Speed</th>
+                <th>≈ km/h</th>
+                <th>Braking Dist</th>
+                <th>Stops (Story)</th>
+                <th>Stops (Online)</th>
+                <th>Ping-Pong</th>
+              </tr>
+            </thead>
+            <tbody id="trackTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="trains-export-bar">
+          <div class="dispatch-export-info">
+            <strong>traintracks.xml</strong>
+            <div class="file-path-crumb">
+              <span class="fpc-seg">GTA V</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">mods</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">update</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg is-rpf">update.rpf</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">common</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">data</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">levels</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">gta5</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg is-file">traintracks.xml</span>
+            </div>
+          </div>
+          <div class="dispatch-export-actions">
+            <button id="tracksResetBtn" class="btn btn-ghost" type="button">↺ Reset to Vanilla</button>
+            <button id="tracksExportBtn" class="btn btn-primary" type="button">↓ Export traintracks.xml</button>
+          </div>
+        </div>
+
+      </div><!-- /tab-tracks -->
+
+      <!-- ── Tab: Train Consists ────────────────────────────────────────────── -->
+      <div id="tab-consists" class="trains-tab-panel">
+
+        <div class="trains-tab-header">
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary)">
+            Each config defines a train's composition — which carriage models appear and how many.
+            <span style="background:rgba(139,92,246,0.15);color:#a78bfa;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600">🎬 Mission</span>
+            configs only spawn via scripts and never appear in free-roam.
+            Click <strong>Edit ↓</strong> on any card to adjust repeat counts and spawn flags.
+          </p>
+          <span id="consistModCount" class="dispatch-mod-count"></span>
+        </div>
+
+        <div id="consistsDropZone" class="trains-drop-zone"
+          role="button" tabindex="0"
+          title="Drop trains.xml here or click to choose"
+          aria-label="Load custom trains.xml">
+          <div style="font-size:22px;margin-bottom:4px">🚂</div>
+          <strong>Drop trains.xml here</strong>
+          <small>or click to choose · Leave empty to start from vanilla GTA 5 defaults</small>
+          <div class="trains-drop-state-text"></div>
+        </div>
+        <input id="consistsFileInput" type="file" accept=".xml,.meta" hidden>
+
+        <div id="consistGrid" class="consist-grid" style="margin-top:4px"></div>
+
+        <div class="trains-export-bar">
+          <div class="dispatch-export-info">
+            <strong>trains.xml</strong>
+            <div class="file-path-crumb">
+              <span class="fpc-seg">GTA V</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">mods</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">update</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg is-rpf">update.rpf</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">common</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">data</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">levels</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg">gta5</span><span class="fpc-sep">›</span>
+              <span class="fpc-seg is-file">trains.xml</span>
+            </div>
+          </div>
+          <div class="dispatch-export-actions">
+            <button id="consistsResetBtn" class="btn btn-ghost" type="button">↺ Reset to Vanilla</button>
+            <button id="consistsExportBtn" class="btn btn-primary" type="button">↓ Export trains.xml</button>
+          </div>
+        </div>
+
+      </div><!-- /tab-consists -->
+
+    </div><!-- /panel -->
+
+    <div class="banner banner-info" style="margin-top:14px">
+      <strong>File location:</strong> Both files live at
+      <code>update\update.rpf\common\data\levels\gta5\</code>.
+      The .dat track path files (trains1.dat – trains12.dat) are in the same folder.
+      Always mod inside your <code>mods\</code> folder.
+    </div>
+
+  </main>
+
+  <div id="trainsToast" class="dispatch-toast"></div>
+
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
+  <script src="/js/trainsapp.js"></script>
+
+</body>
+</html>

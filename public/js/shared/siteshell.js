@@ -66,6 +66,11 @@ const SITE_TOOL_NAV_ITEMS = [
     page: "dispatch"
   },
   {
+    label: "Trains",
+    href: "trains.html",
+    page: "trains"
+  },
+  {
     label: "Events",
     href: "events.html",
     page: "events"
