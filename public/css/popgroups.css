@@ -247,6 +247,38 @@
   transition: width 0.16s ease, min-width 0.16s ease;
 }
 
+/* Library view toggle — By Class / By Pack */
+.pg-library-view-toggle {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+.pg-lib-view-btn {
+  flex: 1;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.55);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+}
+
+.pg-lib-view-btn:hover {
+  background: rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.85);
+  border-color: rgba(255,255,255,0.28);
+}
+
+.pg-lib-view-btn.active {
+  background: rgba(249,115,22,0.18);
+  color: #fb923c;
+  border-color: rgba(249,115,22,0.45);
+}
+
 /* Collapsed: the column itself shrinks to a slim strip, not just its content.
    Selector includes .pg-wide-main-layout so its specificity (2 classes + 1 id)
    beats the later duplicate "#mainLayout.pg-wide-main-layout" rule further down

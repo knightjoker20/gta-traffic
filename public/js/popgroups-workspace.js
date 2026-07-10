@@ -17,6 +17,9 @@
   const imageMap = new Map();
   const installedIds = new Set();
 
+  // Sidebar view: 'class' | 'pack'
+  let sidebarView = 'class';
+
   // "Installed" status lives in the browser's local Vehicle Library database
   // (window.vehicleLibraryStore, IndexedDB) - the same place vehicle-library.html
   // and vehicle-details.html read/write it. It is intentionally per-browser/per-PC,
@@ -475,6 +478,8 @@
     const existing = cloudVehicles.get(model) || {};
     const imageUrl = getImageUrl(flat) || getImageUrl(existing);
 
+    const resolvedCat = getCategory({ ...existing, ...flat });
+
     const merged = {
       ...existing,
       ...flat,
@@ -484,10 +489,26 @@
       gameName: flat.gameName || flat.game_name || existing.gameName || model,
       imageUrl,
       image: imageUrl,
-      category: getCategory({ ...existing, ...flat }),
-      class: getCategory({ ...existing, ...flat }),
-      vehicleClass: getCategory({ ...existing, ...flat })
+      // Normalise pack name — vehicles.meta importer stores it as sourcePack
+      // on the custom sub-object which flattenRecord spreads up to the top level.
+      sourcePack: flat.sourcePack || flat.packName || existing.sourcePack || existing.packName || '',
+      packName:   flat.sourcePack || flat.packName || existing.sourcePack || existing.packName || '',
     };
+
+    // Only stamp category fields when we resolved a real class.
+    // Setting them to "Uncategorized" makes every placeholder pass the sidebar
+    // filter (truthy string), causing 400+ vehicles to flood the Uncategorized bucket.
+    if (resolvedCat !== "Uncategorized") {
+      merged.category    = resolvedCat;
+      merged.class       = resolvedCat;
+      merged.vehicleClass = resolvedCat;
+    } else {
+      // Scrub any stale "Uncategorized" string left by a previous merge pass
+      // so the sidebar filter correctly excludes unimported records.
+      if (merged.category    === "Uncategorized") delete merged.category;
+      if (merged.class       === "Uncategorized") delete merged.class;
+      if (merged.vehicleClass === "Uncategorized") delete merged.vehicleClass;
+    }
 
     cloudVehicles.set(model, merged);
 
@@ -575,11 +596,32 @@
       vehicle.manufacturer,
       vehicle.handlingId,
       vehicle.handlingName,
-      vehicle.packName
+      vehicle.packName,
+      vehicle.sourcePack
     ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
+  }
+
+  function buildVehicleCard(vehicle) {
+    const imageUrl = getImageUrl(vehicle);
+    const model = normalizeModelName(vehicle.modelName);
+    const modelId = model.toLowerCase();
+    const installed = installedIds.has(modelId) || installedIds.has(model) || window.GTAVanillaModels?.has(modelId);
+    return `
+      <article class="pg-sidebar-vehicle-card" draggable="true" data-model="${escapeHtml(model)}">
+        ${imageUrl
+          ? `<img class="pg-sidebar-vehicle-img" src="${escapeHtml(imageUrl)}" alt="">`
+          : `<div class="pg-sidebar-vehicle-img pg-sidebar-no-image">No image</div>`}
+        <div class="pg-sidebar-vehicle-body">
+          <h4>${escapeHtml(model)}</h4>
+          <p>${escapeHtml(getDisplayName(vehicle))}</p>
+          <p>${escapeHtml(getCategory(vehicle))}</p>
+          <span class="pg-sidebar-installed-badge${installed ? " active" : ""}">Installed</span>
+          <a href="vehicle-details.html?model=${encodeURIComponent(model)}">Details</a>
+        </div>
+      </article>`;
   }
 
   function renderSidebar() {
@@ -588,13 +630,14 @@
 
     const query = String(document.getElementById("librarySearchBox")?.value || "").toLowerCase();
     const vehicles = Array.from(cloudVehicles.values())
-      // Only show vehicles that have actual library data (vehicleClass or vehicleType
-      // set from a vehicles.meta import). Vehicles with neither are minimal placeholder
-      // records that were never properly imported and should not appear in the panel.
+      // Show vehicles that have class data from a vehicles.meta import OR that
+      // have been assigned to a pack via Bulk Assign — pack-assigned vehicles are
+      // legitimately imported even if their vehicleClass wasn't captured.
       .filter((vehicle) =>
         vehicle.vehicleClass || vehicle.className || vehicle.class ||
         vehicle.category    || vehicle.vehicleCategory ||
-        vehicle.vehicleType || vehicle.type
+        vehicle.vehicleType || vehicle.type ||
+        vehicle.sourcePack  || vehicle.packName
       )
       .filter((vehicle) => !query || vehicleSearchText(vehicle).includes(query));
 
@@ -603,6 +646,41 @@
       return;
     }
 
+    // ── By Pack view ────────────────────────────────────────────────────────
+    if (sidebarView === 'pack') {
+      const packVehicles = vehicles.filter(v => v.sourcePack || v.packName);
+      if (!packVehicles.length) {
+        target.innerHTML = `<div class="pg-empty-state">No packs assigned yet.<br><small>Use <strong>Bulk Assign Pack</strong> in the Vehicle Library to tag vehicles with a pack name.</small></div>`;
+        return;
+      }
+      const packGroups = new Map();
+      packVehicles.forEach(v => {
+        const pack = v.sourcePack || v.packName;
+        if (!packGroups.has(pack)) packGroups.set(pack, []);
+        packGroups.get(pack).push(v);
+      });
+      target.innerHTML = Array.from(packGroups.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([pack, items]) => {
+          const cards = items
+            .sort((a, b) => String(a.modelName).localeCompare(String(b.modelName)))
+            .map(vehicle => buildVehicleCard(vehicle))
+            .join('');
+          return `
+            <details class="pg-sidebar-category" open>
+              <summary>
+                <strong>📦 ${escapeHtml(pack)}</strong>
+                <span>${items.length}</span>
+              </summary>
+              <div class="pg-sidebar-vehicle-grid">${cards}</div>
+            </details>`;
+        })
+        .join('');
+      bindSidebarDrag();
+      return;
+    }
+
+    // ── By Class view (default) ─────────────────────────────────────────────
     const groups = new Map();
 
     vehicles.forEach((vehicle) => {
@@ -626,27 +704,7 @@
       .map(([category, items]) => {
         const cards = items
           .sort((a, b) => String(a.modelName).localeCompare(String(b.modelName)))
-          .map((vehicle) => {
-            const imageUrl = getImageUrl(vehicle);
-            const model = normalizeModelName(vehicle.modelName);
-            const modelId = model.toLowerCase();
-            const installed = installedIds.has(modelId) || installedIds.has(model) || window.GTAVanillaModels?.has(modelId);
-
-            return `
-              <article class="pg-sidebar-vehicle-card" draggable="true" data-model="${escapeHtml(model)}">
-                ${imageUrl
-                  ? `<img class="pg-sidebar-vehicle-img" src="${escapeHtml(imageUrl)}" alt="">`
-                  : `<div class="pg-sidebar-vehicle-img pg-sidebar-no-image">No image</div>`}
-                <div class="pg-sidebar-vehicle-body">
-                  <h4>${escapeHtml(model)}</h4>
-                  <p>${escapeHtml(getDisplayName(vehicle))}</p>
-                  <p>${escapeHtml(getCategory(vehicle))}</p>
-                  <span class="pg-sidebar-installed-badge${installed ? " active" : ""}">Installed</span>
-                  <a href="vehicle-details.html?model=${encodeURIComponent(model)}">Details</a>
-                </div>
-              </article>
-            `;
-          })
+          .map((vehicle) => buildVehicleCard(vehicle))
           .join("");
 
         return `
@@ -662,6 +720,24 @@
       .join("");
 
     bindSidebarDrag();
+  }
+
+  function initLibraryViewToggle() {
+    const byClass = document.getElementById('libViewByClass');
+    const byPack  = document.getElementById('libViewByPack');
+    if (!byClass || !byPack) return;
+    byClass.addEventListener('click', () => {
+      sidebarView = 'class';
+      byClass.classList.add('active');
+      byPack.classList.remove('active');
+      renderSidebar();
+    });
+    byPack.addEventListener('click', () => {
+      sidebarView = 'pack';
+      byPack.classList.add('active');
+      byClass.classList.remove('active');
+      renderSidebar();
+    });
   }
 
   function bindSidebarDrag() {
@@ -709,6 +785,108 @@
     const imageUrl =
       imageMap.get(model) ||
       getImageUrl(cloudVehicles.get(model)) ||
+      getImageUrl(window.vehicleMeta?.[model]);
+
+    if (!imageUrl) return;
+
+    const existingImg = card.querySelector("img");
+    if (existingImg) {
+      existingImg.src = imageUrl;
+      return;
+    }
+
+    const placeholder = card.querySelector(".pg-sidebar-no-image, .no-image, [class*='no-image']");
+    if (placeholder) {
+      const img = document.createElement("img");
+      img.className = placeholder.className.replace(/no-image[^ ]*/g, "").trim() || "pg-sidebar-vehicle-img";
+      img.src = imageUrl;
+      img.alt = "";
+      placeholder.replaceWith(img);
+    }
+  }
+
+  function removeUnwantedButtons(root) {
+    const blocked = new Set(["edit", "delete", "remove"]);
+
+    root.querySelectorAll("button, a").forEach((button) => {
+      const label = String(button.textContent || "").trim().toLowerCase();
+
+      if (blocked.has(label)) {
+        button.remove();
+      }
+    });
+  }
+
+  // addQuickClearButtons() removed — popgroups-quickclear.js handles this
+  // via the group-quick-clear-button class and properly updates parsedData.
+
+  function refreshLegacyMainCards() {
+    document
+      .querySelectorAll("#results .vehicle-card, #results [class*='vehicle-card']")
+      .forEach(injectImage);
+
+    removeUnwantedButtons(document.getElementById("results") || document);
+  }
+
+  function observeMainRender() {
+    const target = document.getElementById("results");
+    if (!target) return;
+
+    const observer = new MutationObserver(() => {
+      refreshLegacyMainCards();
+    });
+
+    observer.observe(target, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  const LIBRARY_COLLAPSE_STORAGE_KEY = "pgLibraryPanelExpanded";
+
+  function setLibraryCollapsed(collapsed) {
+    const panel = document.getElementById("libraryPanel");
+    const layout = document.getElementById("mainLayout");
+    const toggle = document.getElementById("libraryCollapseToggle");
+
+    panel?.classList.toggle("pg-library-collapsed", collapsed);
+    layout?.classList.toggle("pg-library-collapsed", collapsed);
+
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.title = collapsed ? "Expand vehicle library" : "Collapse vehicle library";
+    }
+  }
+
+  function initLibraryCollapse() {
+    const toggle = document.getElementById("libraryCollapseToggle");
+    if (!toggle) return;
+
+    // Collapsed by default; remembers the user's choice after that.
+    const savedExpanded = localStorage.getItem(LIBRARY_COLLAPSE_STORAGE_KEY);
+    setLibraryCollapsed(savedExpanded !== "true");
+
+    toggle.addEventListener("click", () => {
+      const isCollapsed = document.getElementById("libraryPanel")?.classList.contains("pg-library-collapsed");
+      setLibraryCollapsed(!isCollapsed);
+      localStorage.setItem(LIBRARY_COLLAPSE_STORAGE_KEY, String(isCollapsed));
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("librarySearchBox")?.addEventListener("input", renderSidebar);
+
+    initLibraryCollapse();
+    initLibraryViewToggle();
+    observeMainRender();
+    loadCloudLibrary();
+    loadInstalledIds().then(renderSidebar);
+
+    setTimeout(refreshLegacyMainCards, 500);
+    setTimeout(refreshLegacyMainCards, 1500);
+  });
+})();
+||
       getImageUrl(window.vehicleMeta?.[model]);
 
     if (!imageUrl) return;
