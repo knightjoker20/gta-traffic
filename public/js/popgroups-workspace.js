@@ -807,39 +807,24 @@
 
   function removeUnwantedButtons(root) {
     const blocked = new Set(["edit", "delete", "remove"]);
-
     root.querySelectorAll("button, a").forEach((button) => {
       const label = String(button.textContent || "").trim().toLowerCase();
-
-      if (blocked.has(label)) {
-        button.remove();
-      }
+      if (blocked.has(label)) button.remove();
     });
   }
-
-  // addQuickClearButtons() removed — popgroups-quickclear.js handles this
-  // via the group-quick-clear-button class and properly updates parsedData.
 
   function refreshLegacyMainCards() {
     document
       .querySelectorAll("#results .vehicle-card, #results [class*='vehicle-card']")
       .forEach(injectImage);
-
     removeUnwantedButtons(document.getElementById("results") || document);
   }
 
   function observeMainRender() {
     const target = document.getElementById("results");
     if (!target) return;
-
-    const observer = new MutationObserver(() => {
-      refreshLegacyMainCards();
-    });
-
-    observer.observe(target, {
-      childList: true,
-      subtree: true
-    });
+    const observer = new MutationObserver(() => { refreshLegacyMainCards(); });
+    observer.observe(target, { childList: true, subtree: true });
   }
 
   const LIBRARY_COLLAPSE_STORAGE_KEY = "pgLibraryPanelExpanded";
@@ -848,10 +833,8 @@
     const panel = document.getElementById("libraryPanel");
     const layout = document.getElementById("mainLayout");
     const toggle = document.getElementById("libraryCollapseToggle");
-
     panel?.classList.toggle("pg-library-collapsed", collapsed);
     layout?.classList.toggle("pg-library-collapsed", collapsed);
-
     if (toggle) {
       toggle.setAttribute("aria-expanded", String(!collapsed));
       toggle.title = collapsed ? "Expand vehicle library" : "Collapse vehicle library";
@@ -861,11 +844,8 @@
   function initLibraryCollapse() {
     const toggle = document.getElementById("libraryCollapseToggle");
     if (!toggle) return;
-
-    // Collapsed by default; remembers the user's choice after that.
     const savedExpanded = localStorage.getItem(LIBRARY_COLLAPSE_STORAGE_KEY);
     setLibraryCollapsed(savedExpanded !== "true");
-
     toggle.addEventListener("click", () => {
       const isCollapsed = document.getElementById("libraryPanel")?.classList.contains("pg-library-collapsed");
       setLibraryCollapsed(!isCollapsed);
@@ -875,6 +855,16 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("librarySearchBox")?.addEventListener("input", renderSidebar);
+    initLibraryCollapse();
+    initLibraryViewToggle();
+    observeMainRender();
+    loadCloudLibrary();
+    loadInstalledIds().then(renderSidebar);
+    setTimeout(refreshLegacyMainCards, 500);
+    setTimeout(refreshLegacyMainCards, 1500);
+  });
+})();
+"input", renderSidebar);
 
     initLibraryCollapse();
     initLibraryViewToggle();
