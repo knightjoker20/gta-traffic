@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic — Relationships Editor</title>
+
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/relationships.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="relationships">
+
+  <!-- Site Header -->
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic home">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+    </a>
+  </header>
+
+  <!-- Shared nav -->
+  <div id="siteToolMenu"></div>
+
+  <!-- Hero -->
+  <section class="hero-banner rel-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">NPC Faction Editor</div>
+        <h1>GTA Traffic Relationships Editor</h1>
+        <p>
+          View and edit how every NPC faction feels about every other faction.
+          Load your custom <code>relationships.dat</code>, click cells to change tiers,
+          and export back to a clean .dat file ready to drop into your mod.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="rel-main">
+    <div class="panel" style="margin-bottom:0">
+
+      <!-- Import drop zone -->
+      <div class="rel-import-panel">
+        <div
+          id="relDropZone"
+          class="rel-drop-zone"
+          role="button"
+          tabindex="0"
+          title="Drop a relationships.dat file here or click to choose"
+          aria-label="Load custom relationships.dat"
+        >
+          <div class="rel-drop-icon">📂</div>
+          <strong>Drop relationships.dat here</strong>
+          <small>or click to choose · Leave empty to use vanilla GTA 5 relationships</small>
+          <div class="rel-drop-state-text" style="margin-top:6px;font-size:var(--text-xs);color:var(--color-success-light)"></div>
+        </div>
+        <input id="relFileInput" type="file" accept=".dat,.txt" hidden>
+      </div>
+
+      <!-- Controls bar -->
+      <div class="rel-controls">
+        <div class="rel-controls-left">
+          <span style="font-size:var(--text-xs);color:var(--color-text-muted);font-weight:600;white-space:nowrap">SHOW:</span>
+
+          <button class="rel-cat-chip" data-cat="civilian" type="button">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--color-info);display:inline-block"></span>
+            Civilians
+          </button>
+          <button class="rel-cat-chip" data-cat="law" type="button">
+            <span style="width:7px;height:7px;border-radius:50%;background:#14b8a6;display:inline-block"></span>
+            Law &amp; Services
+          </button>
+          <button class="rel-cat-chip" data-cat="special" type="button">
+            <span style="width:7px;height:7px;border-radius:50%;background:#9333ea;display:inline-block"></span>
+            Special
+          </button>
+          <button class="rel-cat-chip" data-cat="gang" type="button">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--color-error);display:inline-block"></span>
+            Gangs
+          </button>
+          <button class="rel-cat-chip" data-cat="animal" type="button">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--color-success);display:inline-block"></span>
+            Animals
+          </button>
+          <button class="rel-cat-chip" data-cat="mission" type="button">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--color-text-muted);display:inline-block"></span>
+            Mission
+          </button>
+        </div>
+
+        <div class="rel-controls-right">
+          <span id="relModCount" class="rel-mod-count"></span>
+          <button id="relEditToggle" class="rel-edit-toggle" type="button">
+            <span class="rel-edit-dot"></span>
+            <span class="rel-edit-label">Edit Mode</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="rel-legend">
+        <span class="rel-legend-title">Legend:</span>
+        <span class="rel-legend-item">
+          <span class="rel-legend-swatch Hate"></span> Hate
+        </span>
+        <span class="rel-legend-item">
+          <span class="rel-legend-swatch Dislike"></span> Dislike
+        </span>
+        <span class="rel-legend-item">
+          <span class="rel-legend-swatch Like"></span> Like
+        </span>
+        <span class="rel-legend-item">
+          <span class="rel-legend-swatch Respect"></span> Respect
+        </span>
+        <span class="rel-legend-item">
+          <span class="rel-legend-swatch None"></span> No relationship
+        </span>
+        <span class="rel-legend-sep"></span>
+        <span style="font-size:var(--text-xs);color:var(--color-text-muted)">
+          Rows = source (who has the feeling) · Columns = target (who they feel it toward)
+        </span>
+      </div>
+
+      <!-- Stats -->
+      <div id="relStats" class="rel-stats"></div>
+
+      <!-- Matrix -->
+      <div id="relMatrixWrap" class="rel-matrix-wrap">
+        <div style="padding:32px;text-align:center;color:var(--color-text-muted)">Loading…</div>
+      </div>
+
+      <!-- Export bar -->
+      <div class="rel-export-bar">
+        <div class="rel-export-info">
+          <strong>relationships.dat</strong>
+          <span style="margin-left:6px;color:var(--color-text-muted)">·</span>
+          <span style="margin-left:6px">Export the current matrix as a .dat file ready for your mod.</span>
+        </div>
+        <div class="rel-export-actions">
+          <button id="relResetBtn" class="btn btn-ghost" type="button">↺ Reset to Vanilla</button>
+          <button id="relExportBtn" class="btn btn-primary" type="button">↓ Export relationships.dat</button>
+        </div>
+      </div>
+
+    </div><!-- /panel -->
+
+    <!-- Info callout -->
+    <div class="banner banner-info" style="margin-top:14px">
+      <strong>How to use:</strong>
+      Drop your custom <code>relationships.dat</code> above to load it, or start from vanilla GTA 5 defaults.
+      Toggle <em>Edit Mode</em> and click any cell to cycle through Hate → Dislike → Like → Respect → (none).
+      Orange dot = cell differs from vanilla. Export when done and place the file in your mod's
+      <code>common/data/</code> folder.
+    </div>
+
+  </main>
+
+  <!-- Toast notification -->
+  <div id="relToast"></div>
+
+  <!-- Scripts -->
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/relationshipsapp.js"></script>
+
+</body>
+</html>

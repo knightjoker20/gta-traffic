@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic — Dispatch Editor</title>
+
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/dispatch.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="dispatch">
+
+  <!-- Site Header -->
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic home">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+    </a>
+  </header>
+
+  <!-- Shared nav -->
+  <div id="siteToolMenu"></div>
+
+  <!-- Hero -->
+  <section class="hero-banner dispatch-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Law Enforcement Editor</div>
+        <h1>GTA Traffic Dispatch Editor</h1>
+        <p>
+          Swap police, SWAT, and army vehicle models per zone. Tune ped counts per wanted star.
+          Adjust spawn delays, search radii, and evasion timers. Export a clean
+          <code>dispatch.meta</code> ready for your mod.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="dispatch-main">
+    <div class="panel" style="margin-bottom:0">
+
+      <!-- Drop Zone -->
+      <div
+        id="dispatchDropZone"
+        class="dispatch-drop-zone"
+        role="button"
+        tabindex="0"
+        title="Drop dispatch.meta here or click to choose"
+        aria-label="Load custom dispatch.meta"
+      >
+        <div style="font-size:28px;margin-bottom:6px">🚔</div>
+        <strong>Drop dispatch.meta here</strong>
+        <small>or click to choose · Leave empty to start from vanilla GTA 5 defaults</small>
+        <div class="dispatch-drop-state-text"></div>
+      </div>
+      <input id="dispatchFileInput" type="file" accept=".meta,.xml" hidden>
+
+      <!-- Tabs -->
+      <div class="dispatch-tabs">
+        <button class="dispatch-tab-btn active" data-tab="vehicles" type="button">
+          🚗 Vehicle Sets
+        </button>
+        <button class="dispatch-tab-btn" data-tab="escalation" type="button">
+          ⭐ Response Escalation
+        </button>
+        <button class="dispatch-tab-btn" data-tab="settings" type="button">
+          ⚙ Settings &amp; Thresholds
+        </button>
+      </div>
+
+      <!-- Tab: Vehicle Sets -->
+      <div id="tab-vehicles" class="dispatch-tab-panel active">
+        <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary)">
+            Edit which vehicle and ped models spawn for each dispatch type, per zone.
+            Changes apply to all wanted levels that use that set.
+          </p>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="dispatchModCount" class="dispatch-mod-count"></span>
+          </div>
+        </div>
+
+        <!-- Zone legend -->
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;font-size:var(--text-xs);color:var(--color-text-secondary)">
+          <span style="display:flex;align-items:center;gap:5px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#fbbf24;display:inline-block"></span>
+            Army Base — overrides response with military assets
+          </span>
+          <span style="display:flex;align-items:center;gap:5px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#86efac;display:inline-block"></span>
+            Countryside — sheriff vehicles / rural response
+          </span>
+          <span style="display:flex;align-items:center;gap:5px">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--color-info);display:inline-block"></span>
+            City (Default) — standard urban response
+          </span>
+        </div>
+
+        <div id="dispatchVsetGrid" class="dispatch-vset-grid">
+          <div style="padding:24px;color:var(--color-text-muted)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Tab: Escalation -->
+      <div id="tab-escalation" class="dispatch-tab-panel">
+        <p style="margin:0 0 14px;font-size:var(--text-sm);color:var(--color-text-secondary)">
+          Number of peds spawned per dispatch type at each wanted star level.
+          <em>EMRG</em> = emergency response (fires, accidents — not wanted-level triggered).
+          Edit any value and export to change how many units respond.
+        </p>
+        <div id="dispatchEscalationWrap"></div>
+      </div>
+
+      <!-- Tab: Settings -->
+      <div id="tab-settings" class="dispatch-tab-panel">
+        <p style="margin:0 0 16px;font-size:var(--text-sm);color:var(--color-text-secondary)">
+          Global timing, detection ranges, wanted level point thresholds, search radii, and evasion timers.
+          Spawn delays use SLOW/MEDIUM/FAST buckets based on current traffic density.
+        </p>
+        <div id="dispatchSettingsPanel"></div>
+      </div>
+
+      <!-- Export Bar -->
+      <div class="dispatch-export-bar">
+        <div class="dispatch-export-info">
+          <strong>dispatch.meta</strong>
+          <span style="margin-left:6px;color:var(--color-text-muted)">·</span>
+          <span style="margin-left:6px">Place in <code>common/data/</code> inside your mod.</span>
+        </div>
+        <div class="dispatch-export-actions">
+          <button id="dispatchResetBtn" class="btn btn-ghost" type="button">↺ Reset to Vanilla</button>
+          <button id="dispatchExportBtn" class="btn btn-primary" type="button">↓ Export dispatch.meta</button>
+        </div>
+      </div>
+
+    </div><!-- /panel -->
+
+    <!-- Info callout -->
+    <div class="banner banner-info" style="margin-top:14px">
+      <strong>Tip:</strong> The <em>Vehicle Sets</em> tab is the main model swap tool.
+      Each set defines which vehicles and peds respond per zone type.
+      Multiple vehicle models in one field (comma-separated) let the game randomly pick between them.
+      Empty army base slots suppress response at Fort Zancudo — leave them empty to keep vanilla suppression.
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div id="dispatchToast"></div>
+
+  <!-- Scripts -->
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/vehiclelibrarystore.js"></script>
+  <script

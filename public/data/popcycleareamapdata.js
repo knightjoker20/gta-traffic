@@ -17,10 +17,14 @@
 // pin - not a per-area zoom - since auto-zoomed boxes drifted
 // noticeably for smaller areas. This is a visual approximation,
 // good enough to show roughly where a schedule sits on the map.
+//
+// 2026-07-09: Pin positions updated with user-calibrated coordinates
+// from the Map Studio export. 42 area outlines and 15 new permanent
+// area entries baked in as static defaults for all users/tiers.
 // =====================================================
 
 window.GTATrafficAreaMapData = {
-  "version": "2.2-fixed-focus-dot-marker",
+  "version": "2.3-baked-positions",
   "imagePaths": {
     "overview": "assets/area-maps/gta5map2-1600.jpg",
     "city": "assets/area-maps/gta5map2-1600.jpg",
@@ -33,23 +37,11 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Central Blaine",
       "map": "county",
-      "pin": [
-        1011.6,
-        471.89
-      ],
-      "popcycle": [
-        "ALAMO_SEA"
-      ],
-      "popgroups": [
-        "Birds_Ocean",
-        "Fish",
-        "Birds_Countryside"
-      ],
-      "landmarks": [
-        "Inland lake",
-        "Galilee",
-        "Shore roads"
-      ],
+      "pin": [863.32, 563.3],
+      "outline": null,
+      "popcycle": ["ALAMO_SEA"],
+      "popgroups": ["Birds_Ocean", "Fish", "Birds_Countryside"],
+      "landmarks": ["Inland lake", "Galilee", "Shore roads"],
       "notes": "Central body of water. Mostly acts as a landmark between Sandy Shores, Grapeseed, and the mountain regions."
     },
     {
@@ -58,24 +50,17 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Central Blaine",
       "map": "county",
-      "pin": [
-        1131.69,
-        616.77
+      "pin": [903.65, 728.34],
+      "outline": [
+        [934.28, 713.4],
+        [976.19, 711.88],
+        [974.66, 769.78],
+        [936.57, 775.11],
+        [932.38, 715.3]
       ],
-      "popcycle": [
-        "GRAND_SENORA_DESERT",
-        "DESERT"
-      ],
-      "popgroups": [
-        "FREEWAY_COUNTRYSIDE",
-        "SALTON",
-        "Birds_Countryside"
-      ],
-      "landmarks": [
-        "Open desert",
-        "Grand Senora airstrip",
-        "Route 68 corridor"
-      ],
+      "popcycle": ["GRAND_SENORA_DESERT", "DESERT"],
+      "popgroups": ["FREEWAY_COUNTRYSIDE", "SALTON", "Birds_Countryside"],
+      "landmarks": ["Open desert", "Grand Senora airstrip", "Route 68 corridor"],
       "notes": "Large central desert region. Use low-to-medium traffic, rural vehicles, off-road, utility, and some highway mix."
     },
     {
@@ -84,22 +69,11 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Central Blaine",
       "map": "county",
-      "pin": [
-        1066.18,
-        365.43
-      ],
-      "popcycle": [
-        "GRAPESEED"
-      ],
-      "popgroups": [
-        "Grapeseed_General",
-        "Grapeseed_Farm"
-      ],
-      "landmarks": [
-        "Farm grid",
-        "Northeast Alamo Sea shore",
-        "McKenzie Field nearby"
-      ],
+      "pin": [1018.65, 455.76],
+      "outline": null,
+      "popcycle": ["GRAPESEED"],
+      "popgroups": ["Grapeseed_General", "Grapeseed_Farm"],
+      "landmarks": ["Farm grid", "Northeast Alamo Sea shore", "McKenzie Field nearby"],
       "notes": "Agricultural town. Country on-road/off-road cars, trucks, farm vehicles, workers, and rural peds fit."
     },
     {
@@ -108,22 +82,11 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Central Blaine",
       "map": "county",
-      "pin": [
-        767.38,
-        691.64
-      ],
-      "popcycle": [
-        "HARMONY"
-      ],
-      "popgroups": [
-        "FREEWAY_COUNTRYSIDE",
-        "SALTON"
-      ],
-      "landmarks": [
-        "Harmony town strip",
-        "Route 68",
-        "Central county junction"
-      ],
+      "pin": [783.41, 737.3],
+      "outline": null,
+      "popcycle": ["HARMONY"],
+      "popgroups": ["FREEWAY_COUNTRYSIDE", "SALTON"],
+      "landmarks": ["Harmony town strip", "Route 68", "Central county junction"],
       "notes": "Small Route 68 settlement. Good for country traffic, trucks, poor/mid cars, and light rural law enforcement."
     },
     {
@@ -132,23 +95,20 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Central Blaine",
       "map": "county",
-      "pin": [
-        701.79,
-        534.7
+      "pin": [742.34, 606.61],
+      "outline": [
+        [719.97, 584.78],
+        [765.68, 584.78],
+        [766.06, 617.16],
+        [766.06, 624.78],
+        [738.63, 624.78],
+        [723.01, 625.92],
+        [722.25, 610.3],
+        [720.35, 585.92]
       ],
-      "popcycle": [
-        "Hippy"
-      ],
-      "popgroups": [
-        "Hippy",
-        "FREEWAY_COUNTRYSIDE",
-        "Birds_Countryside"
-      ],
-      "landmarks": [
-        "Stab City area",
-        "Alamo Sea southwest shore",
-        "Trailer/camp settlement"
-      ],
+      "popcycle": ["Hippy"],
+      "popgroups": ["Hippy", "FREEWAY_COUNTRYSIDE", "Birds_Countryside"],
+      "landmarks": ["Stab City area", "Alamo Sea southwest shore", "Trailer/camp settlement"],
       "notes": "Special settlement area. Good for unique ped populations, older vehicles, off-road, and low-density traffic."
     },
     {
@@ -157,23 +117,25 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Central Blaine",
       "map": "county",
-      "pin": [
-        1011.6,
-        534.35
+      "pin": [1003.72, 609.6],
+      "outline": [
+        [899.86, 563.69],
+        [1005.77, 562.86],
+        [1007.85, 587.04],
+        [1041.63, 587.87],
+        [1042.04, 561.6],
+        [1095.0, 561.19],
+        [1093.33, 621.65],
+        [1078.73, 621.65],
+        [1078.73, 655.42],
+        [1008.27, 656.25],
+        [1005.77, 635.82],
+        [900.28, 632.9],
+        [899.44, 563.69]
       ],
-      "popcycle": [
-        "SANDY_SHORES"
-      ],
-      "popgroups": [
-        "Sandy_Shores",
-        "Sandy_Shores_Tramps",
-        "Birds_Countryside"
-      ],
-      "landmarks": [
-        "Sandy Shores town",
-        "Airfield",
-        "South Alamo Sea shore"
-      ],
+      "popcycle": ["SANDY_SHORES"],
+      "popgroups": ["Sandy_Shores", "Sandy_Shores_Tramps", "Birds_Countryside"],
+      "landmarks": ["Sandy Shores town", "Airfield", "South Alamo Sea shore"],
       "notes": "Desert town. Poor cars, country cars, off-road, bikes, old trucks, and unusual peds fit the feel."
     },
     {
@@ -182,23 +144,11 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "East Blaine",
       "map": "county",
-      "pin": [
-        1117.04,
-        1144.8
-      ],
-      "popcycle": [
-        "SAN_CHIANSKI",
-        "PALOMINO_HIGHLANDS"
-      ],
-      "popgroups": [
-        "FREEWAY_COUNTRYSIDE",
-        "Birds_Countryside"
-      ],
-      "landmarks": [
-        "Eastern mountain roads",
-        "Humane Labs area",
-        "Wind farm edge"
-      ],
+      "pin": [1054.27, 1182.31],
+      "outline": null,
+      "popcycle": ["SAN_CHIANSKI", "PALOMINO_HIGHLANDS"],
+      "popgroups": ["FREEWAY_COUNTRYSIDE", "Birds_Countryside"],
+      "landmarks": ["Eastern mountain roads", "Humane Labs area", "Wind farm edge"],
       "notes": "Far east mountain/wilderness region. Low traffic, utility, rural, and off-road vehicles make the most sense."
     },
     {
@@ -207,24 +157,31 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Military / Restricted",
       "map": "county",
-      "pin": [
-        267.5,
-        614.25
+      "pin": [477.23, 684.28],
+      "outline": [
+        [334.4, 620.42],
+        [391.17, 621.94],
+        [394.6, 654.32],
+        [436.88, 653.56],
+        [439.17, 622.71],
+        [558.02, 624.23],
+        [562.6, 737.37],
+        [571.74, 742.32],
+        [573.64, 752.23],
+        [561.07, 755.66],
+        [546.21, 743.85],
+        [428.5, 740.42],
+        [425.07, 720.61],
+        [405.64, 717.56],
+        [403.36, 680.61],
+        [359.17, 677.56],
+        [356.12, 667.28],
+        [345.83, 665.37],
+        [344.31, 623.47]
       ],
-      "popcycle": [
-        "ARMY",
-        "FORT_ZANCUDO"
-      ],
-      "popgroups": [
-        "ARMY",
-        "VEH_ARMY",
-        "VEH_ARMYPOLICE"
-      ],
-      "landmarks": [
-        "Military air base",
-        "Runways",
-        "Lago Zancudo"
-      ],
+      "popcycle": ["ARMY", "FORT_ZANCUDO"],
+      "popgroups": ["ARMY", "VEH_ARMY", "VEH_ARMYPOLICE"],
+      "landmarks": ["Military air base", "Runways", "Lago Zancudo"],
       "notes": "Restricted military zone. Army/MP vehicles and low civilian traffic are correct here."
     },
     {
@@ -233,23 +190,17 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Mountains / Wilderness",
       "map": "county",
-      "pin": [
-        374.71,
-        650.89
+      "pin": [598.39, 442.61],
+      "outline": [
+        [566.01, 420.14],
+        [623.54, 417.09],
+        [626.96, 451.76],
+        [570.96, 455.19],
+        [567.54, 420.14]
       ],
-      "popcycle": [
-        "CULT"
-      ],
-      "popgroups": [
-        "CULT",
-        "FREEWAY_COUNTRYSIDE",
-        "Birds_Countryside"
-      ],
-      "landmarks": [
-        "Altruist camp area",
-        "Mountain trails",
-        "Remote western hills"
-      ],
+      "popcycle": ["CULT"],
+      "popgroups": ["CULT", "FREEWAY_COUNTRYSIDE", "Birds_Countryside"],
+      "landmarks": ["Altruist camp area", "Mountain trails", "Remote western hills"],
       "notes": "Special rural/cult zone. This is a unique ped group area, so keep it separate from generic countryside."
     },
     {
@@ -258,23 +209,11 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Mountains / Wilderness",
       "map": "county",
-      "pin": [
-        1066.48,
-        181.36
-      ],
-      "popcycle": [
-        "CHILIAD",
-        "MOUNT_CHILIAD"
-      ],
-      "popgroups": [
-        "Birds_Countryside",
-        "FREEWAY_COUNTRYSIDE"
-      ],
-      "landmarks": [
-        "Mount Chiliad summit",
-        "State wilderness",
-        "Cable car / mountain roads"
-      ],
+      "pin": [839.37, 372.28],
+      "outline": null,
+      "popcycle": ["CHILIAD", "MOUNT_CHILIAD"],
+      "popgroups": ["Birds_Countryside", "FREEWAY_COUNTRYSIDE"],
+      "landmarks": ["Mount Chiliad summit", "State wilderness", "Cable car / mountain roads"],
       "notes": "Major wilderness zone. Keep density low; ranger, off-road, hikers/folk/countryside birds make more sense than city traffic."
     },
     {
@@ -283,22 +222,11 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Mountains / Wilderness",
       "map": "county",
-      "pin": [
-        383.72,
-        527.29
-      ],
-      "popcycle": [
-        "MOUNT_JOSIAH"
-      ],
-      "popgroups": [
-        "FREEWAY_COUNTRYSIDE",
-        "Birds_Countryside"
-      ],
-      "landmarks": [
-        "Mount Josiah",
-        "Western slopes",
-        "Near Raton Canyon and Zancudo"
-      ],
+      "pin": [383.72, 527.29],
+      "outline": null,
+      "popcycle": ["MOUNT_JOSIAH"],
+      "popgroups": ["FREEWAY_COUNTRYSIDE", "Birds_Countryside"],
+      "landmarks": ["Mount Josiah", "Western slopes", "Near Raton Canyon and Zancudo"],
       "notes": "Western mountain/wilderness. Keep spawns sparse and rural."
     },
     {
@@ -307,22 +235,11 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "Mountains / Wilderness",
       "map": "county",
-      "pin": [
-        309.06,
-        427.88
-      ],
-      "popcycle": [
-        "RATON_CANYON"
-      ],
-      "popgroups": [
-        "FREEWAY_COUNTRYSIDE",
-        "Birds_Countryside"
-      ],
-      "landmarks": [
-        "River canyon",
-        "Western trails",
-        "Southwest of Alamo Sea"
-      ],
+      "pin": [596.73, 538.11],
+      "outline": null,
+      "popcycle": ["RATON_CANYON"],
+      "popgroups": ["FREEWAY_COUNTRYSIDE", "Birds_Countryside"],
+      "landmarks": ["River canyon", "Western trails", "Southwest of Alamo Sea"],
       "notes": "Canyon/trail area. Low peds, countryside/off-road traffic, and wildlife-style groups fit best."
     },
     {
@@ -331,22 +248,24 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "North Blaine",
       "map": "county",
-      "pin": [
-        637.65,
-        196.76
+      "pin": [721.43, 250.39],
+      "outline": [
+        [646.02, 285.81],
+        [671.66, 288.72],
+        [670.69, 303.71],
+        [726.31, 304.68],
+        [729.22, 283.4],
+        [801.77, 236.96],
+        [815.79, 225.36],
+        [815.79, 210.85],
+        [756.78, 156.67],
+        [730.18, 156.19],
+        [657.63, 245.67],
+        [646.02, 282.43]
       ],
-      "popcycle": [
-        "PALETO_BAY"
-      ],
-      "popgroups": [
-        "Paleto_Bay_General",
-        "Paleto_Bay_Beach"
-      ],
-      "landmarks": [
-        "Paleto Bay town grid",
-        "Procopio Beach",
-        "Great Ocean Highway"
-      ],
+      "popcycle": ["PALETO_BAY"],
+      "popgroups": ["Paleto_Bay_General", "Paleto_Bay_Beach"],
+      "landmarks": ["Paleto Bay town grid", "Procopio Beach", "Great Ocean Highway"],
       "notes": "Northern coastal town. Rural/country cars, older traffic, bikes, and small-town peds fit well."
     },
     {
@@ -355,22 +274,11 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "North Blaine",
       "map": "county",
-      "pin": [
-        558.02,
-        271.57
-      ],
-      "popcycle": [
-        "PALETO_FOREST"
-      ],
-      "popgroups": [
-        "FREEWAY_COUNTRYSIDE",
-        "Birds_Countryside"
-      ],
-      "landmarks": [
-        "Lumber Yard",
-        "Paleto Forest roads",
-        "South of Paleto Bay"
-      ],
+      "pin": [678.86, 351.21],
+      "outline": null,
+      "popcycle": ["PALETO_FOREST"],
+      "popgroups": ["FREEWAY_COUNTRYSIDE", "Birds_Countryside"],
+      "landmarks": ["Lumber Yard", "Paleto Forest roads", "South of Paleto Bay"],
       "notes": "Forest/wilderness transition. Use low density, off-road, ranger, utility, and rural vehicles."
     },
     {
@@ -379,24 +287,27 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "West Coast",
       "map": "county",
-      "pin": [
-        222.41,
-        544.21
+      "pin": [443.05, 545.02],
+      "outline": [
+        [437.52, 655.37],
+        [393.71, 654.61],
+        [393.71, 560.52],
+        [420.76, 557.85],
+        [420.76, 421.09],
+        [472.95, 420.33],
+        [474.47, 493.85],
+        [490.85, 498.42],
+        [491.23, 509.47],
+        [477.9, 511.76],
+        [476.38, 502.99],
+        [457.71, 501.85],
+        [459.23, 560.52],
+        [437.9, 560.9],
+        [437.52, 653.85]
       ],
-      "popcycle": [
-        "CHUMASH",
-        "NORTH_CHUMASH"
-      ],
-      "popgroups": [
-        "CHUMASH",
-        "FREEWAY_COUNTRYSIDE",
-        "Birds_Ocean"
-      ],
-      "landmarks": [
-        "Great Ocean Highway",
-        "Western coastline",
-        "Coastal houses"
-      ],
+      "popcycle": ["CHUMASH", "NORTH_CHUMASH"],
+      "popgroups": ["CHUMASH", "FREEWAY_COUNTRYSIDE", "Birds_Ocean"],
+      "landmarks": ["Great Ocean Highway", "Western coastline", "Coastal houses"],
       "notes": "Coastal highway strip. Good for mid/poor cars, beach/coast peds, bikes, boats, and light rural cops."
     },
     {
@@ -405,23 +316,11 @@ window.GTATrafficAreaMapData = {
       "county": "Blaine County",
       "category": "West Coast",
       "map": "county",
-      "pin": [
-        277.69,
-        790.77
-      ],
-      "popcycle": [
-        "TONGVA_HILLS",
-        "TONGVA_VALLEY"
-      ],
-      "popgroups": [
-        "FREEWAY_COUNTRYSIDE",
-        "Rockford_Hills_Night"
-      ],
-      "landmarks": [
-        "Tongva Valley",
-        "Marlowe vineyards",
-        "Western rural roads"
-      ],
+      "pin": [472.0, 830.65],
+      "outline": null,
+      "popcycle": ["TONGVA_HILLS", "TONGVA_VALLEY"],
+      "popgroups": ["FREEWAY_COUNTRYSIDE", "Rockford_Hills_Night"],
+      "landmarks": ["Tongva Valley", "Marlowe vineyards", "Western rural roads"],
       "notes": "Rural wealthy hills between city and county. Mid/rich cars mixed with countryside vehicles work well."
     },
     {
@@ -430,26 +329,21 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "Downtown Los Santos",
       "map": "city",
-      "pin": [
-        615.87,
-        1161.18
+      "pin": [749.89, 1188.27],
+      "outline": [
+        [702.94, 1135.34],
+        [795.51, 1135.72],
+        [795.13, 1227.15],
+        [686.56, 1227.53],
+        [688.46, 1172.3],
+        [680.08, 1171.15],
+        [680.84, 1143.72],
+        [701.41, 1145.25],
+        [702.94, 1135.72]
       ],
-      "popcycle": [
-        "DOWN_TOWN",
-        "DOWNTOWN"
-      ],
-      "popgroups": [
-        "Pillbox_Business",
-        "Pillbox_BevHills",
-        "Pillbox_Tramps",
-        "RESTAURANT_NIGHT"
-      ],
-      "landmarks": [
-        "Maze Bank Tower",
-        "FIB / IAA buildings",
-        "Mission Row",
-        "Legion Square"
-      ],
+      "popcycle": ["DOWN_TOWN", "DOWNTOWN"],
+      "popgroups": ["Pillbox_Business", "Pillbox_BevHills", "Pillbox_Tramps", "RESTAURANT_NIGHT"],
+      "landmarks": ["Maze Bank Tower", "FIB / IAA buildings", "Mission Row", "Legion Square"],
       "notes": "Financial and government core. Best for dense peds, taxis, business peds, buses, and moderate police presence."
     },
     {
@@ -458,22 +352,22 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "East / Industrial Los Santos",
       "map": "city",
-      "pin": [
-        821.57,
-        1391.12
+      "pin": [821.57, 1391.12],
+      "outline": [
+        [814.75, 1298.24],
+        [852.46, 1299.38],
+        [852.46, 1322.62],
+        [868.46, 1324.91],
+        [870.75, 1334.43],
+        [868.08, 1428.52],
+        [797.98, 1429.67],
+        [798.75, 1340.14],
+        [812.08, 1339.38],
+        [815.89, 1299.38]
       ],
-      "popcycle": [
-        "CYPRESS_FLATS"
-      ],
-      "popgroups": [
-        "Cypress_General",
-        "Cypress_Tramps"
-      ],
-      "landmarks": [
-        "Industrial blocks",
-        "Warehouses",
-        "East side freight roads"
-      ],
+      "popcycle": ["CYPRESS_FLATS"],
+      "popgroups": ["Cypress_General", "Cypress_Tramps"],
+      "landmarks": ["Industrial blocks", "Warehouses", "East side freight roads"],
       "notes": "Industrial east side. Poor/mid cars, haulage, utility, courier, and workers are the correct feel."
     },
     {
@@ -482,22 +376,27 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "East / Industrial Los Santos",
       "map": "city",
-      "pin": [
-        926.1,
-        1411.5
+      "pin": [926.57, 1372.63],
+      "outline": [
+        [876.29, 1257.2],
+        [921.62, 1257.2],
+        [925.43, 1226.73],
+        [946.38, 1226.35],
+        [946.76, 1203.11],
+        [986.0, 1203.11],
+        [985.24, 1278.92],
+        [962.0, 1280.82],
+        [960.1, 1429.01],
+        [866.38, 1429.01],
+        [868.29, 1334.16],
+        [923.91, 1337.97],
+        [923.14, 1325.78],
+        [875.91, 1321.97],
+        [877.05, 1259.11]
       ],
-      "popcycle": [
-        "EL_BURRO"
-      ],
-      "popgroups": [
-        "El_Burro_General",
-        "Birds_Ground_City"
-      ],
-      "landmarks": [
-        "El Burro Heights",
-        "Oil field edge",
-        "Industrial east side"
-      ],
+      "popcycle": ["EL_BURRO"],
+      "popgroups": ["El_Burro_General", "Birds_Ground_City"],
+      "landmarks": ["El Burro Heights", "Oil field edge", "Industrial east side"],
       "notes": "Industrial/hillside edge district. Good for poor/mid cars, utility, haulage, and light rural crossover."
     },
     {
@@ -506,24 +405,23 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "East / Industrial Los Santos",
       "map": "city",
-      "pin": [
-        816.68,
-        1161.42
+      "pin": [829.39, 1223.44],
+      "outline": [
+        [797.91, 1146.47],
+        [842.11, 1143.55],
+        [845.86, 1182.74],
+        [849.61, 1209.84],
+        [853.78, 1257.79],
+        [875.88, 1258.63],
+        [878.8, 1299.91],
+        [814.17, 1300.32],
+        [810.42, 1275.31],
+        [799.16, 1275.72],
+        [796.24, 1148.55]
       ],
-      "popcycle": [
-        "LA_MESA",
-        "EAST_LOS_SANTOS"
-      ],
-      "popgroups": [
-        "La_Mesa_General",
-        "La_Mesa_Tramps",
-        "InCar_General"
-      ],
-      "landmarks": [
-        "Arts/industrial district",
-        "Freeway intersections",
-        "East of Downtown"
-      ],
+      "popcycle": ["LA_MESA", "EAST_LOS_SANTOS"],
+      "popgroups": ["La_Mesa_General", "La_Mesa_Tramps", "InCar_General"],
+      "landmarks": ["Arts/industrial district", "Freeway intersections", "East of Downtown"],
       "notes": "Useful for east-side city traffic. Mostly poor/mid, haulage, utility, taxis, and couriers."
     },
     {
@@ -532,23 +430,23 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "East Los Santos",
       "map": "city",
-      "pin": [
-        814.87,
-        1136.37
+      "pin": [855.47, 1106.51],
+      "outline": [
+        [824.23, 1082.13],
+        [855.47, 1082.89],
+        [902.33, 1085.94],
+        [912.99, 1087.84],
+        [912.99, 1114.13],
+        [845.18, 1116.03],
+        [844.42, 1143.84],
+        [810.14, 1143.84],
+        [811.28, 1105.75],
+        [823.85, 1105.36],
+        [824.61, 1084.03]
       ],
-      "popcycle": [
-        "EAST_VINEWOOD"
-      ],
-      "popgroups": [
-        "East_Vinewood_Local",
-        "East_Vinewood_Hipster",
-        "East_Vinewood_StreetGeneral"
-      ],
-      "landmarks": [
-        "East Vinewood streets",
-        "Mirror Park west edge",
-        "Del Perro Freeway access"
-      ],
+      "popcycle": ["EAST_VINEWOOD"],
+      "popgroups": ["East_Vinewood_Local", "East_Vinewood_Hipster", "East_Vinewood_StreetGeneral"],
+      "landmarks": ["East Vinewood streets", "Mirror Park west edge", "Del Perro Freeway access"],
       "notes": "Bridge between Vinewood and the east side. Good for mostly mid traffic with some poorer cars."
     },
     {
@@ -557,23 +455,17 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "East Los Santos",
       "map": "city",
-      "pin": [
-        900.28,
-        1151.72
+      "pin": [900.22, 1145.47],
+      "outline": [
+        [845.86, 1115.71],
+        [910.62, 1113.04],
+        [911.38, 1183.52],
+        [845.48, 1185.04],
+        [845.48, 1116.85]
       ],
-      "popcycle": [
-        "MIRROR_PARK"
-      ],
-      "popgroups": [
-        "Mirror_Park_Hipsters",
-        "Mirror_Park_StreetGeneral",
-        "East_Vinewood_Local"
-      ],
-      "landmarks": [
-        "Mirror Park lake",
-        "Suburban loop roads",
-        "East Vinewood border"
-      ],
+      "popcycle": ["MIRROR_PARK"],
+      "popgroups": ["Mirror_Park_Hipsters", "Mirror_Park_StreetGeneral", "East_Vinewood_Local"],
+      "landmarks": ["Mirror Park lake", "Suburban loop roads", "East Vinewood border"],
       "notes": "Residential hipster/suburban zone. Good place for mid cars, older compacts, bikes, bicycles, and lighter police."
     },
     {
@@ -582,22 +474,21 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "Hills / Wealthy Residential",
       "map": "city",
-      "pin": [
-        392.78,
-        1073.6
+      "pin": [521.98, 1052.75],
+      "outline": [
+        [474.47, 1020.05],
+        [551.04, 1020.43],
+        [550.66, 1090.91],
+        [509.9, 1092.05],
+        [508.76, 1079.86],
+        [491.23, 1079.1],
+        [489.33, 1061.19],
+        [476.76, 1059.67],
+        [475.23, 1023.48]
       ],
-      "popcycle": [
-        "RICHMAN"
-      ],
-      "popgroups": [
-        "Richman_BevHills",
-        "Richman_StreetGeneral"
-      ],
-      "landmarks": [
-        "Los Santos Golf Club",
-        "Large mansions",
-        "Northwest of Rockford Hills"
-      ],
+      "popcycle": ["RICHMAN"],
+      "popgroups": ["Richman_BevHills", "Richman_StreetGeneral"],
+      "landmarks": ["Los Santos Golf Club", "Large mansions", "Northwest of Rockford Hills"],
       "notes": "Wealthy residential area. Rich cars, golf/country club peds, and low traffic density feel right."
     },
     {
@@ -606,22 +497,23 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "Hills / Wealthy Residential",
       "map": "city",
-      "pin": [
-        503.49,
-        1023.99
+      "pin": [620.25, 1062.38],
+      "outline": [
+        [590.51, 1019.35],
+        [638.13, 1020.87],
+        [638.13, 1073.82],
+        [653.37, 1076.49],
+        [658.32, 1095.54],
+        [611.85, 1091.35],
+        [614.13, 1083.35],
+        [599.66, 1081.06],
+        [598.89, 1067.73],
+        [591.66, 1068.87],
+        [592.04, 1023.16]
       ],
-      "popcycle": [
-        "ROCKFORD_HILLS"
-      ],
-      "popgroups": [
-        "Rockford_Hills_Day",
-        "Rockford_Hills_Night"
-      ],
-      "landmarks": [
-        "Portola Drive",
-        "Rockford Plaza",
-        "Luxury retail / mansions"
-      ],
+      "popcycle": ["ROCKFORD_HILLS"],
+      "popgroups": ["Rockford_Hills_Day", "Rockford_Hills_Night"],
+      "landmarks": ["Portola Drive", "Rockford Plaza", "Luxury retail / mansions"],
       "notes": "High-income core. This is where rich, rare, and occasional super vehicles make the most sense."
     },
     {
@@ -630,27 +522,34 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "Hills / Wealthy Residential",
       "map": "city",
-      "pin": [
-        995.61,
-        916.95
+      "pin": [750.9, 933.91],
+      "outline": [
+        [564.35, 845.13],
+        [613.69, 842.71],
+        [613.69, 861.57],
+        [900.99, 861.57],
+        [909.69, 908.01],
+        [954.67, 907.52],
+        [958.06, 971.37],
+        [931.94, 976.2],
+        [932.91, 1003.77],
+        [908.24, 1007.64],
+        [906.31, 1025.54],
+        [890.83, 1024.09],
+        [858.42, 1056.49],
+        [855.52, 1083.09],
+        [825.05, 1084.06],
+        [821.66, 1023.12],
+        [473.9, 1022.64],
+        [472.94, 996.03],
+        [539.68, 997.0],
+        [541.62, 909.94],
+        [561.93, 911.88],
+        [567.25, 844.16]
       ],
-      "popcycle": [
-        "VINEWOOD_HILLS",
-        "MARLOWE_DRIVE",
-        "GALILEO_PARK"
-      ],
-      "popgroups": [
-        "Rockford_Hills_Day",
-        "Rockford_Hills_Night",
-        "Marlowe_Drive_BevHills",
-        "Galileo_Park_BevHills"
-      ],
-      "landmarks": [
-        "Vinewood sign",
-        "Lake Vinewood Estates",
-        "Galileo Observatory",
-        "Marlowe Drive"
-      ],
+      "popcycle": ["VINEWOOD_HILLS", "MARLOWE_DRIVE", "GALILEO_PARK"],
+      "popgroups": ["Rockford_Hills_Day", "Rockford_Hills_Night", "Marlowe_Drive_BevHills", "Galileo_Park_BevHills"],
+      "landmarks": ["Vinewood sign", "Lake Vinewood Estates", "Galileo Observatory", "Marlowe Drive"],
       "notes": "Use this as the big hill-region bucket. Rich cars, mid cars, ranger/park traffic, and low density fit better here."
     },
     {
@@ -659,24 +558,20 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "North/Central Los Santos",
       "map": "city",
-      "pin": [
-        718.84,
-        1132.16
+      "pin": [764.64, 1122.18],
+      "outline": [
+        [728.93, 1105.66],
+        [811.22, 1105.66],
+        [810.46, 1127.37],
+        [796.36, 1128.51],
+        [794.08, 1133.85],
+        [786.84, 1136.89],
+        [727.03, 1134.61],
+        [727.79, 1106.04]
       ],
-      "popcycle": [
-        "ALTA"
-      ],
-      "popgroups": [
-        "Alta_Business",
-        "Alta_Tramps",
-        "Alta_BevHills",
-        "Alta_StreetGeneral"
-      ],
-      "landmarks": [
-        "Alta Street / central corridor",
-        "Downtown edge",
-        "Near Pillbox Hill"
-      ],
+      "popcycle": ["ALTA"],
+      "popgroups": ["Alta_Business", "Alta_Tramps", "Alta_BevHills", "Alta_StreetGeneral"],
+      "landmarks": ["Alta Street / central corridor", "Downtown edge", "Near Pillbox Hill"],
       "notes": "Good transition district between Downtown, Vinewood, and Burton. In popcycle this is usually a mid-class city traffic area."
     },
     {
@@ -685,22 +580,25 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "North/Central Los Santos",
       "map": "city",
-      "pin": [
-        607.62,
-        1080.42
+      "pin": [583.29, 1142.44],
+      "outline": [
+        [568.0, 1129.64],
+        [597.51, 1130.0],
+        [599.29, 1139.6],
+        [605.69, 1143.86],
+        [604.98, 1149.2],
+        [595.38, 1149.55],
+        [597.51, 1152.4],
+        [590.4, 1152.75],
+        [589.34, 1157.37],
+        [571.91, 1158.8],
+        [571.56, 1150.26],
+        [565.16, 1148.84],
+        [568.0, 1130.71]
       ],
-      "popcycle": [
-        "BACKLOT_CITY"
-      ],
-      "popgroups": [
-        "Backlot_Film",
-        "Backlot_StreetGeneral"
-      ],
-      "landmarks": [
-        "Movie studio backlot",
-        "West of Downtown",
-        "Near Burton/Rockford"
-      ],
+      "popcycle": ["BACKLOT_CITY"],
+      "popgroups": ["Backlot_Film", "Backlot_StreetGeneral"],
+      "landmarks": ["Movie studio backlot", "West of Downtown", "Near Burton/Rockford"],
       "notes": "Useful for film/studio-style pedestrian pools and lighter commercial traffic."
     },
     {
@@ -709,25 +607,23 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "North/Central Los Santos",
       "map": "city",
-      "pin": [
-        607.62,
-        1080.42
+      "pin": [688.85, 1097.53],
+      "outline": [
+        [657.06, 1076.28],
+        [698.21, 1076.67],
+        [701.63, 1082.38],
+        [727.54, 1084.28],
+        [726.02, 1135.33],
+        [701.63, 1136.86],
+        [697.82, 1120.09],
+        [661.63, 1118.57],
+        [661.63, 1098.38],
+        [654.4, 1094.57],
+        [654.78, 1079.33]
       ],
-      "popcycle": [
-        "BURTON"
-      ],
-      "popgroups": [
-        "Burton_Business",
-        "Burton_BevHills",
-        "Burton_Hipsters",
-        "Burton_StreetGeneral",
-        "Burton_Tramps"
-      ],
-      "landmarks": [
-        "Rockford Plaza edge",
-        "Portola Drive nearby",
-        "Between Rockford Hills and Little Seoul"
-      ],
+      "popcycle": ["BURTON"],
+      "popgroups": ["Burton_Business", "Burton_BevHills", "Burton_Hipsters", "Burton_StreetGeneral", "Burton_Tramps"],
+      "landmarks": ["Rockford Plaza edge", "Portola Drive nearby", "Between Rockford Hills and Little Seoul"],
       "notes": "Mixed upscale/commercial city zone. Good place for rich, mid, taxi, courier, and light supercar traffic."
     },
     {
@@ -736,24 +632,19 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "North/Central Los Santos",
       "map": "city",
-      "pin": [
-        593.61,
-        1025.91
+      "pin": [689.61, 1039.17],
+      "outline": [
+        [635.89, 1019.74],
+        [738.75, 1020.89],
+        [739.89, 1078.79],
+        [701.8, 1081.46],
+        [699.51, 1077.65],
+        [637.8, 1077.65],
+        [635.51, 1023.55]
       ],
-      "popcycle": [
-        "ECLIPSE"
-      ],
-      "popgroups": [
-        "Eclipse_Hipsters",
-        "Eclipse_StreetGeneral",
-        "Eclipse_Vinewood",
-        "Club_Nighttime"
-      ],
-      "landmarks": [
-        "Eclipse Boulevard",
-        "West Vinewood edge",
-        "Club/nightlife area"
-      ],
+      "popcycle": ["ECLIPSE"],
+      "popgroups": ["Eclipse_Hipsters", "Eclipse_StreetGeneral", "Eclipse_Vinewood", "Club_Nighttime"],
+      "landmarks": ["Eclipse Boulevard", "West Vinewood edge", "Club/nightlife area"],
       "notes": "Nightlife and affluent city traffic. Good place for club nighttime peds, rich cars, mid cars, bikes, and rare/super cars."
     },
     {
@@ -762,25 +653,17 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "North/Central Los Santos",
       "map": "city",
-      "pin": [
-        811.78,
-        1098.55
+      "pin": [775.46, 1094.55],
+      "outline": [
+        [727.33, 1080.71],
+        [822.18, 1080.71],
+        [821.8, 1103.94],
+        [728.09, 1105.09],
+        [726.95, 1083.75]
       ],
-      "popcycle": [
-        "HAWICK"
-      ],
-      "popgroups": [
-        "Hawick_Vinewood",
-        "Hawick_BevHills",
-        "Hawick_Hipsters",
-        "Hawick_StreetGeneral",
-        "Hawick_Tramps"
-      ],
-      "landmarks": [
-        "Hawick Avenue",
-        "Vinewood commercial edge",
-        "East of Rockford Hills"
-      ],
+      "popcycle": ["HAWICK"],
+      "popgroups": ["Hawick_Vinewood", "Hawick_BevHills", "Hawick_Hipsters", "Hawick_StreetGeneral", "Hawick_Tramps"],
+      "landmarks": ["Hawick Avenue", "Vinewood commercial edge", "East of Rockford Hills"],
       "notes": "Urban mid-class / trendy district. Usually not as rich as Rockford, but nicer than the industrial zones."
     },
     {
@@ -789,24 +672,17 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "North/Central Los Santos",
       "map": "city",
-      "pin": [
-        700.26,
-        1141.73
+      "pin": [750.45, 1038.29],
+      "outline": [
+        [738.26, 1020.01],
+        [822.84, 1017.72],
+        [822.84, 1081.72],
+        [740.17, 1080.58],
+        [736.36, 1018.48]
       ],
-      "popcycle": [
-        "Downtown_Vinewood",
-        "VINEWOOD"
-      ],
-      "popgroups": [
-        "Downtown_Vinewood",
-        "Club_Nighttime",
-        "Eclipse_StreetGeneral"
-      ],
-      "landmarks": [
-        "Vinewood Boulevard",
-        "Vinewood entertainment strip",
-        "Vinewood Bowl nearby"
-      ],
+      "popcycle": ["Downtown_Vinewood", "VINEWOOD"],
+      "popgroups": ["Downtown_Vinewood", "Club_Nighttime", "Eclipse_StreetGeneral"],
+      "landmarks": ["Vinewood Boulevard", "Vinewood entertainment strip", "Vinewood Bowl nearby"],
       "notes": "Entertainment/nightlife district. Useful for club peds, rich/mid cars, taxis, rare cars, and occasional supercars."
     },
     {
@@ -815,23 +691,21 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "South / Industrial Los Santos",
       "map": "city",
-      "pin": [
-        685.48,
-        1374.17
+      "pin": [735.15, 1361.51],
+      "outline": [
+        [698.14, 1383.18],
+        [799.48, 1383.89],
+        [798.05, 1357.22],
+        [750.76, 1356.51],
+        [749.7, 1345.85],
+        [715.56, 1346.2],
+        [713.43, 1359.36],
+        [699.21, 1358.29],
+        [698.14, 1383.18]
       ],
-      "popcycle": [
-        "BANNING"
-      ],
-      "popgroups": [
-        "Banning_Construction",
-        "Banning_StreetGeneral",
-        "Banning_Tramps"
-      ],
-      "landmarks": [
-        "Industrial south side",
-        "Port approaches",
-        "Warehouse roads"
-      ],
+      "popcycle": ["BANNING"],
+      "popgroups": ["Banning_Construction", "Banning_StreetGeneral", "Banning_Tramps"],
+      "landmarks": ["Industrial south side", "Port approaches", "Warehouse roads"],
       "notes": "Lower-income industrial zone. Poor cars, workers, construction, and haulage fit best."
     },
     {
@@ -840,23 +714,29 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "South / Industrial Los Santos",
       "map": "city",
-      "pin": [
-        506.13,
-        1287.07
+      "pin": [648.08, 1294.27],
+      "outline": [
+        [592.1, 1235.1],
+        [632.48, 1234.72],
+        [634.77, 1226.34],
+        [657.25, 1228.24],
+        [659.15, 1261.76],
+        [694.96, 1262.53],
+        [695.72, 1310.53],
+        [673.25, 1313.57],
+        [673.63, 1353.19],
+        [637.44, 1353.95],
+        [633.25, 1332.24],
+        [593.25, 1332.24],
+        [593.63, 1281.95],
+        [583.34, 1278.14],
+        [584.1, 1264.05],
+        [590.2, 1262.14],
+        [593.25, 1237.0]
       ],
-      "popcycle": [
-        "LA_PUERTA",
-        "LOS_PUERTA"
-      ],
-      "popgroups": [
-        "Los_Puerta_StreetGeneral",
-        "Stadium_StreetGeneral"
-      ],
-      "landmarks": [
-        "Maze Bank Arena",
-        "Industrial lots",
-        "Bridge access to port"
-      ],
+      "popcycle": ["LA_PUERTA", "LOS_PUERTA"],
+      "popgroups": ["Los_Puerta_StreetGeneral", "Stadium_StreetGeneral"],
+      "landmarks": ["Maze Bank Arena", "Industrial lots", "Bridge access to port"],
       "notes": "Industrial/sports arena zone. Good for poor/mid cars, haulage, taxis, courier, and event/stadium peds."
     },
     {
@@ -865,23 +745,28 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "South / Industrial Los Santos",
       "map": "city",
-      "pin": [
-        572.14,
-        1424.49
+      "pin": [570.35, 1399.5],
+      "outline": [
+        [577.4, 1329.98],
+        [522.36, 1385.02],
+        [484.41, 1447.56],
+        [478.99, 1470.08],
+        [481.08, 1492.17],
+        [522.77, 1517.61],
+        [573.23, 1536.79],
+        [602.83, 1543.04],
+        [637.44, 1504.68],
+        [634.94, 1490.51],
+        [641.19, 1435.05],
+        [671.21, 1435.05],
+        [672.88, 1354.16],
+        [637.86, 1355.41],
+        [633.27, 1334.56],
+        [579.06, 1334.15]
       ],
-      "popcycle": [
-        "LOS_SANTOS_INTERNATIONAL",
-        "LSIA"
-      ],
-      "popgroups": [
-        "LSA_Airport",
-        "LSA_StreetGeneral"
-      ],
-      "landmarks": [
-        "Airport terminals",
-        "Runways",
-        "LSIA parking / access roads"
-      ],
+      "popcycle": ["LOS_SANTOS_INTERNATIONAL", "LSIA"],
+      "popgroups": ["LSA_Airport", "LSA_StreetGeneral"],
+      "landmarks": ["Airport terminals", "Runways", "LSIA parking / access roads"],
       "notes": "Airport zone. Taxi, airport vehicles, coaches, workers, security, and moderate civilian traffic fit well."
     },
     {
@@ -890,24 +775,23 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "South / Industrial Los Santos",
       "map": "city",
-      "pin": [
-        799.77,
-        1513.73
+      "pin": [782.57, 1461.64],
+      "outline": [
+        [672.86, 1350.02],
+        [698.0, 1350.79],
+        [699.15, 1380.5],
+        [797.81, 1381.64],
+        [799.72, 1427.36],
+        [822.19, 1428.12],
+        [821.05, 1516.5],
+        [742.57, 1516.5],
+        [743.34, 1433.45],
+        [672.86, 1433.83],
+        [672.86, 1351.55]
       ],
-      "popcycle": [
-        "ELYSIAN_ISLAND",
-        "PORT_OF_SOUTH_LOS_SANTOS"
-      ],
-      "popgroups": [
-        "Elysian_Island_StreetGeneral",
-        "Elysian_Island_GenPed"
-      ],
-      "landmarks": [
-        "Container yards",
-        "Docks",
-        "Elysian Island",
-        "Merryweather zone"
-      ],
+      "popcycle": ["ELYSIAN_ISLAND", "PORT_OF_SOUTH_LOS_SANTOS"],
+      "popgroups": ["Elysian_Island_StreetGeneral", "Elysian_Island_GenPed"],
+      "landmarks": ["Container yards", "Docks", "Elysian Island", "Merryweather zone"],
       "notes": "Heavy industrial port. Haulage, utility, workers, boats, and occasional Merryweather make sense."
     },
     {
@@ -916,22 +800,17 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "South Los Santos",
       "map": "city",
-      "pin": [
-        654.17,
-        1309.05
+      "pin": [709.47, 1287.67],
+      "outline": [
+        [697.04, 1261.53],
+        [722.94, 1261.91],
+        [724.08, 1304.57],
+        [697.42, 1305.72],
+        [694.37, 1262.29]
       ],
-      "popcycle": [
-        "Chamberlain"
-      ],
-      "popgroups": [
-        "Chamberlain_SC",
-        "Chamberlain_Tramps"
-      ],
-      "landmarks": [
-        "Chamberlain Hills",
-        "Southwest of Strawberry",
-        "Residential hills"
-      ],
+      "popcycle": ["Chamberlain"],
+      "popgroups": ["Chamberlain_SC", "Chamberlain_Tramps"],
+      "landmarks": ["Chamberlain Hills", "Southwest of Strawberry", "Residential hills"],
       "notes": "South LS hill/residential district. Similar to Davis but more hillside/residential."
     },
     {
@@ -940,22 +819,24 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "South Los Santos",
       "map": "city",
-      "pin": [
-        706.57,
-        1321.66
+      "pin": [746.59, 1305.81],
+      "outline": [
+        [717.21, 1305.13],
+        [726.35, 1306.28],
+        [727.11, 1297.52],
+        [743.11, 1294.47],
+        [745.78, 1261.71],
+        [780.06, 1263.61],
+        [780.06, 1286.85],
+        [769.78, 1286.85],
+        [766.73, 1305.52],
+        [762.16, 1339.42],
+        [715.3, 1340.56],
+        [715.3, 1305.13]
       ],
-      "popcycle": [
-        "DAVIS"
-      ],
-      "popgroups": [
-        "Davis_SC",
-        "Davis_Tramps"
-      ],
-      "landmarks": [
-        "Davis blocks",
-        "South Los Santos",
-        "Near Strawberry and Chamberlain Hills"
-      ],
+      "popcycle": ["DAVIS"],
+      "popgroups": ["Davis_SC", "Davis_Tramps"],
+      "landmarks": ["Davis blocks", "South Los Santos", "Near Strawberry and Chamberlain Hills"],
       "notes": "South LS neighborhood. Poor cars, mid cars, transport, couriers, workers, and more police presence fit."
     },
     {
@@ -964,22 +845,21 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "South Los Santos",
       "map": "city",
-      "pin": [
-        628.77,
-        1267.76
+      "pin": [735.83, 1251.82],
+      "outline": [
+        [679.45, 1227.06],
+        [797.16, 1226.68],
+        [797.93, 1262.87],
+        [744.97, 1263.25],
+        [744.97, 1296.01],
+        [726.31, 1298.68],
+        [722.5, 1265.16],
+        [680.59, 1260.59],
+        [680.59, 1230.87]
       ],
-      "popcycle": [
-        "STRAWBERRY"
-      ],
-      "popgroups": [
-        "Strawberry_General",
-        "Strawberry_Gang"
-      ],
-      "landmarks": [
-        "Olympic Freeway",
-        "South of Downtown",
-        "Near Davis/Chamberlain"
-      ],
+      "popcycle": ["STRAWBERRY"],
+      "popgroups": ["Strawberry_General", "Strawberry_Gang"],
+      "landmarks": ["Olympic Freeway", "South of Downtown", "Near Davis/Chamberlain"],
       "notes": "Dense south-central neighborhood. Good for poor/mid cars, gang-adjacent peds, taxis, and police."
     },
     {
@@ -988,25 +868,19 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "West Los Santos",
       "map": "city",
-      "pin": [
-        470.01,
-        1167.66
+      "pin": [538.38, 1153.85],
+      "outline": [
+        [488.54, 1160.2],
+        [555.77, 1199.86],
+        [588.18, 1173.26],
+        [571.73, 1153.91],
+        [566.89, 1133.6],
+        [492.41, 1129.24],
+        [489.51, 1163.59]
       ],
-      "popcycle": [
-        "DEL_PERRO",
-        "Del_Perro_Beach",
-        "DEL_PERRO_PROM"
-      ],
-      "popgroups": [
-        "Del_Perro_StreetGeneral",
-        "Del_Perro_Beach",
-        "Del_Perro_Bums"
-      ],
-      "landmarks": [
-        "Del Perro Pier",
-        "Beachfront",
-        "Del Perro Freeway"
-      ],
+      "popcycle": ["DEL_PERRO", "Del_Perro_Beach", "DEL_PERRO_PROM"],
+      "popgroups": ["Del_Perro_StreetGeneral", "Del_Perro_Beach", "Del_Perro_Bums"],
+      "landmarks": ["Del Perro Pier", "Beachfront", "Del Perro Freeway"],
       "notes": "Beach city district. Use a blend of rich/mid/poor cars, beach peds, bikes, taxis, and light police/cycle cops."
     },
     {
@@ -1015,23 +889,30 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "West Los Santos",
       "map": "city",
-      "pin": [
-        479.39,
-        1165.87
+      "pin": [652.39, 1183.27],
+      "outline": [
+        [614.11, 1139.89],
+        [665.16, 1139.89],
+        [680.78, 1145.61],
+        [682.3, 1172.27],
+        [688.78, 1173.04],
+        [688.02, 1226.37],
+        [682.3, 1228.65],
+        [681.16, 1262.94],
+        [660.59, 1262.56],
+        [659.06, 1227.51],
+        [632.02, 1228.27],
+        [632.02, 1211.51],
+        [628.97, 1197.8],
+        [614.49, 1195.51],
+        [610.3, 1171.89],
+        [589.73, 1173.04],
+        [588.21, 1155.13],
+        [615.25, 1140.27]
       ],
-      "popcycle": [
-        "LITTLE_SEOUL"
-      ],
-      "popgroups": [
-        "Little_Seoul_Koreatown",
-        "Little_Seoul_StreetGeneral",
-        "RESTAURANT_NIGHT"
-      ],
-      "landmarks": [
-        "Koreatown blocks",
-        "Olympic Freeway edge",
-        "Between Del Perro and Downtown"
-      ],
+      "popcycle": ["LITTLE_SEOUL"],
+      "popgroups": ["Little_Seoul_Koreatown", "Little_Seoul_StreetGeneral", "RESTAURANT_NIGHT"],
+      "landmarks": ["Koreatown blocks", "Olympic Freeway edge", "Between Del Perro and Downtown"],
       "notes": "Dense urban west-central district. Good for poor/mid cars, restaurant/night peds, couriers, taxis, and moderate cops."
     },
     {
@@ -1040,22 +921,21 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "West Los Santos",
       "map": "city",
-      "pin": [
-        402.58,
-        1098.52
+      "pin": [546.86, 1113.04],
+      "outline": [
+        [522.57, 1091.06],
+        [553.42, 1093.35],
+        [556.47, 1112.78],
+        [567.9, 1114.68],
+        [566.37, 1130.68],
+        [531.71, 1129.54],
+        [531.71, 1112.4],
+        [524.09, 1110.49],
+        [522.18, 1092.97]
       ],
-      "popcycle": [
-        "MORNINGWOOD"
-      ],
-      "popgroups": [
-        "Morningwood_StreetGeneral",
-        "Rockford_Residential_BevHills"
-      ],
-      "landmarks": [
-        "West of Rockford Hills",
-        "North of Del Perro",
-        "Residential-commercial transition"
-      ],
+      "popcycle": ["MORNINGWOOD"],
+      "popgroups": ["Morningwood_StreetGeneral", "Rockford_Residential_BevHills"],
+      "landmarks": ["West of Rockford Hills", "North of Del Perro", "Residential-commercial transition"],
       "notes": "Good bridge between rich Rockford traffic and beach/Del Perro traffic."
     },
     {
@@ -1064,21 +944,29 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "West Los Santos",
       "map": "city",
-      "pin": [
-        606.06,
-        1304.96
+      "pin": [629.96, 1271.74],
+      "outline": [
+        [591.86, 1234.79],
+        [633.77, 1234.02],
+        [634.53, 1227.17],
+        [657.38, 1227.93],
+        [659.67, 1260.31],
+        [693.57, 1262.6],
+        [697.0, 1307.93],
+        [676.43, 1312.88],
+        [673.77, 1355.17],
+        [635.67, 1353.64],
+        [634.53, 1334.98],
+        [592.24, 1329.64],
+        [592.62, 1279.74],
+        [583.48, 1279.36],
+        [583.48, 1264.5],
+        [588.81, 1262.98],
+        [593.0, 1236.31]
       ],
-      "popcycle": [
-        "PUERTO_DEL_SOL"
-      ],
-      "popgroups": [
-        "Puerto_Del_Sol_StreetGeneral"
-      ],
-      "landmarks": [
-        "Marina",
-        "Docks/slips",
-        "Between Vespucci and La Puerta"
-      ],
+      "popcycle": ["PUERTO_DEL_SOL"],
+      "popgroups": ["Puerto_Del_Sol_StreetGeneral"],
+      "landmarks": ["Marina", "Docks/slips", "Between Vespucci and La Puerta"],
       "notes": "Marina district. Mix mid/rich cars, light worker traffic, and boats nearby."
     },
     {
@@ -1087,26 +975,323 @@ window.GTATrafficAreaMapData = {
       "county": "Los Santos County",
       "category": "West Los Santos",
       "map": "city",
-      "pin": [
-        446.51,
-        1254.09
+      "pin": [563.4, 1264.12],
+      "outline": [
+        [532.71, 1225.96],
+        [554.39, 1205.53],
+        [594.42, 1301.01],
+        [594.42, 1330.62],
+        [582.74, 1334.79],
+        [582.33, 1312.69],
+        [567.32, 1312.27],
+        [526.04, 1233.88],
+        [530.21, 1229.29]
       ],
-      "popcycle": [
-        "VESPUCCI",
-        "VESPUCCI_BEACH",
-        "Vespucci_Canals"
-      ],
-      "popgroups": [
-        "Vespucci_StreetGeneral",
-        "Vespucci_Beach",
-        "Vespucci_Canals_StreetGeneral"
-      ],
-      "landmarks": [
-        "Vespucci Beach",
-        "Canals",
-        "Beachfront paths / marina edge"
-      ],
+      "popcycle": ["VESPUCCI", "VESPUCCI_BEACH", "Vespucci_Canals"],
+      "popgroups": ["Vespucci_StreetGeneral", "Vespucci_Beach", "Vespucci_Canals_StreetGeneral"],
+      "landmarks": ["Vespucci Beach", "Canals", "Beachfront paths / marina edge"],
       "notes": "Beach and canal area. Bikes, bicycles, beach peds, mid/poor cars, taxis, and some rich cars are believable."
+    },
+
+    // ──────────────────────────────────────────────────
+    // PERMANENT CUSTOM AREAS — baked in 2026-07-09
+    // These match popcycle schedule names not covered by
+    // the standard 43 areas above.
+    // ──────────────────────────────────────────────────
+    {
+      "id": "CUSTOM_RANCHO",
+      "name": "Rancho",
+      "county": "Los Santos County",
+      "category": "South Los Santos",
+      "map": "city",
+      "custom": true,
+      "pin": [785.92, 1326.59],
+      "outline": [
+        [749.37, 1340.59],
+        [762.71, 1340.17],
+        [760.21, 1307.65],
+        [768.97, 1306.4],
+        [768.13, 1286.8],
+        [778.56, 1288.05],
+        [778.97, 1261.78],
+        [796.9, 1263.87],
+        [801.49, 1278.04],
+        [812.75, 1277.63],
+        [811.91, 1338.92],
+        [803.58, 1340.17],
+        [798.15, 1358.52],
+        [751.04, 1357.68],
+        [750.2, 1341.42]
+      ],
+      "popcycle": ["Rancho"],
+      "popgroups": ["Davis_SC", "Banning_StreetGeneral"],
+      "landmarks": ["Rancho blocks", "Near Davis", "South LS residential"],
+      "notes": "South LS residential neighborhood adjacent to Davis. Similar feel — poor/mid cars, working class peds."
+    },
+    {
+      "id": "CUSTOM_MURRIETA_HEIGHTS",
+      "name": "Murrieta Heights",
+      "county": "Los Santos County",
+      "category": "East / Industrial Los Santos",
+      "map": "city",
+      "custom": true,
+      "pin": [888.01, 1222.41],
+      "outline": [
+        [846.14, 1183.3],
+        [910.52, 1182.54],
+        [912.8, 1206.92],
+        [923.47, 1208.44],
+        [923.47, 1257.59],
+        [852.61, 1257.97],
+        [851.47, 1210.35],
+        [846.9, 1185.59]
+      ],
+      "popcycle": ["Murrieta Heights"],
+      "popgroups": ["La_Mesa_General", "El_Burro_General"],
+      "landmarks": ["Murrieta Heights", "East industrial edge", "Near Mirror Park"],
+      "notes": "East-side industrial/residential area. Mostly poor/mid city traffic, workers, and utility vehicles."
+    },
+    {
+      "id": "CUSTOM_MAZE_BANK_ARENA",
+      "name": "Maze Bank Arena",
+      "county": "Los Santos County",
+      "category": "South / Industrial Los Santos",
+      "map": "city",
+      "custom": true,
+      "pin": [693.88, 1329.08],
+      "outline": null,
+      "popcycle": ["Maze Bank Arena"],
+      "popgroups": ["Stadium_StreetGeneral", "Los_Puerta_StreetGeneral"],
+      "landmarks": ["Maze Bank Arena", "Event traffic area", "South of La Puerta"],
+      "notes": "Arena district. Event peds, taxis, buses, and mid-range cars make sense near game-day traffic."
+    },
+    {
+      "id": "CUSTOM_PACIFIC_BLUFFS",
+      "name": "Pacific Bluffs",
+      "county": "Los Santos County",
+      "category": "West Los Santos",
+      "map": "city",
+      "custom": true,
+      "pin": [455.87, 1081.41],
+      "outline": [
+        [357.84, 1019.89],
+        [474.59, 1021.56],
+        [489.18, 1062.01],
+        [510.45, 1080.77],
+        [522.96, 1093.28],
+        [529.21, 1113.29],
+        [510.45, 1125.38],
+        [494.19, 1142.06],
+        [488.76, 1162.08],
+        [475.84, 1164.58],
+        [395.78, 1108.7],
+        [369.1, 1089.52],
+        [339.91, 1062.42],
+        [333.66, 1041.16],
+        [357.42, 1016.56]
+      ],
+      "popcycle": ["Pacific Bluffs"],
+      "popgroups": ["Rockford_Residential_BevHills", "Morningwood_StreetGeneral"],
+      "landmarks": ["Pacific Bluffs coastal cliffs", "Cemetery", "Northwest LS coast"],
+      "notes": "Affluent clifftop residential area northwest of Morningwood. Rich/mid cars and low-density peds fit best."
+    },
+    {
+      "id": "CUSTOM_RICHMAN_GLEN",
+      "name": "Richman Glen",
+      "county": "Los Santos County",
+      "category": "Hills / Wealthy Residential",
+      "map": "city",
+      "custom": true,
+      "pin": [518.56, 951.49],
+      "outline": null,
+      "popcycle": ["Richman Glen"],
+      "popgroups": ["Richman_BevHills", "Marlowe_Drive_BevHills"],
+      "landmarks": ["Richman Glen estates", "North of Richman", "Hills between city and county"],
+      "notes": "Very affluent hillside residential. Rich vehicles, low density, and upscale peds dominate."
+    },
+    {
+      "id": "CUSTOM_GREAT_CHAPARRAL",
+      "name": "Great Chaparral",
+      "county": "Blaine County",
+      "category": "Mountains / Wilderness",
+      "map": "county",
+      "custom": true,
+      "pin": [648.89, 799.3],
+      "outline": null,
+      "popcycle": ["Great Chaparral"],
+      "popgroups": ["FREEWAY_COUNTRYSIDE", "Birds_Countryside"],
+      "landmarks": ["Great Chaparral scrubland", "South Blaine County", "Transition zone between city and county"],
+      "notes": "Dry scrub wilderness between Los Santos and Blaine County. Country/rural mix with low traffic density."
+    },
+    {
+      "id": "CUSTOM_BOLINGBROKE",
+      "name": "Bolingbroke",
+      "county": "Blaine County",
+      "category": "Central Blaine",
+      "map": "county",
+      "custom": true,
+      "pin": [959.63, 742.33],
+      "outline": null,
+      "popcycle": ["Bolingbroke"],
+      "popgroups": ["Sandy_Shores", "FREEWAY_COUNTRYSIDE"],
+      "landmarks": ["Bolingbroke Penitentiary", "East of Sandy Shores", "Desert correctional facility"],
+      "notes": "Prison complex area. Security/utility vehicles and very low civilian traffic are appropriate."
+    },
+    {
+      "id": "CUSTOM_DOWNTOWN_VINEWOOD",
+      "name": "Downtown Vinewood",
+      "county": "Los Santos County",
+      "category": "North/Central Los Santos",
+      "map": "city",
+      "custom": true,
+      "pin": [786.64, 1062.67],
+      "outline": null,
+      "popcycle": ["Downtown Vinewood"],
+      "popgroups": ["Downtown_Vinewood", "Club_Nighttime"],
+      "landmarks": ["Vinewood Walk of Fame", "Star-studded strip", "Entertainment district core"],
+      "notes": "The busy Vinewood commercial strip. Rich/mid cars, taxis, celebrity peds, and tourist traffic are a good fit."
+    },
+    {
+      "id": "CUSTOM_GOLF_COURSE",
+      "name": "Golf Course",
+      "county": "Los Santos County",
+      "category": "Hills / Wealthy Residential",
+      "map": "city",
+      "custom": true,
+      "pin": [573.96, 1065.78],
+      "outline": [
+        [562.91, 1081.78],
+        [592.62, 1096.25],
+        [610.53, 1098.16],
+        [620.05, 1092.44],
+        [589.58, 1046.73],
+        [577.39, 1049.01],
+        [552.62, 1056.25],
+        [551.86, 1065.01],
+        [549.96, 1079.11],
+        [555.67, 1085.59],
+        [562.15, 1084.44]
+      ],
+      "popcycle": ["Golf Course"],
+      "popgroups": ["Richman_BevHills", "Rockford_Hills_Day"],
+      "landmarks": ["Los Santos Golf Club", "Near Richman", "Exclusive fairways"],
+      "notes": "Golf club grounds. Rich cars, exclusive peds, and very low density are correct for this location."
+    },
+    {
+      "id": "CUSTOM_MISSION_ROW",
+      "name": "Mission Row",
+      "county": "Los Santos County",
+      "category": "Downtown Los Santos",
+      "map": "city",
+      "custom": true,
+      "pin": [785.67, 1212.85],
+      "outline": [
+        [758.24, 1209.42],
+        [767.38, 1209.42],
+        [767.0, 1191.9],
+        [796.72, 1191.52],
+        [796.72, 1228.85],
+        [759.77, 1227.33],
+        [757.1, 1208.28]
+      ],
+      "popcycle": ["Mission Row"],
+      "popgroups": ["Pillbox_Business", "Pillbox_Tramps"],
+      "landmarks": ["LSPD Mission Row Police Station", "Downtown south edge", "Near La Mesa"],
+      "notes": "LSPD district around Mission Row. Police vehicles, city worker traffic, and couriers work well here."
+    },
+    {
+      "id": "CUSTOM_OBERVATORY",
+      "name": "Observatory",
+      "county": "Los Santos County",
+      "category": "Hills / Wealthy Residential",
+      "map": "city",
+      "custom": true,
+      "pin": [719.14, 964.04],
+      "outline": null,
+      "popcycle": ["Obervatory"],
+      "popgroups": ["Galileo_Park_BevHills", "FREEWAY_COUNTRYSIDE"],
+      "landmarks": ["Galileo Observatory", "Galileo Park", "Vinewood Hills hilltop"],
+      "notes": "Observatory hilltop. Very low traffic density — ranger/park vehicles, cyclists, and tourist peds fit best."
+    },
+    {
+      "id": "CUSTOM_ROCKFORD_HILLS_SHOPS",
+      "name": "Rockford Hills Shops",
+      "county": "Los Santos County",
+      "category": "Hills / Wealthy Residential",
+      "map": "city",
+      "custom": true,
+      "pin": [630.53, 1100.1],
+      "outline": null,
+      "popcycle": ["Rockford Hills Shops"],
+      "popgroups": ["Rockford_Hills_Day", "Rockford_Hills_Night"],
+      "landmarks": ["Rockford Hills shopping strip", "Luxury retail cluster", "Near Backlot City"],
+      "notes": "Upscale shopping zone within Rockford Hills. Rich/super vehicles and affluent peds are very believable."
+    },
+    {
+      "id": "CUSTOM_VESPUCCI_CANALS",
+      "name": "Vespucci Canals",
+      "county": "Los Santos County",
+      "category": "West Los Santos",
+      "map": "city",
+      "custom": true,
+      "pin": [601.51, 1210.95],
+      "outline": [
+        [556.46, 1204.84],
+        [584.65, 1261.6],
+        [590.37, 1263.13],
+        [592.27, 1235.32],
+        [633.8, 1234.56],
+        [633.04, 1211.32],
+        [614.75, 1188.46],
+        [598.37, 1175.89],
+        [556.85, 1205.98]
+      ],
+      "popcycle": ["Vespucci Canals"],
+      "popgroups": ["Vespucci_Canals_StreetGeneral", "Vespucci_Beach"],
+      "landmarks": ["Vespucci Canals waterways", "Between Vespucci Beach and Little Seoul", "Residential canals"],
+      "notes": "Canal neighbourhood. Mid-range traffic, bikes, beach peds, and delivery vehicles are a natural fit."
+    },
+    {
+      "id": "CUSTOM_QUARRY",
+      "name": "Quarry",
+      "county": "Blaine County",
+      "category": "Central Blaine",
+      "map": "county",
+      "custom": true,
+      "pin": [864.92, 781.19],
+      "outline": [
+        [834.82, 747.66],
+        [896.16, 748.04],
+        [898.82, 817.76],
+        [835.59, 818.52],
+        [834.44, 750.33]
+      ],
+      "popcycle": ["Quarry"],
+      "popgroups": ["FREEWAY_COUNTRYSIDE", "Sandy_Shores"],
+      "landmarks": ["Davis Quartz quarry", "South of Grand Senora Desert", "Mining operations"],
+      "notes": "Active quarry. Dump trucks, utility vehicles, heavy machinery, and worker peds fit this industrial zone."
+    },
+    {
+      "id": "CUSTOM_RACECOURSE",
+      "name": "Racecourse",
+      "county": "Los Santos County",
+      "category": "East Los Santos",
+      "map": "city",
+      "custom": true,
+      "pin": [876.95, 1063.8],
+      "outline": [
+        [857.14, 1056.56],
+        [886.47, 1027.99],
+        [891.81, 1023.42],
+        [902.09, 1021.9],
+        [900.57, 1087.04],
+        [857.52, 1089.33],
+        [855.24, 1058.47]
+      ],
+      "popcycle": ["Racecourse"],
+      "popgroups": ["East_Vinewood_StreetGeneral", "La_Mesa_General"],
+      "landmarks": ["Los Santos Race Track", "East Vinewood edge", "Near Mirror Park"],
+      "notes": "Race track grounds. Sports cars, event traffic, and race-adjacent peds are a good thematic fit."
     }
   ]
 };

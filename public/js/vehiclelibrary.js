@@ -1960,6 +1960,7 @@ function cardHtml(vehicle) {
       compareStatRow("Drive force (accel)", vehicles, v => numericHandlingValue(linkedHandling(v), "fInitialDriveForce"), { bar: true, decimals: 2 }),
       compareStatRow("Brake force", vehicles, v => numericHandlingValue(linkedHandling(v), "fBrakeForce"), { bar: true, decimals: 1 }),
       compareStatRow("Traction (max)", vehicles, v => numericHandlingValue(linkedHandling(v), "fTractionCurveMax"), { bar: true, decimals: 2 }),
+      compareStatRow("Mass (kg)", vehicles, v => numericHandlingValue(linkedHandling(v), "fMass"), { bar: true, decimals: 0 }),
       compareTextRow("Popgroup membership", vehicles, v => [...new Set((v.popgroups || []).map(group => group.groupName))].join(", ")),
       compareTextRow("Install status", vehicles, v => isInstalled(v) ? "Installed" : "Not installed"),
       compareTextRow("Install type", vehicles, v => inferInstallType(v))

@@ -1410,7 +1410,7 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
 .vl-compare-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 9100; /* above sticky nav (z-index: 900) */
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -1539,4 +1539,54 @@ select.vd-detail-input:disabled { cursor: not-allowed; }
   margin: 0 0 6px;
   color: rgba(255,255,255,.5);
   font-size: .78rem;
+}
+
+/* ── Compare table — stat cells ────────────────────────────── */
+
+.vl-compare-label-col {
+  min-width: 180px;
+  color: rgba(255,255,255,.55);
+  font-weight: 700;
+  font-size: .8rem;
+  white-space: nowrap;
+}
+
+.vl-compare-stat-value {
+  color: #fff;
+  font-weight: 700;
+  font-size: .9rem;
+}
+
+/* Highlight the winning value in each stat row */
+.vl-compare-stat-value.best {
+  color: #4ade80;
+  font-weight: 900;
+  text-shadow: 0 0 12px rgba(74,222,128,.35);
+}
+
+.vl-compare-stat-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.vl-compare-bar-track {
+  height: 5px;
+  background: rgba(255,255,255,.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.vl-compare-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fb923c, #f59e0b);
+  border-radius: 99px;
+  transition: width .25s ease;
+}
+
+.vl-compare-add-more {
+  margin: 12px 0 0;
+  color: rgba(255,255,255,.35);
+  font-size: .79rem;
+  font-style: italic;
 }

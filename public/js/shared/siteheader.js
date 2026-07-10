@@ -10,7 +10,10 @@
     "login": "Account Access",
     "register": "Create Account",
     "admin": "Admin Console",
-    "pricing": "Pricing"
+    "pricing": "Pricing",
+    "relationships": "Relationships Editor",
+    "dispatch": "Dispatch Editor",
+    "events": "Events Editor"
   };
 
   function getPageTagline() {
@@ -38,11 +41,4 @@
     `;
 
     if (!existingHeader) {
-      document.body.insertBefore(header, document.body.firstChild);
-    }
-  }
-
-  renderSiteHeader();
-})();
-
-
+      document.body.insertBefore(header, do

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic — Events Editor</title>
+
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/events.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="events">
+
+  <!-- Site Header -->
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic home">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+    </a>
+  </header>
+
+  <!-- Shared nav -->
+  <div id="siteToolMenu"></div>
+
+  <!-- Hero -->
+  <section class="hero-banner events-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">NPC Behaviour Editor</div>
+        <h1>GTA Traffic Events Editor</h1>
+        <p>
+          Browse the 28 NPC personality profiles and 238 response rules that control how
+          pedestrians, cops, gangs, and animals react to in-game events.
+          Tune probability weights per event source and export a custom
+          <code>events.meta</code> for your mod.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="events-main">
+    <div class="panel" style="margin-bottom:0">
+
+      <!-- Drop Zone -->
+      <div
+        id="eventsDropZone"
+        class="events-drop-zone"
+        role="button"
+        tabindex="0"
+        aria-label="Load custom events.meta"
+        title="Drop events.meta here or click to choose"
+      >
+        <div style="font-size:26px;margin-bottom:6px">🧠</div>
+        <strong>Drop events.meta here</strong>
+        <small>or click to choose · NPC profiles visible without a file · drop to unlock probability editing</small>
+        <div class="events-drop-state"></div>
+      </div>
+      <input id="eventsFileInput" type="file" accept=".meta,.xml" hidden>
+
+      <!-- Tabs -->
+      <div class="events-tabs">
+        <button class="events-tab-btn active" data-tab="profiles" type="button">
+          👤 NPC Profiles
+        </button>
+        <button class="events-tab-btn" data-tab="rules" type="button">
+          📋 Response Rules
+        </button>
+        <button class="events-tab-btn" data-tab="tasks" type="button">
+          ⚙ Task Types
+        </button>
+      </div>
+
+      <!-- Tab: NPC Profiles -->
+      <div id="eventsTab-profiles" class="events-tab-panel active">
+
+        <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary)">
+            28 NPC personality profiles. Each inherits responses from its parent, then adds its own.
+            Click any card to expand its full response rule list.
+          </p>
+          <div class="events-stats">
+            <span class="events-stat">
+              <span class="events-stat-val">28</span> profiles
+            </span>
+            <span class="events-stat">
+              <span class="events-stat-val">238</span> response rules
+            </span>
+            <span class="events-stat">
+              <span class="events-stat-val">76</span> event types
+            </span>
+          </div>
+        </div>
+
+        <!-- Category filters -->
+        <div class="events-cat-filters">
+          <button class="events-cat-chip active" data-cat="all" type="button">All</button>
+          <button class="events-cat-chip" data-cat="law" type="button">🚓 Law</button>
+          <button class="events-cat-chip" data-cat="emergency" type="button">🚑 Emergency</button>
+          <button class="events-cat-chip" data-cat="gang" type="button">🔫 Gang</button>
+          <button class="events-cat-chip" data-cat="civilian" type="button">👤 Civilian</button>
+          <button class="events-cat-chip" data-cat="animal" type="button">🐾 Animal</button>
+          <button class="events-cat-chip" data-cat="abstract" type="button">⚙ Abstract</button>
+        </div>
+
+        <div id="eventsProfileGrid" class="events-profile-grid">
+          <div style="padding:20px;color:var(--color-text-muted)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Tab: Response Rules -->
+      <div id="eventsTab-rules" class="events-tab-panel">
+
+        <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary)">
+            238 named response rules — each binds an EVENT to a set of tasks with per-source probabilities.
+            Drop <code>events.meta</code> above to view and edit probability values.
+          </p>
+          <div style="display:flex;align-items:center;gap:12px">
+            <button id="eventsEditToggle" class="events-edit-toggle btn btn-ghost btn-sm" type="button">
+              Edit Mode <span class="events-edit-dot"></span>
+            </button>
+            <span id="eventsRuleCount" class="events-rule-count"></span>
+          </div>
+        </div>
+
+        <!-- Search + event filter -->
+        <div class="events-filter-bar">
+          <input
+            id="eventsSearch"
+            class="events-search"
+            type="search"
+            placeholder="Search rule name…"
+            autocomplete="off"
+          >
+          <select id="eventsEventSelect" class="events-event-select">
+            <option value="">All events</option>
+          </select>
+        </div>
+
+        <div id="eventsRulesList" class="events-rules-list">
+          <div style="padding:16px 0;color:var(--color-text-muted)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Tab: Task Types -->
+      <div id="eventsTab-tasks" class="events-tab-panel">
+        <p style="margin:0 0 14px;font-size:var(--text-sm);color:var(--color-text-secondary)">
+          40 task type definitions — the action "verbs" that response rules assign to NPCs.
+          Referenced by TaskRef in each decision item.
+          Drop <code>events.meta</code> to load the full list from file.
+        </p>
+        <div id="eventsTaskGrid" class="events-task-grid">
+          <div style="color:var(--color-text-muted)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Export Bar -->
+      <div class="events-export-bar">
+        <div class="events-export-info">
+          <strong>events.meta</strong>
+          <span style="margin-left:6px;color:var(--color-text-muted)">·</span>
+          <span style="margin-left:6px">Place in <code>common/data/</code> inside your mod.</span>
+        </div>
+        <div class="events-export-actions">
+          <button id="eventsResetBtn" class="btn btn-ghost" type="button">↺ Clear Edits</button>
+          <button id="eventsExportBtn" class="btn btn-primary" type="button">↓ Export events.meta</button>
+        </div>
+      </div>
+
+    </div><!-- /panel -->
+
+    <!-- Info callout -->
+    <div class="banner banner-info" style="margin-top:14px">
+      <strong>How it works:</strong>
+      Each NPC profile (COP, GANG, DEFAULT…) holds a list of response rule names.
+      When an event fires, the game checks matching rules in order and rolls against
+      <em>Chance_SourcePlayer/Friend/Threat/Other</em> to decide which task to assign.
+      Probability 0 = never, 1 = always. The <em>EventResponseDecisionFlags</em> constrain
+      which contexts the decision applies in (on foot, in car, in complex scenario, etc.).
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div id="eventsToast" class="dispatch-toast"></div>
+
+  <!-- Scripts -->
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/eventsapp.js"></script>
+
+</body>
+</html>

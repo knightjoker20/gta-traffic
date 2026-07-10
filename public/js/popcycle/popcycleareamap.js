@@ -556,18 +556,40 @@ function applyImportedPopcycleMapPositions(payload) {
 // =====================================================
 
 function loadCustomMarkersFromStorage() {
-  let customAreas = [];
+  let storedAreas = [];
   try {
     const raw = localStorage.getItem(POPCYCLE_CUSTOM_MARKERS_KEY);
-    customAreas = raw ? JSON.parse(raw) : [];
+    storedAreas = raw ? JSON.parse(raw) : [];
   } catch (error) {
     console.warn("Could not load saved custom markers.", error);
-    customAreas = [];
+    storedAreas = [];
   }
 
-  // Remove any custom areas from a previous load (e.g. hot reload) before re-adding.
-  popcycleAreaMapState.areas = popcycleAreaMapState.areas.filter(a => !a.custom);
-  popcycleAreaMapState.areas.push(...customAreas);
+  // Collect the baked-in custom areas from the static data (custom: true entries).
+  const staticCustom = (window.GTATrafficAreaMapData?.areas || []).filter(a => a.custom);
+
+  if (storedAreas.length) {
+    // Merge: use stored areas, and add any baked-in custom areas not present in stored.
+    const storedIds = new Set(storedAreas.map(a => a.id));
+    const mergedCustom = [
+      ...storedAreas,
+      ...staticCustom.filter(a => !storedIds.has(a.id))
+    ];
+    // Remove all existing custom areas (and any non-custom areas whose IDs clash
+    // with incoming custom areas — deduplicates baked-in defaults that were previously
+    // user-imported before they were made permanent).
+    const incomingIds = new Set(mergedCustom.map(a => a.id));
+    popcycleAreaMapState.areas = popcycleAreaMapState.areas.filter(
+      a => !a.custom && !incomingIds.has(a.id)
+    );
+    popcycleAreaMapState.areas.push(...mergedCustom);
+  } else {
+    // No user-saved custom areas — use baked-in defaults.
+    // Just remove any stale custom areas from a previous hot-reload; the static
+    // custom areas are already in popcycleAreaMapState.areas from initializePopcycleAreaMap.
+    popcycleAreaMapState.areas = popcycleAreaMapState.areas.filter(a => !a.custom);
+    popcycleAreaMapState.areas.push(...staticCustom);
+  }
 }
 
 function saveCustomMarkersToStorage() {
@@ -645,6 +667,18 @@ function loadAreaOutlinesFromStorage() {
   } catch (error) {
     console.warn("Could not load saved area outlines.", error);
     popcycleAreaMapState.areaOutlines = {};
+  }
+
+  // Merge baked-in outlines from static area data for any area that doesn't
+  // already have a user-saved outline. User overrides always take precedence.
+  for (const area of (popcycleAreaMapState.areas || [])) {
+    if (
+      Array.isArray(area.outline) &&
+      area.outline.length >= 3 &&
+      !popcycleAreaMapState.areaOutlines[area.id]
+    ) {
+      popcycleAreaMapState.areaOutlines[area.id] = area.outline;
+    }
   }
 }
 
@@ -1184,7 +1218,12 @@ function focusPopcycleMapOnSelected() {
 
   const layerScale = getLayerScale(layer);
 
-  view.zoom = 2.25;
+  // Only zoom IN — never reduce the zoom when the user clicks a schedule.
+  // If already zoomed in past the minimum focus zoom, keep the current level.
+  const MIN_FOCUS_ZOOM = 2.25;
+  if ((view.zoom || 1) < MIN_FOCUS_ZOOM) {
+    view.zoom = MIN_FOCUS_ZOOM;
+  }
 
   const fitScale = Math.min(
     rect.width / layer.width,
