@@ -386,6 +386,7 @@ let relState = {
   // Loaded file name
   loadedFile: null,
 };
+window.relState = relState;
 
 // ── Helpers ───────────────────────────────────────────
 function deepClone(obj) {
@@ -836,4 +837,4 @@ function initRelationshipsEditor() {
   updateStats();
 }
 
-document.addEventListener('DOMContentLoaded', initRelationshipsEditor);
+document.addEventListener('DOMContentLoaded'

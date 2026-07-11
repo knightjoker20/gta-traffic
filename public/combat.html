@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Traffic NPC Combat Editor</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/combat.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+
+<body data-page="combat">
+
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic home">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner combat-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">NPC Toughness &amp; Combat AI</div>
+        <h1>GTA Traffic NPC Combat Editor</h1>
+        <p>
+          Tune how hard peds are to kill, how well they fight in melee and with guns,
+          and how quickly they react when provoked. Edit ped health pools, brawling styles,
+          combat behaviour profiles, and agitation triggers — then export clean files for your mod.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="combat-main">
+
+    <!-- ── Top row: controls + cloud save ── -->
+    <div class="combat-top-row">
+      <section class="panel combat-control-panel">
+        <h2>NPC Combat Controls</h2>
+        <div class="combat-panel-actions">
+          <button class="btn-green"   type="button" onclick="exportAll()">Export All Files</button>
+          <button class="secondary"   type="button" onclick="resetAll()">Reset All to Loaded</button>
+          <span id="combatModCount" class="combat-mod-count"></span>
+        </div>
+        <p class="small" style="opacity:.55;margin:0">
+          Load one or more files below. Each tab works independently — you can load and export any file on its own.
+        </p>
+      </section>
+      <div id="combatCloudSavePanelSlot"></div>
+    </div>
+
+    <!-- ── Tabs ── -->
+    <div class="panel" style="padding:0;overflow:hidden">
+      <div class="combat-tabs" style="padding:0 16px">
+        <button class="combat-tab-btn active" data-tab="health"    type="button">🩺 Ped Health</button>
+        <button class="combat-tab-btn"        data-tab="brawling"  type="button">🥊 Brawling Styles</button>
+        <button class="combat-tab-btn"        data-tab="behaviour" type="button">🔫 Combat Behaviour</button>
+        <button class="combat-tab-btn"        data-tab="triggers"  type="button">⚡ Agitation Triggers</button>
+      </div>
+
+      <!-- ══ TAB: Ped Health ══════════════════════════════ -->
+      <div id="panelHealth" class="combat-tab-panel active" style="padding:20px">
+
+        <div id="healthDropZone" class="combat-drop-zone" role="button" tabindex="0"
+             title="Drop pedhealth.meta here or click to choose">
+          <div class="combat-drop-icon">🩺</div>
+          <strong>Drop pedhealth.meta here</strong>
+          <small>or click to choose · found in <code>update.rpf › common › data › ai</code></small>
+          <div class="combat-drop-state-text"></div>
+        </div>
+        <input id="healthFileInput" type="file" accept=".meta,.xml" hidden>
+
+        <div class="combat-panel-actions">
+          <button class="btn-orange" type="button" onclick="exportHealth()" id="healthExportBtn" disabled>Export pedhealth.meta</button>
+          <button class="secondary"  type="button" onclick="resetHealth()"  id="healthResetBtn"  disabled>Reset to Loaded</button>
+          <span id="healthModCount" class="combat-mod-count"></span>
+        </div>
+
+        <div id="healthEditor">
+          <div class="combat-placeholder">
+            <div class="combat-placeholder-icon">🩺</div>
+            <p>Load pedhealth.meta to edit health profiles</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: Brawling Styles ═════════════════════════ -->
+      <div id="panelBrawling" class="combat-tab-panel" style="padding:20px">
+
+        <div id="brawlingDropZone" class="combat-drop-zone" role="button" tabindex="0"
+             title="Drop pedbrawlingstyle.meta here or click to choose">
+          <div class="combat-drop-icon">🥊</div>
+          <strong>Drop pedbrawlingstyle.meta here</strong>
+          <small>or click to choose · found in <code>update.rpf › common › data › ai</code></small>
+          <div class="combat-drop-state-text"></div>
+        </div>
+        <input id="brawlingFileInput" type="file" accept=".meta,.xml" hidden>
+
+        <div class="combat-panel-actions">
+          <button class="btn-orange" type="button" onclick="exportBrawling()" id="brawlingExportBtn" disabled>Export pedbrawlingstyle.meta</button>
+          <button class="secondary"  type="button" onclick="resetBrawling()"  id="brawlingResetBtn"  disabled>Reset to Loaded</button>
+          <span id="brawlingModCount" class="combat-mod-count"></span>
+        </div>
+
+        <div id="brawlingEditor">
+          <div class="combat-placeholder">
+            <div class="combat-placeholder-icon">🥊</div>
+            <p>Load pedbrawlingstyle.meta to edit melee combat styles</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: Combat Behaviour ════════════════════════ -->
+      <div id="panelBehaviour" class="combat-tab-panel" style="padding:20px">
+
+        <div id="behaviourDropZone" class="combat-drop-zone" role="button" tabindex="0"
+             title="Drop combatbehaviour.meta here or click to choose">
+          <div class="combat-drop-icon">🔫</div>
+          <strong>Drop combatbehaviour.meta here</strong>
+          <small>or click to choose · found in <code>update.rpf › common › data › ai</code></small>
+          <div class="combat-drop-state-text"></div>
+        </div>
+        <input id="behaviourFileInput" type="file" accept=".meta,.xml" hidden>
+
+        <div class="combat-panel-actions">
+          <button class="btn-orange" type="button" onclick="exportBehaviour()" id="behaviourExportBtn" disabled>Export combatbehaviour.meta</button>
+          <button class="secondary"  type="button" onclick="resetBehaviour()"  id="behaviourResetBtn"  disabled>Reset to Loaded</button>
+          <span id="behaviourModCount" class="combat-mod-count"></span>
+        </div>
+
+        <div id="behaviourEditor">
+          <div class="combat-placeholder">
+            <div class="combat-placeholder-icon">🔫</div>
+            <p>Load combatbehaviour.meta to edit combat AI profiles</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: Agitation Triggers ══════════════════════ -->
+      <div id="panelTriggers" class="combat-tab-panel" style="padding:20px">
+
+        <div id="triggersDropZone" class="combat-drop-zone" role="button" tabindex="0"
+             title="Drop agitatedtriggers.meta here or click to choose">
+          <div class="combat-drop-icon">⚡</div>
+          <strong>Drop agitatedtriggers.meta here</strong>
+          <small>or click to choose · found in <code>update.rpf › common › data › ai</code></small>
+          <div class="combat-drop-state-text"></div>
+        </div>
+        <input id="triggersFileInput" type="file" accept=".meta,.xml" hidden>
+
+        <div class="combat-panel-actions">
+          <button class="btn-orange" type="button" onclick="exportTriggers()" id="triggersExportBtn" disabled>Export agitatedtriggers.meta</button>
+          <button class="secondary"  type="button" onclick="resetTriggers()"  id="triggersResetBtn"  disabled>Reset to Loaded</button>
+          <span id="triggersModCount" class="combat-mod-count"></span>
+        </div>
+
+        <div id="triggersEditor">
+          <div class="combat-placeholder">
+            <div class="combat-placeholder-icon">⚡</div>
+            <p>Load agitatedtriggers.meta to edit agitation reaction timing and distances</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
+  <script src="/js/shared/probanner.js"></script>
+  <script src="/js/projectscloud.js"></script>
+  <script src="/js/combat-cloud-save.js"></script>
+  <script src="/js/combatapp.js"></script>
+
+</body>
+</html>

@@ -299,6 +299,7 @@ let state = {
   taskTypes: [...VANILLA_TASK_TYPES],
   modifications: {}    // ruleName → decision[] with modified values
 };
+window.state = state;
 
 /* ─── Parser ─── */
 function parseEventsMeta(xmlText) {
@@ -904,5 +905,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if (allChip) allChip.classList.add('active');
 
   // Initial render
-  renderProfiles();
-});
+  

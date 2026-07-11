@@ -179,6 +179,7 @@ let dispatchState = {
   loadedFile: null,
   activeTab: 'vehicles',
 };
+window.dispatchState = dispatchState;
 
 // ── Helpers ───────────────────────────────────────────
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -947,4 +948,4 @@ function initDispatchEditor() {
   renderAll();
 }
 
-document.addEventListener('DOMContentLoaded', initDispatchEditor);
+document.addEventListener('DO

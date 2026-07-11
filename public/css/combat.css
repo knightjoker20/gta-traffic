@@ -1,0 +1,478 @@
+/* =====================================================
+   combat.css  —  NPC Combat Editor
+   ===================================================== */
+
+/* ── Page layout ─────────────────────────────────────── */
+.combat-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Top row (controls + cloud save) ─────────────────── */
+.combat-top-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.combat-control-panel {
+  flex: 1 1 480px;
+}
+
+/* ── Tabs ─────────────────────────────────────────────── */
+.combat-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 0;
+  flex-wrap: wrap;
+}
+.combat-tab-btn {
+  padding: 9px 18px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.45);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  border-radius: 6px 6px 0 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  letter-spacing: 0.01em;
+}
+.combat-tab-btn:hover {
+  color: rgba(255,255,255,0.75);
+  background: rgba(255,255,255,0.04);
+}
+.combat-tab-btn.active {
+  color: #fb923c;
+  border-bottom-color: #fb923c;
+  background: rgba(249,115,22,0.07);
+}
+
+/* ── Tab panels ───────────────────────────────────────── */
+.combat-tab-panel { display: none; }
+.combat-tab-panel.active { display: block; }
+
+/* ── Drop zone (shared) ───────────────────────────────── */
+.combat-drop-zone {
+  border: 2px dashed rgba(255,255,255,0.18);
+  border-radius: 12px;
+  padding: 22px 28px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+.combat-drop-zone:hover,
+.combat-drop-zone.drag-over {
+  border-color: rgba(249,115,22,0.55);
+  background: rgba(249,115,22,0.05);
+}
+.combat-drop-zone.loaded {
+  border-color: rgba(74,222,128,0.4);
+  background: rgba(74,222,128,0.04);
+}
+.combat-drop-icon { font-size: 22px; margin-bottom: 2px; }
+.combat-drop-zone strong { font-size: 14px; color: rgba(255,255,255,0.85); }
+.combat-drop-zone small  { font-size: 12px; color: rgba(255,255,255,0.4); }
+.combat-drop-state-text  { font-size: 12px; color: #4ade80; margin-top: 2px; min-height: 16px; }
+
+/* ── Tab panel action row ─────────────────────────────── */
+.combat-panel-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  align-items: center;
+}
+.combat-mod-count {
+  font-size: 12px;
+  color: #fb923c;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB 1 — PED HEALTH TABLE
+   ══════════════════════════════════════════════════════ */
+.health-table-scroll {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.health-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.health-table th {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.5);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.health-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.85);
+  vertical-align: middle;
+}
+.health-table tr:last-child td { border-bottom: none; }
+.health-table tr.modified td:first-child { border-left: 2px solid #fb923c; }
+.health-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.health-input {
+  width: 80px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  padding: 4px 8px;
+  transition: border-color 0.15s;
+}
+.health-input:focus { outline: none; border-color: rgba(249,115,22,0.5); }
+.health-input.modified { border-color: rgba(249,115,22,0.4); color: #fb923c; }
+
+.health-checkbox {
+  width: 16px; height: 16px;
+  cursor: pointer;
+  accent-color: #fb923c;
+}
+
+.health-name {
+  font-weight: 600;
+  color: #fb923c;
+  min-width: 110px;
+}
+.health-reset-btn {
+  padding: 3px 10px;
+  font-size: 11px;
+  border-radius: 5px;
+}
+.health-invincible-badge {
+  display: inline-block;
+  font-size: 10px;
+  background: rgba(249,115,22,0.15);
+  color: #fb923c;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB 2 & 3 — SIDEBAR + EDITOR (Brawling / Behaviour)
+   ══════════════════════════════════════════════════════ */
+.combat-workspace {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .combat-workspace { grid-template-columns: 1fr; }
+}
+
+.combat-sidebar {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  position: sticky;
+  top: 14px;
+}
+.combat-sidebar-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.combat-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  max-height: 520px;
+  overflow-y: auto;
+}
+.combat-sidebar-list li {
+  padding: 7px 14px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 0.12s, color 0.12s;
+  border-left: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.combat-sidebar-list li:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.85); }
+.combat-sidebar-list li.active {
+  background: rgba(249,115,22,0.1);
+  color: #fb923c;
+  border-left-color: #fb923c;
+  font-weight: 600;
+}
+.combat-sidebar-mod-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #fb923c;
+  flex-shrink: 0;
+  display: none;
+}
+.combat-sidebar-list li.modified .combat-sidebar-mod-dot { display: block; }
+
+/* ── Editor panel ─────────────────────────────────────── */
+.combat-editor {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 20px 24px;
+  min-height: 300px;
+}
+.combat-editor-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.combat-editor-title small {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.combat-editor-section {
+  margin-bottom: 22px;
+}
+.combat-editor-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.combat-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.combat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.combat-field label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  font-weight: 500;
+}
+.combat-field input[type="number"],
+.combat-field select {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 7px;
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 10px;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.combat-field input[type="number"]:focus,
+.combat-field select:focus { outline: none; border-color: rgba(249,115,22,0.5); }
+.combat-field input.modified,
+.combat-field select.modified { border-color: rgba(249,115,22,0.45); color: #fb923c; }
+.combat-field .field-note {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+}
+
+/* ── Min/Max pair fields ──────────────────────────────── */
+.combat-minmax {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.combat-minmax label { font-size: 11px; color: rgba(255,255,255,0.45); font-weight: 500; }
+.combat-minmax-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.combat-minmax-row input {
+  flex: 1;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 7px;
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 10px;
+  transition: border-color 0.15s;
+}
+.combat-minmax-row input:focus { outline: none; border-color: rgba(249,115,22,0.5); }
+.combat-minmax-row input.modified { border-color: rgba(249,115,22,0.45); color: #fb923c; }
+.combat-minmax-sep { font-size: 11px; color: rgba(255,255,255,0.25); flex-shrink: 0; }
+
+/* ── Behaviour flags grid ─────────────────────────────── */
+.combat-flags-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 6px 16px;
+}
+.combat-flag-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 3px 0;
+}
+.combat-flag-item input[type="checkbox"] {
+  width: 14px; height: 14px;
+  accent-color: #fb923c;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.combat-flag-item span {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  font-family: monospace;
+}
+.combat-flag-item:has(input:checked) span {
+  color: rgba(255,255,255,0.88);
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB 4 — AGITATION TRIGGERS
+   ══════════════════════════════════════════════════════ */
+.triggers-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.triggers-reactions-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.triggers-reactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.triggers-reactions-table th {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.45);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 9px 12px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.triggers-reactions-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.8);
+  vertical-align: middle;
+}
+.triggers-reactions-table tr:last-child td { border-bottom: none; }
+.triggers-reactions-table tr.modified td:first-child { border-left: 2px solid #fb923c; }
+.trigger-input {
+  width: 70px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 5px;
+  color: #fff;
+  font-size: 12px;
+  padding: 3px 7px;
+}
+.trigger-input:focus { outline: none; border-color: rgba(249,115,22,0.5); }
+.trigger-input.modified { border-color: rgba(249,115,22,0.4); color: #fb923c; }
+
+.triggers-sets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+}
+.trigger-set-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.trigger-set-header {
+  background: rgba(255,255,255,0.04);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.trigger-set-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fb923c;
+}
+.trigger-set-parent {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+}
+.trigger-set-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+.trigger-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.trigger-row-label { color: rgba(255,255,255,0.65); }
+.trigger-row-field { display: flex; flex-direction: column; gap: 2px; }
+.trigger-row-field label { font-size: 10px; color: rgba(255,255,255,0.35); }
+.trigger-empty { font-size: 12px; color: rgba(255,255,255,0.25); font-style: italic; padding: 6px 0; }
+
+/* ── Placeholder state ────────────────────────────────── */
+.combat-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: rgba(255,255,255,0.2);
+  gap: 8px;
+  text-align: center;
+}
+.combat-placeholder-icon { font-size: 36px; opacity: 0.4; }
+.combat-placeholder p { font-size: 13px; margin: 0; }

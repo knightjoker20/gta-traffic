@@ -6334,6 +6334,11 @@ const SAVED_PROJECT_TYPES = new Set([
   "handling-meta",
   "pack-database",
   "vehicle-library",
+  "dispatch",
+  "relationships",
+  "trains",
+  "events",
+  "combat",
   "general"
 ]);
 
@@ -8476,9 +8481,4 @@ async function requireAuth(request, env) {
       email:       row.email || '',
       displayName: row.display_name || row.email || '',
       role:        row.role  || '',
-      plan:        row.plan  || 'free',
-    };
-  } catch {
-    return null;
-  }
-}
+      plan:  
