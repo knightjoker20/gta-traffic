@@ -908,3 +908,119 @@ dd {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Collapsible type groups ─────────────────────────────────── */
+.saved-projects-type-group {
+  margin-bottom: 24px;
+}
+
+.saved-projects-type-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  border-bottom: 1px solid rgba(255,207,47,.15);
+  margin-bottom: 14px;
+}
+
+.saved-projects-type-summary::-webkit-details-marker { display: none; }
+
+.saved-projects-type-summary::before {
+  content: "▶";
+  font-size: .72rem;
+  color: rgba(255,207,47,.7);
+  transition: transform .15s ease;
+  flex-shrink: 0;
+}
+
+.saved-projects-type-group[open] > .saved-projects-type-summary::before {
+  transform: rotate(90deg);
+}
+
+.saved-projects-type-count {
+  margin-left: auto;
+  font-size: .78rem;
+  color: rgba(203,213,225,.5);
+  font-weight: 600;
+}
+
+.saved-projects-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+/* ── Cloud save panel (dispatch / relationships / trains / events) ── */
+.cloud-save-panel {
+  background: rgba(255,207,47,.06);
+  border: 1px solid rgba(255,207,47,.2);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.cloud-save-panel-head {
+  margin-bottom: 14px;
+}
+
+.cloud-save-panel-kicker {
+  display: block;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #ffdf75;
+  margin-bottom: 4px;
+}
+
+.cloud-save-panel h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #f8fafc;
+}
+
+.cloud-save-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cloud-save-input,
+.cloud-save-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,207,47,.2);
+  border-radius: 10px;
+  background: rgba(2,6,10,.55);
+  color: #f8fafc;
+  font-size: .9rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.cloud-save-input::placeholder,
+.cloud-save-textarea::placeholder {
+  color: rgba(203,213,225,.4);
+}
+
+.cloud-save-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cloud-save-status {
+  margin-top: 10px;
+  font-size: .83rem;
+  min-height: 1.2em;
+}
+
+.cloud-save-status.is-busy    { color: #93c5fd; }
+.cloud-save-status.is-success { color: #86efac; }
+.cloud-save-status.is-error   { color: #fca5a5; }
+.cloud-save-status.is-warning { color: #fde68a; }

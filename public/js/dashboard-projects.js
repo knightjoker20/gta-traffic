@@ -6,23 +6,35 @@
   let dashboardProjectSearchTimer = null;
 
   const PROJECT_TYPE_LABELS = {
-    "popgroups": "PopGroups",
-    "popcycle": "PopCycle",
-    "vehicle-meta": "Vehicle Meta",
-    "handling-meta": "Handling Meta",
-    "pack-database": "Pack Database",
+    "popgroups":       "PopGroups",
+    "popcycle":        "PopCycle",
+    "vehicle-meta":    "Vehicle Meta",
+    "handling-meta":   "Handling Meta",
+    "dispatch":        "Dispatch",
+    "relationships":   "Relationships",
+    "trains":          "Trains",
+    "events":          "Events",
+    "pack-database":   "Pack Database",
     "vehicle-library": "Vehicle Library",
-    "general": "General"
+    "general":         "General"
   };
 
-  // Where each saved project type's editor actually lives. "Open" links
-  // build on this instead of pointing at the homepage, which has no
-  // projectId handling at all.
+  const PROJECT_TYPE_ORDER = [
+    "popgroups", "popcycle", "vehicle-meta", "handling-meta",
+    "dispatch", "relationships", "trains", "events",
+    "pack-database", "vehicle-library", "general"
+  ];
+
+  // Where each saved project type's editor actually lives.
   const PROJECT_TYPE_PAGES = {
-    "popgroups": "/popgroups.html",
-    "popcycle": "/popcycle.html",
-    "vehicle-meta": "/vehicle-meta.html",
-    "handling-meta": "/handling-meta.html",
+    "popgroups":       "/popgroups.html",
+    "popcycle":        "/popcycle.html",
+    "vehicle-meta":    "/vehicle-meta.html",
+    "handling-meta":   "/handling-meta.html",
+    "dispatch":        "/dispatch.html",
+    "relationships":   "/relationships.html",
+    "trains":          "/trains.html",
+    "events":          "/events.html",
     "vehicle-library": "/vehicle-library.html"
   };
 
@@ -107,6 +119,10 @@
               <option value="vehicle-meta">Vehicle Meta</option>
               <option value="handling-meta">Handling Meta</option>
               <option value="pack-database">Pack Database</option>
+              <option value="dispatch">Dispatch</option>
+              <option value="relationships">Relationships</option>
+              <option value="trains">Trains</option>
+              <option value="events">Events</option>
               <option value="vehicle-library">Vehicle Library</option>
               <option value="general">General</option>
             </select>
@@ -164,56 +180,74 @@
     `;
   }
 
+  function renderProjectCard(project) {
+    const typeLabel = getProjectTypeLabel(project.projectType);
+    const updated = formatDate(project.updatedAt || project.createdAt);
+    const description = project.description || "No description saved yet.";
+    const pinned = project.pinned ? `<span class="project-pin">Pinned</span>` : "";
+    const cleanupButton =
+      project.status === "archived"
+        ? `<button type="button" class="button ghost" data-project-status="active" data-project-status-id="${project.id}">Restore</button>`
+        : `<button type="button" class="button ghost danger-soft" data-project-status="archived" data-project-status-id="${project.id}">Archive</button>`;
+
+    return `
+      <article class="saved-project-card" data-project-id="${project.id}">
+        <div class="saved-project-card-top">
+          <span class="project-type-badge">${typeLabel}</span>
+          ${pinned}
+        </div>
+        <div class="saved-project-card-body">
+          <h3>${project.name}</h3>
+          <p>${description}</p>
+        </div>
+        <div class="saved-project-meta">
+          <span>Status: ${project.status}</span>
+          <span>Updated: ${updated}</span>
+        </div>
+        <div class="saved-project-card-actions">
+          <a class="button" href="${getProjectTypePage(project.projectType)}?projectId=${encodeURIComponent(project.id)}">Open</a>
+          <button type="button" class="button ghost" data-project-details="${project.id}">Details</button>
+          <button type="button" class="button ghost" data-project-edit="${project.id}">Edit</button>
+          ${cleanupButton}
+        </div>
+      </article>`;
+  }
+
   function renderProjects(grid, projects) {
     if (!projects.length) {
       renderEmptyState(grid);
       return;
     }
 
-    grid.innerHTML = projects.map(project => {
-      const typeLabel = getProjectTypeLabel(project.projectType);
-      const updated = formatDate(project.updatedAt || project.createdAt);
-      const description = project.description || "No description saved yet.";
-      const pinned = project.pinned ? `<span class="project-pin">Pinned</span>` : "";
-      const cleanupButton =
-        project.status === "archived"
-          ? `<button type="button" class="button ghost" data-project-status="active" data-project-status-id="${project.id}">Restore</button>`
-          : `<button type="button" class="button ghost danger-soft" data-project-status="archived" data-project-status-id="${project.id}">Archive</button>`;
+    // Group by project type
+    const grouped = new Map();
+    projects.forEach(project => {
+      const type = project.projectType || "general";
+      if (!grouped.has(type)) grouped.set(type, []);
+      grouped.get(type).push(project);
+    });
 
+    // Sort groups by canonical type order
+    const sortedGroups = [...grouped.entries()].sort(([a], [b]) => {
+      const ai = PROJECT_TYPE_ORDER.indexOf(a);
+      const bi = PROJECT_TYPE_ORDER.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+
+    grid.innerHTML = sortedGroups.map(([type, typeProjects]) => {
+      const label = getProjectTypeLabel(type);
+      const cards = typeProjects.map(renderProjectCard).join("");
       return `
-        <article class="saved-project-card" data-project-id="${project.id}">
-          <div class="saved-project-card-top">
-            <span class="project-type-badge">${typeLabel}</span>
-            ${pinned}
-          </div>
-
-          <div class="saved-project-card-body">
-            <h3>${project.name}</h3>
-            <p>${description}</p>
-          </div>
-
-          <div class="saved-project-meta">
-            <span>Status: ${project.status}</span>
-            <span>Updated: ${updated}</span>
-          </div>
-
-          <div class="saved-project-card-actions">
-            <a class="button" href="${getProjectTypePage(project.projectType)}?projectId=${encodeURIComponent(project.id)}">
-              Open
-            </a>
-
-            <button type="button" class="button ghost" data-project-details="${project.id}">
-              Details
-            </button>
-
-            <button type="button" class="button ghost" data-project-edit="${project.id}">
-              Edit
-            </button>
-
-            ${cleanupButton}
-          </div>
-        </article>
-      `;
+        <details class="saved-projects-type-group" open>
+          <summary class="saved-projects-type-summary">
+            <span class="project-type-badge">${label}</span>
+            <span class="saved-projects-type-count">${typeProjects.length}</span>
+          </summary>
+          <div class="saved-projects-type-grid">${cards}</div>
+        </details>`;
     }).join("");
   }
 
@@ -267,6 +301,10 @@
                 <option value="popcycle">PopCycle</option>
                 <option value="vehicle-meta">Vehicle Meta</option>
                 <option value="handling-meta">Handling Meta</option>
+                <option value="dispatch">Dispatch</option>
+                <option value="relationships">Relationships</option>
+                <option value="trains">Trains</option>
+                <option value="events">Events</option>
                 <option value="pack-database">Pack Database</option>
                 <option value="vehicle-library">Vehicle Library</option>
                 <option value="general">General</option>
