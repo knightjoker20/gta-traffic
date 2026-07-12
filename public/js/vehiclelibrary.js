@@ -307,13 +307,18 @@ function saveCategoryFilters(categoryFilters) {
     return memberships;
   }
 function getImportSourceDetails(file) {
+  // Auto-infer DLC folder from filenames like "mphalloween_vehicles.meta" → "mphalloween"
+  const fileBase = file.name.replace(/\.[^.]+$/, ""); // strip extension
+  const dlcMatch = fileBase.match(/^(.+?)_(?:vehicles|handling|carcols|carvariations|popgroups)$/i);
+  const inferredDlc = dlcMatch ? dlcMatch[1] : "";
+
   // These form fields may not be present on all page variants — fall back gracefully.
   const sourceLabel =
     el("vlImportSourceLabel")?.value?.trim() ||
-    file.name.replace(/\.[^.]+$/, ""); // fall back to filename without extension
+    file.name; // use full filename (with extension) as the source label
 
   const dlcFolder =
-    el("vlImportDlcFolder")?.value?.trim() || "";
+    el("vlImportDlcFolder")?.value?.trim() || inferredDlc;
 
   const sourceDirectory =
     (el("vlImportSourcePath")?.value || "")
@@ -1174,7 +1179,19 @@ const importSource =
       zone.classList.remove("drag-over");
     }));
 
-    zone.addEventListener("drop", event => handleDroppedFiles(event.dataTransfer.files, importer));
+    zone.addEventListener("drop", event => {
+      // Auto-populate the DLC folder input from the dropped filename if it matches the pattern
+      const firstFile = event.dataTransfer.files?.[0];
+      if (firstFile) {
+        const base = firstFile.name.replace(/\.[^.]+$/, "");
+        const match = base.match(/^(.+?)_(?:vehicles|handling|carcols|carvariations|popgroups)$/i);
+        if (match) {
+          const dlcInput = el("vlImportDlcFolder");
+          if (dlcInput && !dlcInput.value.trim()) dlcInput.value = match[1];
+        }
+      }
+      handleDroppedFiles(event.dataTransfer.files, importer);
+    });
 
     zone.addEventListener("keydown", event => {
       if (event.key === "Enter" || event.key === " ") {

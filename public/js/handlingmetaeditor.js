@@ -163,6 +163,9 @@ const handlingMetaEditor = window.handlingMetaEditor = (() => {
     "fTractionCurveMax",
     "fSuspensionForce",
     "fDeformationDamageMult",
+    "fCollisionDamageMult",
+    "fWeaponDamageMult",
+    "fEngineDamageMult",
     "AIHandling"
   ];
 
