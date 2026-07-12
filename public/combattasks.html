@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combat Tasks Editor — GTA Traffic</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/combattasks.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+<body data-page="combattasks">
+
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic home">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner combattasks-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Cop AI Aggressiveness</div>
+        <h1>Combat Tasks Editor</h1>
+        <p>
+          Edit <code>combattasks.ymt</code> — the global file controlling cop AI aggressiveness,
+          flanking, charging, retreat behaviour, helicopter strafing, and weapon reaction speed.
+          Drop in your vanilla or modded file, tune the values, and export.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="combattasks-main">
+
+    <!-- Drop zone -->
+    <div
+      id="tasksDropZone"
+      class="ct-drop-zone"
+      role="button"
+      tabindex="0"
+      aria-label="Drop combattasks.ymt.xml here or click to browse"
+    >
+      <span class="ct-drop-icon">🎯</span>
+      <span class="ct-drop-title">Drop combattasks.ymt.xml here</span>
+      <span class="ct-drop-sub">or click to browse — accepts .xml or .ymt.xml</span>
+      <span class="ct-drop-state-text"></span>
+    </div>
+    <input type="file" id="tasksFileInput" accept=".xml" style="display:none">
+
+    <!-- Controls row -->
+    <div class="ct-controls">
+      <button id="tasksExportBtn" class="btn-orange" type="button" disabled>Export XML</button>
+      <button id="tasksResetBtn" class="secondary" type="button" disabled>Reset to Loaded</button>
+      <span id="tasksModCount" class="ct-mod-count"></span>
+    </div>
+
+    <!-- Cloud save panel -->
+    <div id="tasksCloudSavePanelSlot"></div>
+
+    <!-- Editor content (rendered by combattasksapp.js after file load) -->
+    <div id="tasksContent" class="is-hidden"></div>
+
+  </main>
+
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
+  <script src="/js/shared/probanner.js"></script>
+  <script src="/js/projectscloud.js"></script>
+  <script src="/js/combattasks-cloud-save.js"></script>
+  <script src="/js/combattasksapp.js"></script>
+
+</body>
+</html>

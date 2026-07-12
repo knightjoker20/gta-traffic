@@ -948,4 +948,4 @@ function initDispatchEditor() {
   renderAll();
 }
 
-document.addEventListener('DO
+document.addEventListener('DOMContentLoaded', initDispatchEditor);

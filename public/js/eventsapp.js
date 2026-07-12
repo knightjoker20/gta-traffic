@@ -905,4 +905,5 @@ document.addEventListener('DOMContentLoaded', () => {
   if (allChip) allChip.classList.add('active');
 
   // Initial render
-  
+  renderProfiles();
+});

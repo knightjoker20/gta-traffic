@@ -837,4 +837,4 @@ function initRelationshipsEditor() {
   updateStats();
 }
 
-document.addEventListener('DOMContentLoaded'
+document.addEventListener('DOMContentLoaded', initRelationshipsEditor);

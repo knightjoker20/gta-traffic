@@ -6339,6 +6339,7 @@ const SAVED_PROJECT_TYPES = new Set([
   "trains",
   "events",
   "combat",
+  "combattasks",
   "general"
 ]);
 
@@ -8481,4 +8482,9 @@ async function requireAuth(request, env) {
       email:       row.email || '',
       displayName: row.display_name || row.email || '',
       role:        row.role  || '',
-      plan:  
+      plan:        row.plan  || 'free',
+    };
+  } catch {
+    return null;
+  }
+}

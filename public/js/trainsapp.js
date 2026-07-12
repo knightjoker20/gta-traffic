@@ -522,4 +522,9 @@ function initTrainsApp() {
     const dz = document.getElementById('consistsDropZone');
     if (dz) { dz.classList.remove('loaded'); const st = dz.querySelector('.trains-drop-state-text'); if (st) st.textContent = ''; }
     showToast('Reset to vanilla');
-  }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initTrainsApp);
+
+document.addEventListener('DOMContentLoaded', initTrainsApp);

@@ -143,6 +143,9 @@
             <label>Subhandling Type
               <select id="hmSubTypeFilter"><option value="">All subhandling types</option></select>
             </label>
+            <label>Vehicle Class
+              <select id="hmClassFilter"><option value="">All classes</option></select>
+            </label>
           </div>
 
           <div class="hm-quick-edit" aria-label="Quick multi-row editor">
@@ -173,21 +176,24 @@
                   <th><input id="hmSelectAllVisible" type="checkbox" title="Select visible rows"></th>
                   <th>Profile</th>
                   <th>handlingName</th>
-                  <th>AI handling</th>
-                  <th>mass</th>
-                  <th>drive bias</th>
-                  <th>gears</th>
-                  <th>drive force</th>
-                  <th>max velocity</th>
-                  <th>brake force</th>
-                  <th>steering lock</th>
-                  <th>traction max</th>
-                  <th>suspension</th>
-                  <th>deformation</th>
+                  <th>AI handling <span class="hm-th-tip" title="NPC driving style profile (e.g. AVERAGE, SPORT, TRUCK). Controls how aggressively and capably AI drives this vehicle.">ⓘ</span></th>
+                  <th>mass <span class="hm-th-tip" title="Vehicle weight (kg). ↑ more momentum, harder to push around | ↓ lighter, easier to flip and spin">ⓘ</span></th>
+                  <th>drive bias <span class="hm-th-tip" title="Power split front/rear. 0 = rear-wheel drive · 0.5 = all-wheel · 1 = front-wheel drive">ⓘ</span></th>
+                  <th>gears <span class="hm-th-tip" title="Number of gears. ↑ smoother acceleration, higher top speed potential | ↓ fewer, more abrupt shifts">ⓘ</span></th>
+                  <th>drive force <span class="hm-th-tip" title="Acceleration power multiplier. ↑ faster takeoff and acceleration | ↓ sluggish pulling power">ⓘ</span></th>
+                  <th>max velocity <span class="hm-th-tip" title="Top speed on flat ground (km/h). ↑ higher top speed | ↓ lower top speed">ⓘ</span></th>
+                  <th>brake force <span class="hm-th-tip" title="Braking power multiplier. ↑ shorter stopping distance | ↓ longer stops">ⓘ</span></th>
+                  <th>steering lock <span class="hm-th-tip" title="Maximum steering angle (degrees). ↑ tighter turns | ↓ wider, more sluggish turns">ⓘ</span></th>
+                  <th>traction max <span class="hm-th-tip" title="Maximum grip level. ↑ more traction, less wheelspin | ↓ more wheelspin and sliding">ⓘ</span></th>
+                  <th>suspension <span class="hm-th-tip" title="Suspension spring stiffness. ↑ stiffer ride, less body roll | ↓ softer, bouncier, more roll">ⓘ</span></th>
+                  <th>deformation <span class="hm-th-tip" title="fDeformationDamageMult — body crumple on impact. ↑ more visual deformation | ↓ less crumple (looks tougher)">ⓘ</span></th>
+                  <th>collision dmg <span class="hm-th-tip" title="fCollisionDamageMult — health lost in crashes. ↑ takes more damage from impacts | ↓ tankier in collisions">ⓘ</span></th>
+                  <th>weapon dmg <span class="hm-th-tip" title="fWeaponDamageMult — health lost from bullets/explosions. ↑ more vulnerable to gunfire | ↓ more bullet resistant">ⓘ</span></th>
+                  <th>engine dmg <span class="hm-th-tip" title="fEngineDamageMult — engine durability. ↑ engine fails faster when hit | ↓ engine takes more punishment">ⓘ</span></th>
                 </tr>
               </thead>
               <tbody id="hmTableBody">
-                <tr><td colspan="14" class="hm-muted">Load a handling.meta file to begin.</td></tr>
+                <tr><td colspan="17" class="hm-muted">Load a handling.meta file to begin.</td></tr>
               </tbody>
             </table>
           </div>

@@ -3,6 +3,153 @@
 // Standalone handling profile editor with local autosave.
 // =====================================================
 
+// ── GTA V stock vehicle class lookup (handlingName → class) ──
+const VEH_CLASS_MAP = {
+  // Compacts
+  BLISTA:"Compacts", BRIOSO:"Compacts", ISSI2:"Compacts", PANTO:"Compacts", PRAIRIE:"Compacts", RHEA:"Compacts", WEEVIL:"Compacts",
+  // Sedans
+  ASEA:"Sedans", ASEA2:"Sedans", ASTEROPE:"Sedans", FUGITIVE:"Sedans",
+  GLENDALE:"Sedans", GLENDALE2:"Sedans", INGOT:"Sedans", INTRUDER:"Sedans",
+  PREMIER:"Sedans", PRIMO:"Sedans", PRIMO2:"Sedans", ROMANCE:"Sedans",
+  SCHAFTER2:"Sedans", STAFFORD:"Sedans", STANIER:"Sedans", STRATUM:"Sedans", STRETCH:"Sedans",
+  SUPERD:"Sedans", SURGE:"Sedans", TAILGATER:"Sedans", TAILGATER2:"Sedans", WASHINGTON:"Sedans",
+  // SUVs
+  BALLER:"SUVs", BALLER2:"SUVs", BALLER3:"SUVs", BALLER4:"SUVs", BALLER5:"SUVs", BALLER6:"SUVs",
+  CAVALCADE:"SUVs", CAVALCADE2:"SUVs", FQ2:"SUVs", GRANGER:"SUVs", GRANGER2:"SUVs",
+  HABANERO:"SUVs", HUNTLEY:"SUVs", LANDSTALKER:"SUVs", LANDSTALKER2:"SUVs",
+  MESA:"SUVs", MESA2:"SUVs", MESA3:"SUVs", NOVAK:"SUVs",
+  PATRIOT:"SUVs", PATRIOT2:"SUVs", PATRIOT3:"SUVs",
+  RADI:"SUVs", REBLA:"SUVs", SEMINOLE:"SUVs", SEMINOLE2:"SUVs", TOROS:"SUVs", GRESLEY:"SUVs",
+  // Coupes
+  BUFFALO:"Coupes", BUFFALO2:"Coupes", BUFFALO3:"Coupes", BUFFALO4:"Coupes",
+  EXEMPLAR:"Coupes", FELON:"Coupes", FELON2:"Coupes", JACKAL:"Coupes",
+  ORACLE:"Coupes", ORACLE2:"Coupes", ZION:"Coupes", ZION2:"Coupes", ZION3:"Coupes",
+  // Sports
+  ALPHA:"Sports", BANSHEE:"Sports", BANSHEE2:"Sports",
+  CARBONIZZARE:"Sports", COMET2:"Sports", COMET3:"Sports", COMET4:"Sports", COMET5:"Sports", COMET6:"Sports",
+  COQUETTE:"Sports", COQUETTE3:"Sports", ELEGY:"Sports", ELEGY2:"Sports",
+  ENTITY2:"Sports", FELTZER2:"Sports", FUROREGT:"Sports", GT500:"Sports",
+  HOTRING:"Sports", IMORGON:"Sports", ISSI3:"Sports", ISSI4:"Sports", ISSI5:"Sports", ISSI6:"Sports", ISSI7:"Sports",
+  ITALIGTB2:"Sports", JESTER:"Sports", JESTER2:"Sports", JESTER3:"Sports", JESTER4:"Sports",
+  KURUMA:"Sports", KURUMA2:"Sports", LYNX:"Sports",
+  MASSACRO:"Sports", MASSACRO2:"Sports", NEON:"Sports", NINEF:"Sports", NINEF2:"Sports",
+  OMNIS:"Sports", OMNIS2:"Sports", PANTHERE:"Sports", PARIAH:"Sports",
+  PENUMBRA:"Sports", PENUMBRA2:"Sports", RAPIDGT:"Sports", RAPIDGT2:"Sports", RAPIDGT3:"Sports",
+  REVOLTER:"Sports", SCHAFTER3:"Sports", SCHAFTER4:"Sports", SCHAFTER5:"Sports", SCHAFTER6:"Sports",
+  SCHWARZER:"Sports", SENTINEL:"Sports", SENTINEL2:"Sports", SENTINEL3:"Sports",
+  SPECTER:"Sports", SPECTER2:"Sports", SULTAN:"Sports", SULTAN2:"Sports", SULTAN3:"Sports",
+  SURANO:"Sports", TAMPA:"Sports", TAMPA2:"Sports", TAMPA3:"Sports",
+  TROPOS:"Sports", VECTRE:"Sports", VERLIERER:"Sports", VERLIERER2:"Sports", VSTR:"Sports",
+  // Super
+  ADDER:"Super", AUTARCH:"Super", BULLET:"Super", CHEETAH:"Super", CHEETAH2:"Super",
+  CYCLONE:"Super", CYCLONE2:"Super", DEVESTE:"Super", EMERUS:"Super",
+  ENTITY:"Super", ENTITY3:"Super", ETR1:"Super", FMJ:"Super", GP1:"Super",
+  INFERNUS:"Super", INFERNUS2:"Super", ITALIGTB:"Super", KRIEGER:"Super",
+  NERO:"Super", NERO2:"Super", OSIRIS:"Super", P996:"Super", P996B:"Super",
+  PENETRATOR:"Super", RE7B:"Super", S80:"Super", SC1:"Super", SHEAVA:"Super",
+  T20:"Super", TAIPAN:"Super", TEMPESTA:"Super", THRAX:"Super", TIGON:"Super",
+  TURISMO2:"Super", TYRANT:"Super", TYRUS:"Super", VAGNER:"Super",
+  VISIONE:"Super", VOLTIC:"Super", VOLTIC2:"Super", XA21:"Super", ZENTORNO:"Super", ZORRUSSO:"Super",
+  // Sports Classics
+  CASCO:"Sports Classics", DELUXO:"Sports Classics", FAGLIO01:"Sports Classics",
+  FELTZER:"Sports Classics", JB700:"Sports Classics", JB7002:"Sports Classics",
+  MAMBA:"Sports Classics", MANANA:"Sports Classics", MANANA2:"Sports Classics",
+  MONROE:"Sports Classics", PEYOTE:"Sports Classics", PEYOTE2:"Sports Classics", PEYOTE3:"Sports Classics",
+  PIGALLE:"Sports Classics", STINGER:"Sports Classics", STINGERGT:"Sports Classics",
+  STIRLING:"Sports Classics", SWINGER:"Sports Classics",
+  TORERO:"Sports Classics", TORERO2:"Sports Classics", TURISMO:"Sports Classics",
+  VISERIS:"Sports Classics", Z190:"Sports Classics", ZTYPE:"Sports Classics",
+  // Muscle
+  BLADE:"Muscle", BUCCANEER:"Muscle", BUCCANEER2:"Muscle", CHINO:"Muscle", CHINO2:"Muscle",
+  COQUETTE2:"Muscle", DEVIANT:"Muscle",
+  DOMINATOR:"Muscle", DOMINATOR2:"Muscle", DOMINATOR3:"Muscle", DOMINATOR4:"Muscle",
+  DOMINATOR5:"Muscle", DOMINATOR6:"Muscle", DOMINATOR7:"Muscle", DOMINATOR8:"Muscle",
+  DUKES:"Muscle", DUKES2:"Muscle", FACTION:"Muscle", FACTION2:"Muscle", FACTION3:"Muscle",
+  GAUNTLET:"Muscle", GAUNTLET2:"Muscle", GAUNTLET3:"Muscle", GAUNTLET4:"Muscle", GAUNTLET5:"Muscle",
+  GREENWOOD:"Muscle", HERMES:"Muscle",
+  IMPALER:"Muscle", IMPALER2:"Muscle", IMPALER3:"Muscle", IMPALER4:"Muscle",
+  IMPERATOR:"Muscle", IMPERATOR2:"Muscle", IMPERATOR3:"Muscle",
+  LURCHER:"Muscle", MOONBEAM:"Muscle", MOONBEAM2:"Muscle", NIGHTSHADE:"Muscle",
+  ORLANDO:"Muscle", PHOENIX:"Muscle", PICADOR:"Muscle",
+  RUINER:"Muscle", RUINER2:"Muscle", RUINER3:"Muscle",
+  SABRE2:"Muscle", SLAMVAN:"Muscle", SLAMVAN2:"Muscle", SLAMVAN3:"Muscle",
+  SLAMVAN4:"Muscle", SLAMVAN5:"Muscle", SLAMVAN6:"Muscle",
+  STALLION:"Muscle", TAHOMA:"Muscle", TULIP:"Muscle", TULIP2:"Muscle",
+  VAMOS:"Muscle", VIGERO:"Muscle", VIGERO2:"Muscle",
+  VIRGO:"Muscle", VIRGO2:"Muscle", VIRGO3:"Muscle", VOODOO:"Muscle", VOODOO2:"Muscle",
+  // Motorcycles
+  AKUMA:"Motorcycles", AVARUS:"Motorcycles", BAGGER:"Motorcycles", BATI:"Motorcycles", BATI2:"Motorcycles",
+  CARBONRS:"Motorcycles", CHIMERA:"Motorcycles", CLIFFHANGER:"Motorcycles",
+  DAEMON:"Motorcycles", DAEMON2:"Motorcycles", DEFILER:"Motorcycles",
+  DIABOLUS:"Motorcycles", DIABOLUS2:"Motorcycles", DOUBLE:"Motorcycles",
+  ENDURO:"Motorcycles", ESSKEY:"Motorcycles",
+  FAGGIO:"Motorcycles", FAGGIO2:"Motorcycles", FAGGIO3:"Motorcycles", FCR:"Motorcycles", FCR2:"Motorcycles",
+  GARGOYLE:"Motorcycles", HAKUCHOU:"Motorcycles", HAKUCHOU2:"Motorcycles", HEXER:"Motorcycles",
+  INNOVATION:"Motorcycles", LECTRO:"Motorcycles",
+  MANCHEZ:"Motorcycles", MANCHEZ2:"Motorcycles", NAGASAKI:"Motorcycles", NEMESIS:"Motorcycles",
+  NIGHTBLADE:"Motorcycles", OPPRESSOR:"Motorcycles", OPPRESSOR2:"Motorcycles",
+  PCJ600:"Motorcycles", RATBIKE:"Motorcycles", RUFFIAN:"Motorcycles",
+  SANCHEZ:"Motorcycles", SANCHEZ2:"Motorcycles", SANCTUS:"Motorcycles",
+  SHOTARO:"Motorcycles", SOVEREIGN:"Motorcycles", STRYDER:"Motorcycles",
+  THRUST:"Motorcycles", TYPHOON:"Motorcycles", VADER:"Motorcycles",
+  VINDICATOR:"Motorcycles", VORTEX:"Motorcycles", WOLFSBANE:"Motorcycles",
+  ZOMBIE:"Motorcycles", ZOMBIE2:"Motorcycles",
+  // Vans
+  BISON:"Vans", BISON2:"Vans", BISON3:"Vans", BOBCATXL:"Vans",
+  BOXVILLE:"Vans", BOXVILLE2:"Vans", BOXVILLE3:"Vans", BOXVILLE4:"Vans", BOXVILLE5:"Vans",
+  BRICKADE:"Vans", BRICKADE2:"Vans",
+  BURRITO:"Vans", BURRITO2:"Vans", BURRITO3:"Vans", BURRITO4:"Vans", BURRITO5:"Vans",
+  CAMPER:"Vans", GBURRITO:"Vans", GBURRITO2:"Vans", JOURNEY:"Vans",
+  MINIVAN:"Vans", MINIVAN2:"Vans", PONY:"Vans", PONY2:"Vans",
+  RUMPO:"Vans", RUMPO2:"Vans", RUMPO3:"Vans",
+  SPEEDO:"Vans", SPEEDO2:"Vans", SPEEDO4:"Vans",
+  SURFER:"Vans", SURFER2:"Vans", TACO:"Vans", YOUGA:"Vans", YOUGA2:"Vans", YOUGA3:"Vans",
+  // Off-Road
+  BIFTA:"Off-Road", BRAWLER:"Off-Road", CARACARA:"Off-Road", CARACARA2:"Off-Road",
+  DLOADER:"Off-Road", DUBSTA2:"Off-Road",
+  DUNE:"Off-Road", DUNE2:"Off-Road", DUNE3:"Off-Road", DUNE4:"Off-Road", DUNE5:"Off-Road",
+  EVERON:"Off-Road", FREECRAWLER:"Off-Road",
+  INJECTION:"Off-Road", INSURGENT:"Off-Road", INSURGENT2:"Off-Road", INSURGENT3:"Off-Road",
+  KAMACHO:"Off-Road", KALAHARI:"Off-Road", LIBERATOR:"Off-Road",
+  MARSHALL:"Off-Road", MONSTER:"Off-Road", MONSTER2:"Off-Road", MONSTER3:"Off-Road",
+  MONSTER4:"Off-Road", MONSTER5:"Off-Road", OUTLAW:"Off-Road",
+  RANCHERXL:"Off-Road", RANCHERXL2:"Off-Road", REBEL:"Off-Road", REBEL2:"Off-Road",
+  SANDKING:"Off-Road", SANDKING2:"Off-Road", VAGRANT:"Off-Road",
+  // Trucks
+  BIFF:"Trucks", BIFF2:"Trucks", DOCKTUG:"Trucks", DUMP:"Trucks",
+  FLATBED:"Trucks", HAULER:"Trucks", HAULER2:"Trucks",
+  MIXER:"Trucks", MIXER2:"Trucks", PACKER:"Trucks",
+  PHANTOM:"Trucks", PHANTOM2:"Trucks", PHANTOM3:"Trucks",
+  POUNDER:"Trucks", POUNDER2:"Trucks", RUBBLE:"Trucks",
+  STOCKADE:"Trucks", STOCKADE2:"Trucks", STOCKADE3:"Trucks",
+  TANKER:"Trucks", TANKER2:"Trucks", TERBYTE:"Trucks",
+  TOW2:"Trucks", TOWTRUCK:"Trucks", TOWTRUCK2:"Trucks",
+  // Commercial
+  BENSON:"Commercial", MULE:"Commercial", MULE2:"Commercial", MULE3:"Commercial", MULE4:"Commercial",
+  // Emergency
+  AMBULANCE:"Emergency", FBI:"Emergency", FBI2:"Emergency",
+  FIRETRUK:"Emergency", LGUARD:"Emergency",
+  POLICE:"Emergency", POLICE2:"Emergency", POLICE3:"Emergency", POLICE4:"Emergency",
+  POLICEB:"Emergency", POLICEOLD1:"Emergency", POLICEOLD2:"Emergency", POLICET:"Emergency",
+  PRANGER:"Emergency", RIOT:"Emergency", RIOT2:"Emergency",
+  SHERIFF:"Emergency", SHERIFF2:"Emergency",
+  // Military
+  APC:"Military", BARRACKS:"Military", BARRACKS2:"Military", BARRACKS3:"Military",
+  CRUSADER:"Military", HALFTRACK:"Military", KHANJALI:"Military",
+  RHINO:"Military", SCARAB:"Military", SCARAB2:"Military", SCARAB3:"Military",
+  // Utility
+  AIRTUG:"Utility", CADDY:"Utility", CADDY2:"Utility", CADDY3:"Utility",
+  FORKLIFT:"Utility", MOWER:"Utility", RIPLEY:"Utility",
+  SADLER:"Utility", SADLER2:"Utility", SCRAP:"Utility",
+  TRACTOR:"Utility", TRACTOR2:"Utility", TRACTOR3:"Utility",
+  TRASH:"Utility", TRASH2:"Utility", TRASHMASTER:"Utility",
+};
+
+function getVehicleClass(handlingName) {
+  if (!handlingName) return "";
+  return VEH_CLASS_MAP[handlingName.toUpperCase()] || "";
+}
+
 const handlingMetaEditor = window.handlingMetaEditor = (() => {
   const TABLE_FIELDS = [
     "handlingName",
@@ -498,9 +645,13 @@ const handlingMetaEditor = window.handlingMetaEditor = (() => {
   function populateFilters() {
     const aiValues = [...new Set(state.entries.map(entry => entry.AIHandling).filter(Boolean))].sort();
     const subTypes = [...new Set(state.entries.flatMap(entry => entry.subTypes).filter(Boolean))].sort();
+    const knownClasses = [...new Set(
+      state.entries.map(entry => getVehicleClass(entry.handlingName)).filter(Boolean)
+    )].sort();
 
-    const currentAi = el("hmAiFilter").value;
+    const currentAi  = el("hmAiFilter").value;
     const currentSub = el("hmSubTypeFilter").value;
+    const currentCls = el("hmClassFilter")?.value || "";
 
     el("hmAiFilter").innerHTML = `<option value="">All AI types</option>${aiValues.map(value => (
       `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`
@@ -510,15 +661,24 @@ const handlingMetaEditor = window.handlingMetaEditor = (() => {
       `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`
     )).join("")}`;
 
+    const classEl = el("hmClassFilter");
+    if (classEl) {
+      classEl.innerHTML = `<option value="">All classes</option>${knownClasses.map(c => (
+        `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`
+      )).join("")}`;
+      if (knownClasses.includes(currentCls)) classEl.value = currentCls;
+    }
+
     if (aiValues.includes(currentAi)) el("hmAiFilter").value = currentAi;
     if (subTypes.includes(currentSub)) el("hmSubTypeFilter").value = currentSub;
   }
 
   function applyFilters() {
-    const search = el("hmSearch").value.trim().toLowerCase();
-    const ai = el("hmAiFilter").value;
-    const aiSort = el("hmAiSort")?.value || "original";
+    const search  = el("hmSearch").value.trim().toLowerCase();
+    const ai      = el("hmAiFilter").value;
+    const aiSort  = el("hmAiSort")?.value || "original";
     const subType = el("hmSubTypeFilter").value;
+    const cls     = el("hmClassFilter")?.value || "";
 
     const filtered = state.entries
       .map((entry, index) => ({ entry, index }))
@@ -526,6 +686,7 @@ const handlingMetaEditor = window.handlingMetaEditor = (() => {
         if (search && !entry.searchText.includes(search)) return false;
         if (ai && entry.AIHandling !== ai) return false;
         if (subType && !entry.subTypes.includes(subType)) return false;
+        if (cls && getVehicleClass(entry.handlingName) !== cls) return false;
         return true;
       });
 
@@ -560,12 +721,12 @@ const handlingMetaEditor = window.handlingMetaEditor = (() => {
     const body = el("hmTableBody");
 
     if (!state.entries.length) {
-      body.innerHTML = `<tr><td colspan="14" class="hm-muted">Load a handling.meta file to begin.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="17" class="hm-muted">Load a handling.meta file to begin.</td></tr>`;
       return;
     }
 
     if (!state.filteredIndexes.length) {
-      body.innerHTML = `<tr><td colspan="14" class="hm-muted">No handling profiles match the current filters.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="17" class="hm-muted">No handling profiles match the current filters.</td></tr>`;
     } else {
       body.innerHTML = state.filteredIndexes.map(index => {
         const entry = state.entries[index];
@@ -587,6 +748,9 @@ const handlingMetaEditor = window.handlingMetaEditor = (() => {
             <td>${tableInput(entry, "fTractionCurveMax")}</td>
             <td>${tableInput(entry, "fSuspensionForce")}</td>
             <td>${tableInput(entry, "fDeformationDamageMult")}</td>
+            <td>${tableInput(entry, "fCollisionDamageMult")}</td>
+            <td>${tableInput(entry, "fWeaponDamageMult")}</td>
+            <td>${tableInput(entry, "fEngineDamageMult")}</td>
           </tr>`;
       }).join("");
     }
@@ -1677,9 +1841,9 @@ const handlingMetaEditor = window.handlingMetaEditor = (() => {
     });
     dropZone.addEventListener("drop", event => handleFile(event.dataTransfer.files?.[0]));
 
-    ["hmSearch", "hmAiFilter", "hmAiSort", "hmSubTypeFilter"].forEach(id => {
-      el(id).addEventListener("input", applyFilters);
-      el(id).addEventListener("change", applyFilters);
+    ["hmSearch", "hmAiFilter", "hmAiSort", "hmSubTypeFilter", "hmClassFilter"].forEach(id => {
+      el(id)?.addEventListener("input", applyFilters);
+      el(id)?.addEventListener("change", applyFilters);
     });
 
     el("hmTableBody").addEventListener("click", event => {
