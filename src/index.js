@@ -6340,6 +6340,7 @@ const SAVED_PROJECT_TYPES = new Set([
   "events",
   "combat",
   "combattasks",
+  "randomevents",
   "general"
 ]);
 

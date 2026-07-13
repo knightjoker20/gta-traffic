@@ -86,6 +86,11 @@ const SITE_TOOL_NAV_ITEMS = [
     page: "combattasks"
   },
   {
+    label: "Random Events",
+    href: "randomevents.html",
+    page: "randomevents"
+  },
+  {
     label: "Resources",
     href: "resources.html",
     page: "resources"

@@ -1,0 +1,397 @@
+/* =====================================================
+   randomevents.css — Random Events Editor
+   ===================================================== */
+
+/* ─── Hero ──────────────────────────────────────────── */
+
+.randomevents-hero { min-height: 220px; }
+
+.randomevents-hero .hero-shade {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 24px;
+}
+
+/* ─── Page layout ───────────────────────────────────── */
+
+.randomevents-main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ─── Controls row ──────────────────────────────────── */
+
+.re-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.re-mod-count {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-left: auto;
+}
+
+.re-mod-count.is-modified {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+/* ─── Drop zone ─────────────────────────────────────── */
+
+.re-drop-zone {
+  border: 2px dashed rgba(148, 163, 184, 0.25);
+  border-radius: 14px;
+  padding: 36px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.re-drop-zone:hover,
+.re-drop-zone.is-drag {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.re-drop-zone.is-loaded {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.re-drop-icon  { font-size: 2rem; margin-bottom: 8px; display: block; }
+.re-drop-title { font-size: 1rem; font-weight: 600; color: #cbd5e1; margin-bottom: 4px; display: block; }
+.re-drop-sub   { font-size: 0.82rem; color: #64748b; display: block; }
+
+.re-drop-state-text {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-top: 10px;
+  display: block;
+  min-height: 1.2em;
+}
+
+.re-drop-zone.is-loaded .re-drop-state-text { color: #22c55e; }
+
+/* ─── Content area ──────────────────────────────────── */
+
+#reContent.is-hidden { display: none; }
+
+#reContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ─── Section cards ─────────────────────────────────── */
+
+.re-section {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.re-section-head {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.re-section-head h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.re-section-head p {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 4px 0 0;
+  line-height: 1.5;
+  width: 100%;
+}
+
+.re-badge-ref {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #475569;
+  border: 1px solid rgba(148,163,184,0.2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
+
+/* ─── Field table (global settings) ────────────────── */
+
+.re-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.re-table thead th {
+  padding: 8px 16px 8px 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #475569;
+  text-align: left;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.re-table tbody tr {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+}
+
+.re-table tbody tr:last-child { border-bottom: none; }
+.re-table tbody tr:hover { background: rgba(255, 255, 255, 0.015); }
+
+.re-field-label {
+  padding: 10px 16px 10px 20px;
+  vertical-align: top;
+  width: 65%;
+}
+
+.re-field-name {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  margin-bottom: 2px;
+}
+
+.re-field-help {
+  display: block;
+  font-size: 0.75rem;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.re-field-input {
+  padding: 8px 20px 8px 0;
+  vertical-align: middle;
+  text-align: right;
+}
+
+.re-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.re-input {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  padding: 5px 10px;
+  width: 120px;
+  text-align: right;
+  transition: border-color 0.15s;
+}
+
+.re-input.re-text { text-align: left; width: 180px; }
+
+.re-input:focus {
+  outline: none;
+  border-color: #f59e0b;
+  background: rgba(30, 41, 59, 0.95);
+}
+
+.re-unit {
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+/* ─── Toggle ────────────────────────────────────────── */
+
+.re-toggle {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.re-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.re-toggle-track {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.re-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #94a3b8;
+  transition: left 0.2s, background 0.2s;
+}
+
+.re-toggle input:checked + .re-toggle-track { background: rgba(34, 197, 94, 0.3); }
+.re-toggle input:checked + .re-toggle-track::after { left: 21px; background: #22c55e; }
+
+/* ─── Event Type timing table ───────────────────────── */
+
+.re-et-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.re-et-table thead th {
+  padding: 8px 14px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #475569;
+  text-align: left;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.re-et-row {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+}
+
+.re-et-row:last-child { border-bottom: none; }
+.re-et-row:hover { background: rgba(255, 255, 255, 0.015); }
+
+.re-et-name {
+  padding: 12px 14px 12px 20px;
+  vertical-align: top;
+  width: 32%;
+}
+
+.re-type-badge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+}
+
+.re-et-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.re-event-chip {
+  font-size: 0.68rem;
+  color: #64748b;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.re-et-cell {
+  padding: 10px 14px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.re-et-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.re-min-label {
+  display: block;
+  font-size: 0.72rem;
+  color: #475569;
+  margin-top: 4px;
+}
+
+.re-stationary-on  { color: #f59e0b; }
+.re-stationary-off { color: #475569; }
+
+/* ─── Event catalog table ───────────────────────────── */
+
+.re-catalog-table { opacity: 0.75; }
+
+.re-catalog-name {
+  padding: 8px 12px 8px 20px;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.re-catalog-type {
+  padding: 8px 20px 8px 12px;
+  font-size: 0.78rem;
+  color: #475569;
+  font-family: monospace;
+}
+
+.re-muted { color: #475569; font-size: 0.85rem; padding: 16px 20px; }
+
+/* ─── .button (used by cloud-save panel JS) ─────────── */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  background: #f59e0b;
+  color: #0f172a;
+}
+
+.button:hover { background: #fbbf24; }
+.button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.button.ghost {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.button.ghost:hover {
+  background: rgba(148, 163, 184, 0.18);
+  color: #cbd5e1;
+}

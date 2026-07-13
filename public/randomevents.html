@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Events Editor — GTA Traffic</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/randomevents.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+<body data-page="randomevents">
+
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic home">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner randomevents-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">World Events &amp; Ambient Life</div>
+        <h1>Random Events Editor</h1>
+        <p>
+          Edit <code>randomevents.ymt</code> — controls how often crime, cop pursuits, jaywalkers,
+          aggressive drivers, and other ambient events fire near the player.
+          Tune the frequency, idle boosts, chase limits, and helicopter settings.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="randomevents-main">
+
+    <!-- Drop zone -->
+    <div
+      id="reDropZone"
+      class="re-drop-zone"
+      role="button"
+      tabindex="0"
+      aria-label="Drop randomevents.ymt.xml here or click to browse"
+    >
+      <span class="re-drop-icon">🎲</span>
+      <span class="re-drop-title">Drop randomevents.ymt.xml here</span>
+      <span class="re-drop-sub">or click to browse — accepts .xml or .ymt.xml</span>
+      <span class="re-drop-state-text"></span>
+    </div>
+    <input type="file" id="reFileInput" accept=".xml" style="display:none">
+
+    <!-- Controls row -->
+    <div class="re-controls">
+      <button id="reExportBtn" class="btn-orange" type="button" disabled
+        onclick="exportRandomEvents()">Export XML</button>
+      <button id="reResetBtn" class="secondary" type="button" disabled
+        onclick="resetRandomEvents()">Reset to Loaded</button>
+      <span id="reModCount" class="re-mod-count"></span>
+    </div>
+
+    <!-- Cloud save panel -->
+    <div id="reCloudSavePanelSlot"></div>
+
+    <!-- Editor content (rendered by randomeventsapp.js after file load) -->
+    <div id="reContent" class="is-hidden"></div>
+
+  </main>
+
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
+  <script src="/js/shared/probanner.js"></script>
+  <script src="/js/projectscloud.js"></script>
+  <script src="/js/randomevents-cloud-save.js"></script>
+  <script src="/js/randomeventsapp.js"></script>
+
+</body>
+</html>
