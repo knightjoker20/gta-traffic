@@ -62,6 +62,9 @@ function parsePopgroups(text, filename) {
     renderWorkspaceStatus(`Saved recent project: ${filename}`);
   }
 
+  // Load installed flags from the Vehicle Library and re-render cards once ready
+  loadInstalledModelsFromLibrary().then(() => renderSection(currentSection)).catch(() => {});
+
   if (typeof syncMainPagePopgroupsToCloud === "function") {
     syncMainPagePopgroupsToCloud(filename)
       .then(result => {
@@ -153,6 +156,48 @@ function closeAllGroups() {
 
   if (typeof schedulePopgroupsProjectSave === "function") {
     schedulePopgroupsProjectSave();
+  }
+}
+
+function copyGroupToMP(section, groupIndex) {
+  const spGroup = parsedData[section][groupIndex];
+  const mpGroupName = spGroup.name + "_MP";
+  const mpGroupIndex = parsedData[section].findIndex(g => g.name === mpGroupName);
+
+  if (mpGroupIndex === -1) {
+    alert(`No matching group "${mpGroupName}" found.`);
+    return;
+  }
+
+  const mpGroup = parsedData[section][mpGroupIndex];
+
+  if (!confirm(
+    `This will replace all ${mpGroup.models.length} entries in "${mpGroupName}" with ` +
+    `the ${spGroup.models.length} entries from "${spGroup.name}".\n\nContinue?`
+  )) return;
+
+  mpGroup.models = [...spGroup.models];
+
+  // Make sure the MP group is open so the user sees the result
+  openGroups[section].add(mpGroupIndex);
+
+  markUnsaved();
+  renderSection(section);
+}
+
+async function loadInstalledModelsFromLibrary() {
+  try {
+    const store = window.vehicleLibraryStore;
+    if (!store) return;
+    const vehicles = await store.getVehicles();
+    installedModels = new Set(
+      vehicles
+        .filter(v => v.custom?.installed === true)
+        .map(v => String(v.modelName || v.id || "").toLowerCase())
+        .filter(Boolean)
+    );
+  } catch (e) {
+    console.warn("Could not load installed models from library.", e);
   }
 }
 

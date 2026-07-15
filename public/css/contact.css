@@ -1,0 +1,221 @@
+/* =====================================================
+   contact.css — Feedback & Contact page
+   ===================================================== */
+
+/* ─── Hero ──────────────────────────────────────────── */
+
+.contact-hero { min-height: 220px; }
+
+.contact-hero .hero-shade {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 24px;
+}
+
+/* ─── Page layout ───────────────────────────────────── */
+
+.contact-main {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ─── Form card ─────────────────────────────────────── */
+
+.cf-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.cf-card-head {
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.cf-card-head h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 6px;
+}
+
+.cf-card-head p {
+  font-size: 0.83rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.cf-required {
+  color: #f59e0b;
+  font-weight: 700;
+}
+
+/* ─── Form ──────────────────────────────────────────── */
+
+.cf-form {
+  padding: 24px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cf-row {
+  display: flex;
+  gap: 16px;
+}
+
+.cf-row-2 > .cf-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.cf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cf-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.cf-input,
+.cf-select,
+.cf-textarea {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  font-family: inherit;
+  padding: 10px 14px;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cf-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.cf-textarea {
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.6;
+}
+
+.cf-input::placeholder,
+.cf-textarea::placeholder {
+  color: #334155;
+}
+
+.cf-input:focus,
+.cf-select:focus,
+.cf-textarea:focus {
+  outline: none;
+  border-color: rgba(245, 158, 11, 0.6);
+  background: rgba(30, 41, 59, 0.9);
+}
+
+.cf-input:focus-visible,
+.cf-select:focus-visible,
+.cf-textarea:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.35);
+  outline-offset: 2px;
+}
+
+/* ─── Actions row ───────────────────────────────────── */
+
+.cf-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cf-submit {
+  min-width: 148px;
+}
+
+.cf-status {
+  font-size: 0.85rem;
+  color: #64748b;
+  min-height: 1.2em;
+  transition: color 0.2s;
+}
+
+.cf-status.is-success { color: #22c55e; }
+.cf-status.is-error   { color: #ef4444; }
+
+/* ─── Info cards row ────────────────────────────────── */
+
+.cf-info-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.cf-info-card {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 14px;
+  padding: 22px 20px;
+  text-align: center;
+}
+
+.cf-info-icon {
+  font-size: 1.6rem;
+  margin-bottom: 10px;
+}
+
+.cf-info-card h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin: 0 0 8px;
+}
+
+.cf-info-card p {
+  font-size: 0.8rem;
+  color: #475569;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ─── Responsive ─────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .cf-row-2 {
+    flex-direction: column;
+  }
+
+  .cf-info-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cf-form {
+    padding: 18px 16px 20px;
+  }
+
+  .cf-card-head {
+    padding: 18px 16px 14px;
+  }
+}

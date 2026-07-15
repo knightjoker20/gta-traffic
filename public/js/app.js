@@ -127,6 +127,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     els.workspaceBackupImport.value = "";
   });
 
+  // Load installed-vehicle flags from the Vehicle Library for card highlighting
+  loadInstalledModelsFromLibrary().catch(() => {});
+
   // Existing databases are restored first because the workspace
   // UI state may reference an active pack.
   loadPackDatabase();

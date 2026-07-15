@@ -41,64 +41,31 @@ const SITE_TOOL_NAV_ITEMS = [
     page: "pack-builder"
   },
   {
-    label: "Car Download DB",
-    href: "mod-catalog.html",
-    page: "mod-catalog"
-  },
-  {
-    label: "Flags Reference",
-    href: "handling-flags.html",
-    page: "flags-reference"
-  },
-  {
-    label: "Pricing",
-    href: "pricing.html",
-    page: "pricing"
-  },
-  {
-    label: "Relationships",
-    href: "relationships.html",
-    page: "relationships"
-  },
-  {
-    label: "Dispatch",
-    href: "dispatch.html",
-    page: "dispatch"
-  },
-  {
-    label: "Trains",
-    href: "trains.html",
-    page: "trains"
-  },
-  {
-    label: "Events",
-    href: "events.html",
-    page: "events"
-  },
-  {
-    label: "NPC Combat",
-    href: "combat.html",
-    page: "combat"
-  },
-  {
-    label: "Combat Tasks",
-    href: "combattasks.html",
-    page: "combattasks"
-  },
-  {
-    label: "Random Events",
-    href: "randomevents.html",
-    page: "randomevents"
+    label: "Other Metas",
+    href: "javascript:void(0)",
+    page: "other-metas",
+    children: [
+      { label: "Relationships", href: "relationships.html", page: "relationships" },
+      { label: "Dispatch",      href: "dispatch.html",      page: "dispatch"      },
+      { label: "Trains",        href: "trains.html",        page: "trains"        },
+      { label: "Events",        href: "events.html",        page: "events"        },
+      { label: "NPC Combat",    href: "combat.html",        page: "combat"        },
+      { label: "Combat Tasks",  href: "combattasks.html",   page: "combattasks"   },
+      { label: "Random Events", href: "randomevents.html",  page: "randomevents"  },
+    ]
   },
   {
     label: "Resources",
     href: "resources.html",
-    page: "resources"
-  },
-  {
-    label: "Community",
-    href: "community.html",
-    page: "community"
+    page: "resources",
+    children: [
+      { label: "Resources",      href: "resources.html",      page: "resources"      },
+      { label: "Car Download DB",href: "mod-catalog.html",    page: "mod-catalog"    },
+      { label: "Flags Reference",href: "handling-flags.html", page: "flags-reference"},
+      { label: "Pricing",        href: "pricing.html",        page: "pricing"        },
+      { label: "Community",      href: "community.html",      page: "community"      },
+      { label: "Contact Us",     href: "contact.html",        page: "contact"        },
+    ]
   },
 ];
 
@@ -125,16 +92,34 @@ function renderSiteToolMenu() {
         id="siteToolMenuLinks"
         class="site-tool-menu-links"
       >
-        ${SITE_TOOL_NAV_ITEMS.map(item => `
-          <a
-            class="site-tool-menu-link ${
-              item.page === activePage ? "active" : ""
-            }"
-            href="${item.href}"
-          >
-            ${item.label}
-          </a>
-        `).join("")}
+        ${SITE_TOOL_NAV_ITEMS.map(item => {
+          if (item.children && item.children.length) {
+            const parentActive = item.children.some(c => c.page === activePage);
+            const parentHref = item.href || item.children[0]?.href || "#";
+            return `
+              <div class="site-tool-menu-group">
+                <a class="site-tool-menu-link has-dropdown ${parentActive ? "active" : ""}"
+                  href="${parentHref}" aria-haspopup="true">
+                  ${item.label}
+                </a>
+                <div class="site-tool-dropdown" role="menu">
+                  ${item.children.map(child => `
+                    <a class="site-tool-dropdown-link ${child.page === activePage ? "active" : ""}"
+                      href="${child.href}" role="menuitem">${child.label}</a>
+                  `).join("")}
+                </div>
+              </div>
+            `;
+          }
+          return `
+            <a
+              class="site-tool-menu-link ${item.page === activePage ? "active" : ""}"
+              href="${item.href}"
+            >
+              ${item.label}
+            </a>
+          `;
+        }).join("")}
       </div>
     </nav>
   `;
@@ -149,6 +134,37 @@ function renderSiteToolMenu() {
     const open = links.classList.toggle("open");
     toggle.setAttribute("aria-expanded", String(open));
   });
+
+  // Dropdown click-toggle — stays open until you click away or pick a link
+  host.querySelectorAll(".has-dropdown").forEach(trigger => {
+    trigger.addEventListener("click", e => {
+      e.preventDefault();
+      const group  = trigger.closest(".site-tool-menu-group");
+      const isOpen = group.classList.toggle("is-open");
+      trigger.setAttribute("aria-expanded", String(isOpen));
+
+      // Close sibling dropdowns
+      host.querySelectorAll(".site-tool-menu-group.is-open").forEach(g => {
+        if (g !== group) {
+          g.classList.remove("is-open");
+          g.querySelector(".has-dropdown")
+           ?.setAttribute("aria-expanded", "false");
+        }
+      });
+    });
+  });
+
+  // Click outside → close all dropdowns
+  document.addEventListener("click", e => {
+    if (!e.target.closest(".site-tool-menu-group")) {
+      host.querySelectorAll(".site-tool-menu-group.is-open").forEach(g => {
+        g.classList.remove("is-open");
+        g.querySelector(".has-dropdown")
+         ?.setAttribute("aria-expanded", "false");
+      });
+    }
+  });
+
 }
 
 document.addEventListener(

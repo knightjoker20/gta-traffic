@@ -1642,8 +1642,11 @@ function cardHtml(vehicle) {
     ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(title)}">`
     : `<img data-vl-static-model="${escapeHTML(vehicle.modelName.toLowerCase())}" data-vl-initials="${escapeHTML(initials(title))}" src="images/${encodeURIComponent(vehicle.modelName.toLowerCase())}.jpg" alt="${escapeHTML(title)}">`;
 
+  const installed = isInstalled(vehicle);
+  const isVanilla = inferInstallType(vehicle) === "Vanilla";
+
   return `
-    <article class="vl-vehicle-card ${isSelected ? "vl-bulk-selected" : ""}" data-model="${escapeHTML(vehicle.modelName)}">
+    <article class="vl-vehicle-card ${isSelected ? "vl-bulk-selected" : ""} ${installed ? "is-installed" : ""}" data-model="${escapeHTML(vehicle.modelName)}">
       <div class="vl-vehicle-card-image">
         <div class="vl-vehicle-photo-wrap">
           ${imageHtml}
@@ -1655,7 +1658,17 @@ function cardHtml(vehicle) {
           <label class="vl-bulk-select-check" title="Select for bulk pack assignment">
             <input type="checkbox" data-bulk-select="${escapeHTML(vehicle.modelName)}" ${isSelected ? "checked" : ""}>
           </label>
-        ` : ""}
+        ` : `
+          ${isVanilla ? `
+            <span class="vl-install-toggle-badge is-on is-vanilla" title="Vanilla — always installed">✓</span>
+          ` : `
+            <button type="button"
+              class="vl-install-toggle-badge ${installed ? "is-on" : ""}"
+              data-install-toggle="${escapeHTML(vehicle.modelName)}"
+              title="${installed ? "Installed — click to unmark" : "Not installed — click to mark as installed"}"
+            >${installed ? "✓" : "+"}</button>
+          `}
+        `}
 
         <div class="vl-card-source-dots">
           <span class="vl-source-dot ${vehicle.vehiclesMeta?.modelName ? "ready" : ""}">META</span>
@@ -2025,6 +2038,25 @@ function cardHtml(vehicle) {
     el("vlCompareModalOverlay")?.classList.add("vl-hidden");
   }
 
+  async function quickToggleInstalled(modelName) {
+    const id = store.normalizeId(modelName);
+    const vehicle = state.vehicles.find(v => v.id === id);
+    if (!vehicle) return;
+
+    // Vanilla vehicles can't be toggled — they're always installed
+    if (inferInstallType(vehicle) === "Vanilla") return;
+
+    vehicle.custom = vehicle.custom || {};
+    const newState = !vehicle.custom.installed;
+    vehicle.custom.installed   = newState;
+    vehicle.custom.installDate = newState ? new Date().toISOString().slice(0, 10) : "";
+    vehicle.updatedAt = new Date().toISOString();
+
+    await store.putVehicle(vehicle);
+
+    renderAll();
+  }
+
   function renderGrid() {
     const filtered = getFilteredVehicles();
 	const pageSize = state.pageSize || DEFAULT_PAGE_SIZE;
@@ -2062,6 +2094,16 @@ grid.querySelectorAll(
     event.stopPropagation();
     toggleBulkSelect(checkbox.dataset.bulkSelect);
     checkbox.closest(".vl-vehicle-card")?.classList.toggle("vl-bulk-selected", checkbox.checked);
+  });
+});
+
+grid.querySelectorAll(
+  "[data-install-toggle]"
+).forEach(button => {
+  button.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    quickToggleInstalled(button.dataset.installToggle);
   });
 });
 

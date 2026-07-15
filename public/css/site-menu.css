@@ -89,4 +89,106 @@
   }
 }
 
+/* ─── Dropdown groups ────────────────────────────────── */
+
+.site-tool-menu-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.has-dropdown::after {
+  content: ' ▾';
+  font-size: 8px;
+  opacity: 0.65;
+  display: inline-block;
+  transition: transform 0.15s, opacity 0.15s;
+  vertical-align: middle;
+}
+
+.site-tool-menu-group.is-open .has-dropdown::after {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+.site-tool-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 160px;
+  background: rgba(3, 6, 13, 0.97);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  z-index: 200;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.site-tool-menu-group.is-open .site-tool-dropdown {
+  display: flex;
+}
+
+.site-tool-dropdown-link {
+  display: block;
+  padding: 8px 12px;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.site-tool-dropdown-link:hover {
+  background: rgba(30, 41, 59, 0.78);
+  color: #fff;
+  border-color: rgba(249, 115, 22, 0.32);
+}
+
+.site-tool-dropdown-link.active {
+  color: #fff7ed;
+  background: linear-gradient(
+    180deg,
+    rgba(194, 65, 12, 0.92),
+    rgba(124, 45, 18, 0.92)
+  );
+}
+
+/* Mobile: dropdown becomes inline, click-only */
+@media (max-width: 760px) {
+  .site-tool-menu-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .site-tool-menu-group .has-dropdown {
+    width: 100%;
+  }
+
+  .site-tool-dropdown {
+    position: static;
+    transform: none;
+    background: rgba(15, 23, 42, 0.5);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 4px 0 4px 12px;
+    margin-top: 2px;
+    display: flex; /* always visible when mobile nav is open */
+  }
+
+  .site-tool-dropdown-link {
+    width: 100%;
+  }
+}
+
 /* [END SECTION: SITE_TOOL_MENU] */

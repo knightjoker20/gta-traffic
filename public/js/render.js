@@ -88,6 +88,10 @@ function renderSection(section) {
     const isMultiplayerGroup =
       /_MP$/i.test(group.name.trim());
 
+    const mpGroupName  = group.name.trim() + "_MP";
+    const hasMpPartner = !isMultiplayerGroup &&
+      parsedData[section].some(g => g.name === mpGroupName);
+
     const groupDiv =
       document.createElement("div");
 
@@ -149,6 +153,15 @@ function renderSection(section) {
           onclick="event.stopPropagation(); if(typeof window.quickClearPopgroupsGroup === 'function') window.quickClearPopgroupsGroup('${escapeHTML(section)}', ${groupIndex});"
           title="Remove all vehicle entries from this group"
         >Clear All</button>
+
+        ${hasMpPartner ? `
+        <button
+          type="button"
+          class="group-copy-mp-button"
+          onclick="event.stopPropagation(); copyGroupToMP('${escapeAttribute(section)}', ${groupIndex})"
+          title="Copy all entries from this group into ${escapeAttribute(mpGroupName)}, replacing its current list"
+        >Copy to MP</button>
+        ` : ""}
       </div>
 
       <div>
@@ -383,11 +396,16 @@ function renderVehicleCards(
           const cardKey = `${section}-${groupIndex}-${String(model).toLowerCase()}`;
           const isCardOpen = openVehicleCards.has(cardKey);
 
+          const modelLower = String(model).toLowerCase();
+          const modelInstalled =
+            installedModels.has(modelLower) ||
+            (window.GTAVanillaModels?.has(modelLower) ?? false);
+
           return `
             <div
-              class="vehicle-card${isCardOpen ? ' vehicle-card-open' : ''}"
+              class="vehicle-card${isCardOpen ? ' vehicle-card-open' : ''}${modelInstalled ? ' is-installed' : ''}"
               draggable="true"
-              data-model="${String(model).toLowerCase()}"
+              data-model="${modelLower}"
               data-section="${escapeAttribute(section)}"
               data-groupindex="${groupIndex}"
               onclick="openVehicleLibraryDetails(event, '${escapeAttribute(model)}')"
@@ -407,6 +425,8 @@ function renderVehicleCards(
                 title="Remove from group"
                 aria-label="Remove ${escapeAttribute(model)}"
               >✕</button>
+
+              ${modelInstalled ? '<span class="vehicle-card-installed-badge" title="Installed">✓</span>' : ''}
 
               ${renderVehicleImage(
                 model,
@@ -506,11 +526,16 @@ function renderTextCards(
           const cardKeyT = `${section}-${groupIndex}-${String(model).toLowerCase()}`;
           const isCardOpenT = openVehicleCards.has(cardKeyT);
 
+          const modelLowerT = String(model).toLowerCase();
+          const modelInstalledT =
+            installedModels.has(modelLowerT) ||
+            (window.GTAVanillaModels?.has(modelLowerT) ?? false);
+
           return `
             <div
-              class="vehicle-card${isCardOpenT ? ' vehicle-card-open' : ''}"
+              class="vehicle-card${isCardOpenT ? ' vehicle-card-open' : ''}${modelInstalledT ? ' is-installed' : ''}"
               draggable="true"
-              data-model="${String(model).toLowerCase()}"
+              data-model="${modelLowerT}"
               data-section="${escapeAttribute(section)}"
               data-groupindex="${groupIndex}"
               onclick="openVehicleLibraryDetails(event, '${escapeAttribute(model)}')"
@@ -530,6 +555,8 @@ function renderTextCards(
                 title="Remove from group"
                 aria-label="Remove ${escapeAttribute(model)}"
               >✕</button>
+
+              ${modelInstalledT ? '<span class="vehicle-card-installed-badge" title="Installed">✓</span>' : ''}
 
               <div class="vehicle-name">
                 ${escapeHTML(model)}

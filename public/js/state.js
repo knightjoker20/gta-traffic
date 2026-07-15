@@ -65,5 +65,9 @@ let openPackItems = new Set();
 // Persists across re-renders so delete/add doesn't collapse open cards.
 let openVehicleCards = new Set();
 
+// Set of model names (lowercase) marked as installed in the Vehicle Library.
+// Populated async from IndexedDB; vanilla vehicles are always considered installed.
+let installedModels = new Set();
+
 // DOM references are assigned in app.js.
 let els = {};

@@ -591,6 +591,56 @@ body.vl-library-page {
   border-color: rgba(249,115,22,.75);
   box-shadow: 0 0 0 2px rgba(249,115,22,.28);
 }
+.vl-vehicle-card.is-installed {
+  border-color: rgba(34,197,94,.45);
+  box-shadow: 0 0 0 1px rgba(34,197,94,.18);
+}
+.vl-vehicle-card.is-installed:hover {
+  border-color: rgba(34,197,94,.72);
+  box-shadow: 0 0 0 2px rgba(34,197,94,.28), 0 14px 28px rgba(0,0,0,.32);
+}
+.vl-install-toggle-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.2);
+  background: rgba(3,6,13,.72);
+  color: rgba(255,255,255,.35);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+  backdrop-filter: blur(6px);
+}
+.vl-install-toggle-badge:hover {
+  background: rgba(34,197,94,.25);
+  border-color: rgba(34,197,94,.55);
+  color: #a7f3d0;
+}
+.vl-install-toggle-badge.is-on {
+  background: rgba(34,197,94,.88);
+  border-color: rgba(52,211,153,.9);
+  color: #fff;
+  cursor: pointer;
+}
+.vl-install-toggle-badge.is-on:not(.is-vanilla):hover {
+  background: rgba(239,68,68,.78);
+  border-color: rgba(239,68,68,.8);
+  color: #fff;
+}
+.vl-install-toggle-badge.is-vanilla {
+  cursor: default;
+  pointer-events: none;
+}
 .vl-card-source-dots {
   position: absolute;
   left: 8px;

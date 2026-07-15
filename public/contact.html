@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact &amp; Feedback — GTA Traffic</title>
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/site-menu.css">
+  <link rel="stylesheet" href="css/contact.css">
+  <link rel="stylesheet" href="/css/accountnav.css">
+  <link rel="stylesheet" href="/css/site-shell.css">
+</head>
+<body data-page="contact">
+
+  <header class="app-header">
+    <a class="brand-left" href="index.html" aria-label="Return to GTA Traffic home">
+      <img class="site-logo" src="assets/gta-traffic-logo.png" alt="GTA Traffic">
+    </a>
+  </header>
+
+  <div id="siteToolMenu"></div>
+
+  <section class="hero-banner contact-hero">
+    <div class="hero-shade">
+      <div class="hero-content">
+        <div class="hero-kicker">Get in Touch</div>
+        <h1>Feedback &amp; Contact</h1>
+        <p>
+          Found a bug? Have a feature request? Just want to say hey?
+          Fill out the form below and we'll get back to you.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="contact-main">
+
+    <div class="cf-card">
+
+      <div class="cf-card-head">
+        <h2>Send a Message</h2>
+        <p>All fields marked <span class="cf-required">*</span> are required. We're working on connecting an inbox — your message will be delivered as soon as it's live.</p>
+      </div>
+
+      <form class="cf-form" id="contactForm" novalidate>
+
+        <div class="cf-row cf-row-2">
+          <div class="cf-field">
+            <label class="cf-label" for="cfName">Name <span class="cf-required">*</span></label>
+            <input class="cf-input" type="text" id="cfName" name="name"
+              placeholder="Your name" autocomplete="name" required>
+          </div>
+          <div class="cf-field">
+            <label class="cf-label" for="cfEmail">Email <span class="cf-required">*</span></label>
+            <input class="cf-input" type="email" id="cfEmail" name="email"
+              placeholder="you@example.com" autocomplete="email" required>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label" for="cfSubject">Subject <span class="cf-required">*</span></label>
+          <select class="cf-select" id="cfSubject" name="subject" required>
+            <option value="" disabled selected>Choose a topic…</option>
+            <option value="bug">🐛 Bug Report</option>
+            <option value="feature">💡 Feature Request</option>
+            <option value="feedback">⭐ General Feedback</option>
+            <option value="question">❓ Question</option>
+            <option value="other">💬 Other</option>
+          </select>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label" for="cfMessage">Message <span class="cf-required">*</span></label>
+          <textarea class="cf-textarea" id="cfMessage" name="message"
+            placeholder="Describe your bug, idea, or question in as much detail as you like…"
+            rows="7" required></textarea>
+        </div>
+
+        <div class="cf-actions">
+          <button type="submit" class="btn-orange cf-submit" id="cfSubmitBtn">
+            Send Message
+          </button>
+          <span class="cf-status" id="cfStatus"></span>
+        </div>
+
+      </form>
+
+    </div>
+
+    <div class="cf-info-row">
+      <div class="cf-info-card">
+        <div class="cf-info-icon">🐛</div>
+        <h3>Bug Reports</h3>
+        <p>Include the file you were editing, the browser you're using, and what you expected vs. what happened.</p>
+      </div>
+      <div class="cf-info-card">
+        <div class="cf-info-icon">💡</div>
+        <h3>Feature Requests</h3>
+        <p>Tell us which GTA meta file you'd like supported or what workflow would save you the most time.</p>
+      </div>
+      <div class="cf-info-card">
+        <div class="cf-info-icon">⭐</div>
+        <h3>General Feedback</h3>
+        <p>We read everything. If something's confusing, slow, or missing — let us know and we'll fix it.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/js/shared/siteheader.js"></script>
+  <script src="/js/shared/siteshell.js"></script>
+  <script src="/js/shared/accountstate.js"></script>
+  <script src="/js/accountnav.js"></script>
+  <script src="/js/shared/probanner.js"></script>
+  <script>
+    // Placeholder form handler — swap for real endpoint when inbox is connected
+    document.getElementById("contactForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const btn    = document.getElementById("cfSubmitBtn");
+      const status = document.getElementById("cfStatus");
+      btn.disabled = true;
+      btn.textContent = "Sending…";
+      status.textContent = "";
+      status.className = "cf-status";
+
+      // TODO: replace this timeout with a real fetch() to your API endpoint
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = "Send Message";
+        status.textContent = "✓ Message received — inbox coming soon!";
+        status.className = "cf-status is-success";
+        this.reset();
+      }, 800);
+    });
+  </script>
+
+</body>
+</html>
